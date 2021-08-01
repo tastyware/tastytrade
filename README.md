@@ -48,7 +48,7 @@ async def main_loop(session: TastyAPISession, streamer: DataStreamer):
     # Execute an order
     details = OrderDetails(
         type=OrderType.LIMIT,
-        price=Decimal(400),
+        price=D(400),
         price_effect=OrderPriceEffect.CREDIT)
     new_order = Order(details)
 
@@ -56,7 +56,7 @@ async def main_loop(session: TastyAPISession, streamer: DataStreamer):
         ticker='AKS',
         quantity=1,
         expiry=get_third_friday(date.today()),
-        strike=Decimal(3),
+        strike=D(3),
         option_type=OptionType.CALL,
         underlying_type=UnderlyingType.EQUITY
     )
