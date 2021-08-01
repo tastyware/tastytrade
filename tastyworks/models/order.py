@@ -1,11 +1,11 @@
 import logging
+from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import List
 
 import aiohttp
-from dataclasses import dataclass, field
 
 from tastyworks.models.security import Security
 

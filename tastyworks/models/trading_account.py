@@ -1,7 +1,7 @@
+from dataclasses import dataclass
 from typing import List
 
 import aiohttp
-from dataclasses import dataclass
 
 from tastyworks.models.order import Order, OrderPriceEffect
 

@@ -1,9 +1,9 @@
+from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from enum import Enum
 
-from dataclasses import dataclass
-
+from tastyworks.models.greeks import Greeks
 from tastyworks.models.security import Security
 from tastyworks.models.underlying import UnderlyingType
 
@@ -20,7 +20,14 @@ class Option(Security):
     strike: Decimal
     option_type: OptionType
     underlying_type: UnderlyingType
+    greeks: Greeks = None
     quantity: int = 1
+    symbol_occ: str = None
+    symbol_dxf: str = None
+
+    def __post_init__(self):
+        self.symbol_occ = self.get_occ2010_symbol()
+        self.symbol_dxf = self.get_dxfeed_symbol()
 
     def _get_underlying_type_string(self, underlying_type: UnderlyingType):
         if underlying_type == UnderlyingType.EQUITY:

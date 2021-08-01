@@ -1,5 +1,6 @@
-from tastyworks.dxfeed.mapped_item import MappedItem
 import datetime
+
+from tastyworks.dxfeed.mapped_item import MappedItem
 
 
 class Quote(MappedItem):

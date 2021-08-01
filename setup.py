@@ -1,45 +1,25 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
+
+from tastyworks.utils import VERSION
 
 
-REQUIRES = [
-    'aiocometd',
-    'aiohttp<4',
-    'dataclasses',
-    'requests<3',
-]
-
-TEST_REQUIRES = [
-    'pytest'
-]
-
-with open('README.md', 'r', encoding='utf8') as file:
-    long_desc = file.read()
+f = open('README.md', 'r')
+LONG_DESCRIPTION = f.read()
+f.close()
 
 setup(
-    name='tastyworks',
-    author='Boyan Soubachov',
-    author_email='boyanvs@gmail.com',
-    url='http://pypi.python.org/pypi/tastyworks/',
-    version='4.0.0',
-    packages=find_packages(exclude=['main.py']),
-    python_requires='>= 3.6.0',
-    description='Tastyworks (unofficial) API',
-    license='LICENSE.txt',
-    long_description=long_desc,
+    name='tastyworks-api',
+    version=VERSION,
+    description='An unofficial API for Tastyworks!',
+    long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
-    install_requires=REQUIRES,
-    extras_require={
-        'testing': TEST_REQUIRES,
-    },
-    keywords=['tastyworks', 'trading', 'api', 'algorithmic'],
-    entry_points={
-        'console_scripts': ['tasty=tastyworks.example:main']
-    },
-    classifiers=(
-        "Development Status :: 3 - Alpha",
-        "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: Apache Software License",
-        "Operating System :: OS Independent",
-    ),
-
+    author='Graeme Holliday',
+    author_email='graeme.holliday@pm.me',
+    url='https://github.com/Graeme22/tastyworks-api',
+    license='MIT',
+    install_requires=[
+        # stuff!
+    ],
+    packages=find_packages(exclude=['ez_setup', 'tests*']),
+    include_package_data=True,
 )

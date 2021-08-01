@@ -1,6 +1,7 @@
+import asyncio
+
 from tastyworks.models.watchlists import WatchlistGroup
 from tastyworks.tastyworks_api import tasty_session
-import asyncio
 
 
 class TestWatchlists(object):

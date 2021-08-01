@@ -1,27 +1,127 @@
-# Tastyworks (Unofficial) API
-
-## Disclaimer
-
-This is an unofficial, reverse-engineered API for Tastyworks. There is no implied warranty for any actions and results which arise from using it.
-
-## Purpose
+# Tastyworks API (Unofficial)
 
 A simple, async-based, reverse-engineered API for tastyworks. This will allow you to create trading algorithms for whatever strategies you may have.
 
 Please note that this is in the very early stages of development so any and all contributions are welcome. Please submit an issue and/or a pull request.
 
+This is a fork with modified and added features. You can find the original GitHub repo at: https://github.com/boyan-soubachov/tastyworks_api
+
 ## Installation
 ```
-pip install tastyworks
+$ pip install tastyworks-api
 ```
-✨ 🍰
 
-Since it's an async-based API, please make sure you're familiar with how asynchronous python works (Note: Python 3.6 or higher).
+## Usage
 
-An example use is provided in `example.py` in the `tastyworks` folder. See for yourself by adding your tastyworks username/password and running:
+Here's a simple example which showcases many different aspects of the API:
 
-```
-tasty 
+```python
+import asyncio
+from datetime import date
+from decimal import Decimal as D
+
+from tastyworks.models import option_chain, underlying
+from tastyworks.models.greeks import Greeks
+from tastyworks.models.option import Option, OptionType
+from tastyworks.models.order import (Order, OrderDetails, OrderPriceEffect,
+                                     OrderType)
+from tastyworks.models.session import TastyAPISession
+from tastyworks.models.trading_account import TradingAccount
+from tastyworks.models.underlying import UnderlyingType
+from tastyworks.streamer import DataStreamer
+from tastyworks.tastyworks_api import tasty_session
+from tastyworks.utils import get_third_friday
+
+
+async def main_loop(session: TastyAPISession, streamer: DataStreamer):
+    sub_values = {
+        "Quote": ["/ES"]
+    }
+
+    accounts = await TradingAccount.get_remote_accounts(session)
+    acct = accounts[0]
+    print(f'Accounts available: {accounts}')
+
+    orders = await Order.get_remote_orders(session, acct)
+    print(f'Number of active orders: {len(orders)}')
+
+    # Execute an order
+    details = OrderDetails(
+        type=OrderType.LIMIT,
+        price=Decimal(400),
+        price_effect=OrderPriceEffect.CREDIT)
+    new_order = Order(details)
+
+    opt = Option(
+        ticker='AKS',
+        quantity=1,
+        expiry=get_third_friday(date.today()),
+        strike=Decimal(3),
+        option_type=OptionType.CALL,
+        underlying_type=UnderlyingType.EQUITY
+    )
+    new_order.add_leg(opt)
+
+    res = await acct.execute_order(new_order, session, dry_run=True)
+    print(f'Order executed successfully: {res}')
+
+    # Get an options chain
+    undl = underlying.Underlying('AKS')
+
+    chain = await option_chain.get_option_chain(session, undl)
+    print(f'Chain strikes: {chain.get_all_strikes()}')
+
+	# Get all expirations for the options for the above equity symbol
+    exp = chain.get_all_expirations()
+
+    # Choose the next expiration as an example & fetch the entire options chain for that expiration (all strikes)
+    next_exp = exp[0]
+    chain_next_exp = await option_chain.get_option_chain(session, undl, next_exp)
+    options = []
+    for option in chain_next_exp.options:
+        options.append(option)
+
+    # Get the greeks data for all option symbols via the streamer by subscribing
+    options_symbols = [options[x].symbol_dxf for x in range(len(options))]
+    streamer_list = {"Greeks": options_symbols}
+    await streamer.add_data_sub(streamer_list)
+    greeks_data = []
+
+    async for item in streamer.listen():
+        # This is where you manipulate incoming streamer data
+        greeks_data.extend(item.data)
+        if len(greeks_data) >= len(streamer_list['Greeks']):
+            break  # Stops the async for item in streamer.listen() loop after receiving all the data
+
+    for data in greeks_data:
+        gd = Greeks().from_streamer_dict(data)
+        # gd = Greeks(kwargs=data)
+        idx_match = [options[x].symbol_dxf for x in range(len(options))].index(gd.symbol)
+        options[idx_match].greeks = gd
+        print('> Symbol: {}\tPrice: {}\tDelta {}'.format(gd.symbol, gd.price, gd.delta))
+
+    await streamer.add_data_sub(sub_values)
+
+    async for item in streamer.listen():
+        print(f'Received item: {item.data}')
+
+
+if __name__ == '__main__':
+    tasty_client = tasty_session.create_new_session('foo', 'bar')
+    streamer = DataStreamer(tasty_client)
+    loop = asyncio.get_event_loop()
+
+    try:
+        loop.run_until_complete(main_loop(tasty_client, streamer))
+    except Exception:
+        print('Exception in main loop')
+    finally:
+        # find all futures/tasks still running and wait for them to finish
+        pending_tasks = [
+            task for task in asyncio.Task.all_tasks() if not task.done()
+        ]
+        loop.run_until_complete(asyncio.gather(*pending_tasks))
+        loop.close()
 ```
 
 ## Guidelines and caveats
@@ -32,13 +132,7 @@ There are a few useful things to know which will help you get the most out of th
 1. One can have multiple sessions and, due to the inter-object independence, can execute identical actions on identical objects in different sessions.
 1. Given the above points, this API *does not* implement state management and synchronization (i.e. are my local object representations identical to the remote [Tastyworks] ones?). This is not an indefinitely closed matter and may be re-evaluated if the need arises.
 
-## Contributing
+## Disclaimer
 
-The more hands and brains that can help with this project, the better. It was implemented with the effort of getting something working rather than something beautiful as it is a reverse-engineering effort in progress.
-I would appreciate any input (be it in the form of issue reporting or code) on how to make this code-base better.
-
-You can find the official GitHub repo at: https://github.com/boyan-soubachov/tastyworks_api
-
-## TODO
-
-I would really appreciate any help/contributions with the TODO's scattered all around the codebase. If they're not descriptive enough, I'd be happy to provide more details.
+This is an unofficial, reverse-engineered API for Tastyworks. There is no implied warranty for any actions and results which arise from using it.
+The only guarantee I make is that you will lose all your money if you use this API.
