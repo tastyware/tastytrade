@@ -16,9 +16,10 @@ setup(
     author='Graeme Holliday',
     author_email='graeme.holliday@pm.me',
     url='https://github.com/Graeme22/tastyworks-api',
-    license='MIT',
+    license='Apache',
     install_requires=[
-        # stuff!
+        'aiohttp>=3.7.4',
+        'requests>=2.26.0',
     ],
     packages=find_packages(exclude=['ez_setup', 'tests*']),
     include_package_data=True,
