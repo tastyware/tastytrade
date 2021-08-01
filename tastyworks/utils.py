@@ -1,7 +1,7 @@
 import calendar
 from datetime import date, timedelta
 
-VERSION = '0.1.0'
+VERSION = '0.4.1'
 
 
 def get_third_friday(d):
