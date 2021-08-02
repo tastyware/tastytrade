@@ -71,7 +71,7 @@ async def main_loop(session: TastyAPISession, streamer: DataStreamer):
     chain = await option_chain.get_option_chain(session, undl)
     print(f'Chain strikes: {chain.get_all_strikes()}')
 
-	# Get all expirations for the options for the above equity symbol
+    # Get all expirations for the options for the above equity symbol
     exp = chain.get_all_expirations()
 
     # Choose the next expiration as an example & fetch the entire options chain for that expiration (all strikes)
