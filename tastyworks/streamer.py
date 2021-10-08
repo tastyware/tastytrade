@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import suppress
 import datetime
 import logging
 
@@ -20,17 +21,14 @@ class DataStreamer(object):
         self.tasty_session = session
         self.cometd_client = None
         self.subs = {}
-        asyncio.get_event_loop().run_until_complete(
-            self._setup_connection()
-        )
 
-    def __del__(self):
-        asyncio.get_event_loop().run_until_complete(
-            self.cometd_client.close()
-        )
+    async def __aenter__(self):
+        await self._setup_connection()
+        return self
 
-    async def _cometd_close(self):
+    async def __aexit__(self, *excinfo):
         await self.cometd_client.close()
+        return self
 
     async def add_data_sub(self, values):
         LOGGER.debug(f'Adding subscription: {values}')

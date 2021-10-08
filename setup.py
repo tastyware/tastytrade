@@ -18,8 +18,10 @@ setup(
     url='https://github.com/Graeme22/tastyworks-api',
     license='Apache',
     install_requires=[
-        'aiohttp>=3.7.4',
-        'requests>=2.26.0',
+        'aiohttp<4',
+        'requests<3',
+        'aiocometd',
+        'dataclasses'
     ],
     packages=find_packages(exclude=['ez_setup', 'tests*']),
     include_package_data=True,
