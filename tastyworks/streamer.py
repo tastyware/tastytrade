@@ -24,7 +24,6 @@ class DataStreamer(object):
     async def create(cls, session: TastyAPISession):
         self = DataStreamer(session)
         await self._setup_connection()
-        
         return self
 
     async def add_data_sub(self, values):
