@@ -20,12 +20,11 @@ class DataStreamer(object):
         self.cometd_client = None
         self.subs = {}
 
-    async def __aenter__(self):
+    @classmethod
+    async def create(cls, session: TastyAPISession):
+        self = DataStreamer(session)
         await self._setup_connection()
-        return self
-
-    async def __aexit__(self, *excinfo):
-        await self.cometd_client.close()
+        
         return self
 
     async def add_data_sub(self, values):
