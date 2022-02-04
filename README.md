@@ -34,10 +34,6 @@ from tastyworks.utils import get_third_friday
 
 
 async def main_loop(session: TastyAPISession, streamer: DataStreamer):
-    sub_values = {
-        "Quote": ["/ES"]
-    }
-
     accounts = await TradingAccount.get_remote_accounts(session)
     acct = accounts[0]
     print(f'Accounts available: {accounts}')
@@ -83,15 +79,7 @@ async def main_loop(session: TastyAPISession, streamer: DataStreamer):
 
     # Get the greeks data for all option symbols via the streamer by subscribing
     options_symbols = [options[x].symbol_dxf for x in range(len(options))]
-    streamer_list = {"Greeks": options_symbols}
-    await streamer.add_data_sub(streamer_list)
-    greeks_data = []
-
-    async for item in streamer.listen():
-        # This is where you manipulate incoming streamer data
-        greeks_data.extend(item.data)
-        if len(greeks_data) >= len(streamer_list['Greeks']):
-            break  # Stops the async for item in streamer.listen() loop after receiving all the data
+    greeks_data = await streamer.stream('Greeks', options_symbols)
 
     for data in greeks_data:
         gd = Greeks().from_streamer_dict(data)
@@ -100,10 +88,11 @@ async def main_loop(session: TastyAPISession, streamer: DataStreamer):
         options[idx_match].greeks = gd
         print('> Symbol: {}\tPrice: {}\tDelta {}'.format(gd.symbol, gd.price, gd.delta))
 
-    await streamer.add_data_sub(sub_values)
 
-    async for item in streamer.listen():
-        print(f'Received item: {item.data}')
+	quote = await streamer.stream('Quote', sub_values)
+    print(f'Received item: {quote}')
+
+	await streamer.close()
 
 
 if __name__ == '__main__':

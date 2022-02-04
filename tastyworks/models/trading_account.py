@@ -45,11 +45,11 @@ class TradingAccount(object):
 
         async with aiohttp.request('POST', url, headers=session.get_request_headers(), json=body) as resp:
             if resp.status == 201:
-                return True
+                return (await resp.json())['data']
             elif resp.status == 400:
-                raise Exception('Order execution failed, message: {}'.format(await resp.text()))
+                raise Exception('Order execution failed: {}'.format(await resp.text()))
             else:
-                raise Exception('Unknown remote error, status code: {}, message: {}'.format(resp.status, await resp.text()))
+                raise Exception('Unknown remote error {}: {}'.format(resp.status, await resp.text()))
 
     @classmethod
     def from_dict(cls, data: dict) -> List:

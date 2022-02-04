@@ -10,6 +10,7 @@ from tastyworks.dxfeed import mapper as dxfeed_mapper
 from tastyworks.models.session import TastyAPISession
 
 LOGGER = logging.getLogger(__name__)
+logging.getLogger('aiocometd').setLevel(logging.CRITICAL)
 
 
 class DataStreamer(object):
@@ -32,7 +33,7 @@ class DataStreamer(object):
 
     async def remove_data_sub(self, values):
         # NOTE: Experimental, unconfirmed. Needs testing
-        LOGGER.info(f'Removing subscription: {values}')
+        LOGGER.debug(f'Removing subscription: {values}')
         await self._send_msg(dxfeed.SUBSCRIPTION_CHANNEL, {'remove': values})
 
     async def _consumer(self, message):
@@ -75,7 +76,7 @@ class DataStreamer(object):
     async def _setup_connection(self):
         aiocometd.client.DEFAULT_CONNECTION_TYPE = ConnectionType.WEBSOCKET
         streamer_url = self._get_streamer_websocket_url()
-        LOGGER.info('Connecting to url: %s', streamer_url)
+        LOGGER.debug('Connecting to url: %s', streamer_url)
 
         auth_extension = AuthExtension(self.get_streamer_token())
         cometd_client = aiocometd.Client(
@@ -87,9 +88,12 @@ class DataStreamer(object):
 
         self.cometd_client = cometd_client
         self.logged_in = True
-        LOGGER.info('Connected and logged in to dxFeed data stream')
+        LOGGER.debug('Connected and logged in to dxFeed data stream')
 
         await self.reset_data_subs()
+
+    async def close(self):
+        await self.cometd_client.close()
 
     async def listen(self):
         async for msg in self.cometd_client:
@@ -97,6 +101,17 @@ class DataStreamer(object):
             if msg['channel'] != dxfeed.DATA_CHANNEL:
                 continue
             yield await self._consumer(msg['data'])
+
+    async def stream(self, key, dxfeeds):
+        streamer_dict = {key: dxfeeds}
+        await self.add_data_sub(streamer_dict)
+        data = []
+        async for item in self.listen():
+            data.extend(item.data)
+            if len(data) >= len(dxfeeds):
+                break
+        await self.remove_data_sub(streamer_dict)
+        return data
 
 
 class AuthExtension(aiocometd.AuthExtension):
