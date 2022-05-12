@@ -20,7 +20,7 @@ setup(
     install_requires=[
         'aiohttp<4',
         'requests<3',
-        'aiocometd @ git+https://github.com/Graeme22/aiocometd@0.4.5.3#egg=aiocometd',
+        'tastyworks-aiocometd>=1.0',
         'dataclasses'
     ],
     packages=find_packages(exclude=['ez_setup', 'tests*']),
