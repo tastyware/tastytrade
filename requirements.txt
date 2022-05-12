@@ -1,5 +1,5 @@
 aiohttp==3.7.4
-aiocometd==0.4.5
+git+https://github.com/Graeme22/aiocometd@0.4.5.3#egg=aiocometd
 requests==2.26.0
 pytest==6.2.4
 pytest-cov==2.12.0

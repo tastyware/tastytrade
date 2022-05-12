@@ -4,7 +4,7 @@ A simple, async-based, reverse-engineered API for tastyworks. This will allow yo
 
 Please note that this is in the very early stages of development so any and all contributions are welcome. Please submit an issue and/or a pull request.
 
-This is a fork with modified and added features. You can find the original GitHub repo at: https://github.com/boyan-soubachov/tastyworks_api
+This is a fork with modified and added features. You can find the original (unmaintained) GitHub repo at: https://github.com/boyan-soubachov/tastyworks_api
 
 ## Installation
 ```

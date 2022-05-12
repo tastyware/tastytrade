@@ -15,12 +15,12 @@ setup(
     long_description_content_type='text/markdown',
     author='Graeme Holliday',
     author_email='graeme.holliday@pm.me',
-    url='https://github.com/Graeme22/tastyworks-api',
+    url='https://github.com/tastyware/tastyworks-api',
     license='Apache',
     install_requires=[
         'aiohttp<4',
         'requests<3',
-        'aiocometd',
+        'aiocometd @ git+https://github.com/Graeme22/aiocometd@0.4.5.3#egg=aiocometd',
         'dataclasses'
     ],
     packages=find_packages(exclude=['ez_setup', 'tests*']),
