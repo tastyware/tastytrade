@@ -52,7 +52,7 @@ class TradingAccount(object):
                 raise Exception('Unknown remote error {}: {}'.format(resp.status, await resp.text()))
 
     @classmethod
-    def from_dict(cls, data: dict) -> List:
+    def from_dict(cls, data: dict):
         """
         Parses a TradingAccount object from a dict.
         """
@@ -66,9 +66,7 @@ class TradingAccount(object):
             'opened_at': data['opened-at']
         }
 
-        res = TradingAccount(**new_data)
-
-        return res
+        return TradingAccount(**new_data)
 
     @classmethod
     async def get_remote_accounts(cls, session) -> List:
@@ -213,7 +211,7 @@ def _get_execute_order_json(order: Order):
     order_json = {
         'source': order.details.source,
         'order-type': order.details.type.value,
-        'price': '{:.2f}'.format(order.details.price),
+        'price': f'{order.details.price:.2f}',
         'price-effect': order.details.price_effect.value,
         'time-in-force': order.details.time_in_force.value,
         'legs': _get_legs_request_data(order)

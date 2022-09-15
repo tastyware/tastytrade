@@ -1,4 +1,8 @@
-# Tastyworks API (Unofficial)
+[![PyPI version](https://badge.fury.io/py/tastyworks-api.svg)](https://badge.fury.io/py/tastyworks-api)
+[![Downloads](https://pepy.tech/badge/tastyworks-api)](https://pepy.tech/project/tastyworks-api)
+[![Docs](https://readthedocs.org/projects/tastyworks-api/badge/?version=latest)](https://tastyworks-api.readthedocs.io/en/latest/?badge=latest)
+
+# Tastyworks API (unofficial)
 
 A simple, async-based, reverse-engineered API for tastyworks. This will allow you to create trading algorithms for whatever strategies you may have.
 

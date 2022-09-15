@@ -1,15 +1,15 @@
 import abc
 import logging
+from typing import Dict, Optional
 
-from tastyworks.dxfeed import mapper as mapper
-
+KEY_MAP: Dict[str, list[str]] = {}
 LOGGER = logging.getLogger(__name__)
 
 
 class MappedItem(object):
     __metaclass__ = abc.ABCMeta
 
-    DXFEED_TEXT = None
+    DXFEED_TEXT: Optional[str] = None
 
     def _map_data(self, data) -> list:
         first_sample = True
@@ -28,9 +28,9 @@ class MappedItem(object):
             # NOTE: I know this is dirty. Technical debt.
             # Stores the list of keys from the first sample since
             # subsequent ones only provide values
-            mapper.KEY_MAP[self.DXFEED_TEXT] = keys
+            KEY_MAP[self.DXFEED_TEXT] = keys
         else:
-            keys = mapper.KEY_MAP[self.DXFEED_TEXT]
+            keys = KEY_MAP[self.DXFEED_TEXT]
 
         res = []
         values = data[1]

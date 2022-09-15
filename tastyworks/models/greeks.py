@@ -5,18 +5,19 @@ from decimal import Decimal
 
 @dataclass
 class Greeks(object):
-    symbol: str = None
-    index: str = None
-    datetime: datetime = None
-    price: Decimal = None
-    volatility: Decimal = None
-    delta: Decimal = None
-    gamma: Decimal = None
-    theta: Decimal = None
-    rho: Decimal = None
-    vega: Decimal = None
+    symbol: str
+    index: str
+    datetime: datetime
+    price: Decimal
+    volatility: Decimal
+    delta: Decimal
+    gamma: Decimal
+    theta: Decimal
+    rho: Decimal
+    vega: Decimal
 
-    def from_streamer_dict(self, input_dict: dict):
+    @classmethod
+    def from_streamer_dict(cls, input_dict: dict):
         """
         imports the Greeks data from a dictionary pulled from subscribed streamer data
             sub_greeks = {"Greeks": [".SPY210419P410"]}
@@ -26,15 +27,16 @@ class Greeks(object):
             input_dict (dict): dictionary from the streamer containing the greeks data for one options symbol
 
         """
-        self.symbol = input_dict.get('eventSymbol')
-        self.index = input_dict.get('index')
-        self.datetime = datetime.fromtimestamp(input_dict.get('time') / 1000.0)  # timestamp comes in ms
-        self.price = Decimal(str(input_dict.get('price')))
-        self.volatility = Decimal(str(input_dict.get('volatility')))
-        self.delta = Decimal(str(input_dict.get('delta')))
-        self.gamma = Decimal(str(input_dict.get('gamma')))
-        self.theta = Decimal(str(input_dict.get('theta')))
-        self.rho = Decimal(str(input_dict.get('rho')))
-        self.vega = Decimal(str(input_dict.get('vega')))
-
+        self = Greeks(
+            symbol=input_dict.get('eventSymbol', ''),
+            index=input_dict.get('index', ''),
+            datetime=datetime.fromtimestamp(input_dict.get('time', 0.0) / 1000.0),  # timestamp comes in ms
+            price=Decimal(str(input_dict.get('price'))),
+            volatility=Decimal(str(input_dict.get('volatility'))),
+            delta=Decimal(str(input_dict.get('delta'))),
+            gamma=Decimal(str(input_dict.get('gamma'))),
+            theta=Decimal(str(input_dict.get('theta'))),
+            rho=Decimal(str(input_dict.get('rho'))),
+            vega=Decimal(str(input_dict.get('vega')))
+        )
         return self

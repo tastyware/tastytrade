@@ -9,6 +9,11 @@ Mapped Item
 .. autoclass:: MappedItem
    :members:
 
+Mapper
+------
+
+.. module:: tastyworks.dxfeed.mapper
+
 .. autofunction:: map_message
 
 Greeks

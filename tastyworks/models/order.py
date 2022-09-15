@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import List
+from typing import List, Optional
 
 import aiohttp
 
@@ -42,12 +42,12 @@ class TimeInForce(Enum):
 
 @dataclass
 class OrderDetails(object):
-    type: OrderType = None
+    type: OrderType
     time_in_force: TimeInForce = TimeInForce.DAY
-    gtc_date: datetime = None
-    price: Decimal = None
-    price_effect: OrderPriceEffect = None
-    status: OrderStatus = None
+    gtc_date: datetime = datetime.now()
+    price: Optional[Decimal] = None
+    price_effect: OrderPriceEffect = OrderPriceEffect.CREDIT
+    status: Optional[OrderStatus] = None
     legs: List[Security] = field(default_factory=list)
     source: str = 'WBT'
 
@@ -68,7 +68,7 @@ class OrderDetails(object):
 
         if self.time_in_force == TimeInForce.GTD:
             try:
-                datetime.strptime(self.gtc_date, '%Y-%m-%d')
+                datetime.strptime(str(self.gtc_date), '%Y-%m-%d')
             except ValueError:
                 return False
 
