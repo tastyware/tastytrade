@@ -1,5 +1,6 @@
 import datetime
 import logging
+from typing import Dict
 
 import aiocometd
 import requests
@@ -19,7 +20,7 @@ class DataStreamer(object):
             raise Exception('TastyWorks API session not active/valid')
         self.tasty_session = session
         self.cometd_client = None
-        self.subs = {}
+        self.subs: Dict[str, list[str]] = {}
 
     @classmethod
     async def create(cls, session: TastyAPISession):

@@ -3,7 +3,6 @@ import logging
 from tastyworks.dxfeed import greeks, profile, quote, summary, trade
 
 LOGGER = logging.getLogger(__name__)
-KEY_MAP = {}
 
 
 def map_message(message):

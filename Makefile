@@ -1,4 +1,4 @@
-.PHONY: clean venv test
+.PHONY: clean venv test install docs
 
 clean:
 	find . -name '*.py[co]' -delete
@@ -10,7 +10,11 @@ venv:
 test:
 	isort --check --diff tastyworks/ tests/
 	flake8 --count --show-source --statistics --ignore=E501 tastyworks/ tests/
+	mypy -p tastyworks
 	python -m pytest --cov=tastyworks --cov-report=term-missing tests/
 
 install:
 	env/bin/pip install -e .
+
+docs:
+	cd docs; make html
