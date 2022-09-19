@@ -1,44 +1,94 @@
 import datetime
 import logging
-from typing import Dict
+from enum import Enum
+from typing import Any, AsyncIterator
 
 import aiocometd
 import requests
 from aiocometd import ConnectionType
 
-from tastyworks import dxfeed
-from tastyworks.dxfeed import mapper as dxfeed_mapper
+from tastyworks.dxfeed import DATA_CHANNEL, SUBSCRIPTION_CHANNEL
+from tastyworks.dxfeed.greeks import Greeks
+from tastyworks.dxfeed.quote import Quote
+from tastyworks.dxfeed.profile import Profile
+from tastyworks.dxfeed.summary import Summary
+from tastyworks.dxfeed.trade import Trade
 from tastyworks.models.session import TastyAPISession
 
 LOGGER = logging.getLogger(__name__)
 logging.getLogger('aiocometd').setLevel(logging.CRITICAL)
 
 
+class SubscriptionType(str, Enum):
+    """
+    This is an :class:`~enum.Enum` that contains the valid subscription types for the quote streamer.
+    """
+
+    #: Used to stream the greeks (must be used with options symbols)
+    GREEKS = 'Greeks'
+    #: Used to stream price quotes (for either options or equity symbols)
+    QUOTE = 'Quote'
+
+
 class DataStreamer(object):
+    """
+    A :class:`DataStreamer` object is used to fetch quotes or greeks for a given symbol or list of symbols. It should always be initialized using the :meth:`create` function, since the object cannot be fully instantiated without using async.
+
+    :param session: active user session to use
+
+    Example usage::
+
+        session = TastyAPISession('user', 'pass)
+        streamer = await DataStreamer.create(session)
+
+        sub = ['SPY', 'GLD']  # list of quotes to fetch
+        quote = await streamer.stream(SubscriptionType.QUOTE, sub)
+
+    """
     def __init__(self, session: TastyAPISession):
         if not session.is_active():
             raise Exception('TastyWorks API session not active/valid')
-        self.tasty_session = session
-        self.cometd_client = None
-        self.subs: Dict[str, list[str]] = {}
+        #: The active session used to initiate the streamer or make requests
+        self.tasty_session: TastyAPISession = session
+        #: The cometd client which handles requests behind the scenes
+        self.cometd_client: Optional[aiocometd.Client] = None
 
     @classmethod
     async def create(cls, session: TastyAPISession):
+        """
+        async-compatible constructor for the :class:`DataStreamer` object. Simply calls the constructor and performs the asynchronous setup tasks. This should be used instead of the constructor.
+
+        :param session: active user session to use
+        """
         self = DataStreamer(session)
         await self._setup_connection()
         return self
 
-    async def add_data_sub(self, values):
-        LOGGER.debug(f'Adding subscription: {values}')
-        await self._send_msg(dxfeed.SUBSCRIPTION_CHANNEL, {'add': values})
+    async def add_data_sub(self, key: SubscriptionType, dxfeeds: list[str]):
+        """
+        Subscribes to quotes for given list of symbols. Used for recurring data feeds; if you just want to get a one-time quote, use :meth:`stream`.
 
-    async def remove_data_sub(self, values):
+        :param key: type of subscription to add
+        :param dxfeeds: list of symbols to subscribe for
+        """
+        streamer_dict = {key: dxfeeds}
+        LOGGER.debug(f'Adding subscription: {streamer_dict}')
+        await self._send_msg(SUBSCRIPTION_CHANNEL, {'add': streamer_dict})
+
+    async def remove_data_sub(self, key: SubscriptionType, dxfeeds: list[str]):
+        """
+        Removes existing subscription for given list of symbols.
+
+        :param key: type of subscription to remove
+        :param dxfeeds: list of symbols to unsubscribe from
+        """
         # NOTE: Experimental, unconfirmed. Needs testing
-        LOGGER.debug(f'Removing subscription: {values}')
-        await self._send_msg(dxfeed.SUBSCRIPTION_CHANNEL, {'remove': values})
+        streamer_dict = {key: dxfeeds}
+        LOGGER.debug(f'Removing subscription: {streamer_dict}')
+        await self._send_msg(SUBSCRIPTION_CHANNEL, {'remove': streamer_dict})
 
     async def _consumer(self, message):
-        return dxfeed_mapper.map_message(message)
+        return _map_message(message)
 
     async def _send_msg(self, channel, message):
         if not self.logged_in:
@@ -47,8 +97,11 @@ class DataStreamer(object):
         await self.cometd_client.publish(channel, message)
 
     async def reset_data_subs(self):
+        """
+        Clears all existing subscriptions.
+        """
         LOGGER.debug('Resetting data subscriptions')
-        await self._send_msg(dxfeed.SUBSCRIPTION_CHANNEL, {'reset': True})
+        await self._send_msg(SUBSCRIPTION_CHANNEL, {'reset': True})
 
     def get_streamer_token(self):
         return self._get_streamer_data()['data']['token']
@@ -85,7 +138,7 @@ class DataStreamer(object):
             auth=auth_extension,
         )
         await cometd_client.open()
-        await cometd_client.subscribe(dxfeed.DATA_CHANNEL)
+        await cometd_client.subscribe(DATA_CHANNEL)
 
         self.cometd_client = cometd_client
         self.logged_in = True
@@ -94,24 +147,37 @@ class DataStreamer(object):
         await self.reset_data_subs()
 
     async def close(self):
+        """
+        Closes all existing subscriptions and the cometd client. Should be called to avoid asyncio exceptions when you finish using the streamer.
+        """
         await self.cometd_client.close()
 
-    async def listen(self):
+    async def listen(self) -> AsyncIterator[Greeks | Quote]:
+        """
+        Using the existing subscriptions, pulls greeks or quotes and yield returns them. Never exits unless there's an error or the channel is closed.
+        """
         async for msg in self.cometd_client:
             LOGGER.debug('[dxFeed] received: %s', msg)
-            if msg['channel'] != dxfeed.DATA_CHANNEL:
+            if msg['channel'] != DATA_CHANNEL:
                 continue
             yield await self._consumer(msg['data'])
 
-    async def stream(self, key, dxfeeds):
-        streamer_dict = {key: dxfeeds}
-        await self.add_data_sub(streamer_dict)
+    async def stream(self, key: SubscriptionType, dxfeeds: list[str]) -> list[dict[str, Any]]:
+        """
+        Using the given information, subscribes to the list of symbols passed, streams the requested information once, then unsubscribes. If you want to maintain the subscription open, add a subscription with :meth:`add_data_sub` and listen with :meth:`listen`.
+
+        :param key: the type of subscription to stream, either greeks or quotes
+        :param dxfeeds: list of symbols to subscribe to
+
+        :return: list of quotes or greeks pulled.
+        """
+        await self.add_data_sub(key, dxfeeds)
         data = []
         async for item in self.listen():
             data.extend(item.data)
             if len(data) >= len(dxfeeds):
                 break
-        await self.remove_data_sub(streamer_dict)
+        await self.remove_data_sub(key, dxfeeds)
         return data
 
 
@@ -138,3 +204,27 @@ class AuthExtension(aiocometd.AuthExtension):
 
     async def authenticate(self):
         pass
+
+
+def _map_message(message):
+    if isinstance(message[0], str):
+        first_sample = False
+    else:
+        first_sample = True
+    msg_type = message[0][0] if first_sample else message[0]
+
+    if Quote.DXFEED_TEXT == msg_type:
+        res = Quote(data=message)
+    elif Greeks.DXFEED_TEXT == msg_type:
+        res = Greeks(data=message)
+    elif Trade.DXFEED_TEXT == msg_type:
+        res = Trade(data=message)
+    elif Summary.DXFEED_TEXT == msg_type:
+        res = Summary(data=message)
+    elif Profile.DXFEED_TEXT == msg_type:
+        res = Profile(data=message)
+    else:
+        LOGGER.warning("Unknown message type received from streamer: {}".format(message))
+        res = [{'warning': 'Unknown message type received', 'message': message}]
+
+    return res

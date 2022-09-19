@@ -1,40 +1,63 @@
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Optional
 
+import aiohttp
+import logging
+
 from tastyworks.models.greeks import Greeks
 from tastyworks.models.security import Security
-from tastyworks.models.underlying import UnderlyingType
+from tastyworks.models.session import TastyAPISession
+from tastyworks.models.underlying import Underlying, UnderlyingType
+
+LOGGER = logging.getLogger(__name__)
 
 
-class OptionType(Enum):
-    PUT = 'P'
+class OptionType(str, Enum):
+    """
+    This is an :class:`~enum.Enum` that contains the valid types of options and their abbreviations in the API.
+    """
+    #: a call option
     CALL = 'C'
+    #: a put option
+    PUT = 'P'
 
 
 @dataclass
 class Option(Security):
+    """
+    Container class for an option object in the API.
+    """
+    #: the underlying symbol
     ticker: str
+    #: date of expiration
     expiry: date
+    #: option strike
     strike: Decimal
+    #: option type, either call or put
     option_type: OptionType
+    #: underlying type, either equity, ETF or future
     underlying_type: UnderlyingType
+    #: greeks for the option
     greeks: Optional[Greeks] = None
+    #: number of contracts (for portfolio or orders)
     quantity: int = 1
+    #: option symbol formatted to OCC standard
     symbol_occ: Optional[str] = None
+    #: option symbol formatted to dxfeed standard
     symbol_dxf: Optional[str] = None
 
     def __post_init__(self):
-        self.symbol_occ = self.get_occ2010_symbol()
-        self.symbol_dxf = self.get_dxfeed_symbol()
+        self.symbol_occ = self._get_occ2010_symbol()
+        self.symbol_dxf = self._get_dxfeed_symbol()
 
     def _get_underlying_type_string(self, underlying_type: UnderlyingType):
         if underlying_type == UnderlyingType.EQUITY:
             return 'Equity Option'
 
-    def get_occ2010_symbol(self):
+    def _get_occ2010_symbol(self):
         strike_int, strike_dec = divmod(self.strike, 1)
         strike_int = int(round(strike_int, 5))
         strike_dec = int(round(strike_dec, 3) * 1000)
@@ -48,7 +71,7 @@ class Option(Security):
         )
         return res
 
-    def get_dxfeed_symbol(self):
+    def _get_dxfeed_symbol(self):
         if self.strike % 1 == 0:
             strike_str = '{0:.0f}'.format(self.strike)
         else:
@@ -64,10 +87,101 @@ class Option(Security):
         )
         return res
 
-    def to_tasty_json(self):
+    def _to_tasty_json(self):
         res = {
             'instrument-type': f'{self.underlying_type.value} Option',
-            'symbol': self.get_occ2010_symbol(),
+            'symbol': self._get_occ2010_symbol(),
             'quantity': self.quantity
         }
         return res
+
+
+
+class OptionChain(object):
+    """
+    A collection of call and put options, usually with the same expiration date.
+    Provides filter methods based on type, strike price, expiry, etc.
+
+    Example::
+
+        session = TastyAPISession('username', 'password')
+        underlying = Underlying('SPY')
+        chain = await get_option_chain(session, underlying, date(2022, 10, 21))
+
+    """
+
+    def __init__(self, options: list[Option]):
+        #: list of all options in the chain
+        self.options: list[Option] = options
+
+    def _get_filter_strategy(self, key, unique=True):
+        values = [getattr(option, key) for option in self.options]
+        if not any(values):
+            raise Exception(f'No values found for specified key: {key}')
+
+        values = list(set(values)) if unique else list(values)
+        return sorted(values)
+
+    def get_all_strikes(self) -> list[Decimal]:
+        """
+        Get all available strikes in the chain.
+
+        :return: list of available strikes
+        """
+        return self._get_filter_strategy('strike')
+
+    def get_all_expirations(self) -> list[date]:
+        """
+        Get all available expirations in the chain. Usually would just be one.
+
+        :return: list of dates present
+        """
+        return self._get_filter_strategy('expiry')
+
+
+async def get_option_chain(session: TastyAPISession, underlying: Underlying, expiration: date = None) -> OptionChain:
+    """
+    Finds the option chain data for the given underlying and date.
+
+    :param session: active user session to use
+    :param underlying: underlying to fetch options for
+    :expiration: date to fetch options for
+
+    :return: :class:`OptionChain` object with retrieved data
+    """
+    LOGGER.debug('Getting options chain for ticker: %s', underlying.ticker)
+    data = await _get_tasty_option_chain_data(session, underlying)
+    res = []
+
+    for exp in data['expirations']:
+        exp_date = datetime.strptime(exp['expiration-date'], '%Y-%m-%d').date()
+
+        if expiration and expiration != exp_date:
+            continue
+
+        for strike in exp['strikes']:
+            strike_val = Decimal(strike['strike-price'])
+            for option_types in OptionType:
+                new_option = Option(
+                    ticker=underlying.ticker,
+                    expiry=exp_date,
+                    strike=strike_val,
+                    option_type=option_types,
+                    underlying_type=UnderlyingType.EQUITY
+                )
+                res.append(new_option)
+    return OptionChain(res)
+
+
+async def _get_tasty_option_chain_data(session, underlying) -> dict:
+    async with aiohttp.request(
+            'GET',
+            f'{session.API_url}/option-chains/{underlying.ticker}/nested',
+            headers=session.get_request_headers()) as response:
+
+        if response.status != 200:
+            raise Exception(f'Could not find option chain for symbol {underlying.ticker}')
+        resp = await response.json()
+
+        # NOTE: Have not seen an example with more than 1 item. No idea what that would be.
+        return resp['data']['items'][0]

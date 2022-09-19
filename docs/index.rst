@@ -1,31 +1,18 @@
-tastyworks-api: A simple, async-based, reverse-engineered API for Tastyworks
-============================================================================
+tastyworks-api: A reverse-engineered Python API for Tastyworks
+==============================================================
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Documentation:
 
-   dough
-   dxfeed
+   install
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference:
+
+   tastyworks
    models
-   tastyworks_api
-
-Utilities
----------
-
-.. module:: tastyworks.utils
-
-.. autofunction:: get_third_friday
-
-Streamer
---------
-.. module:: tastyworks.streamer
-
-.. autoclass:: DataStreamer
-   :members:
-
-.. autoclass:: AuthExtension
-   :members:
 
 Indices and tables
 ==================

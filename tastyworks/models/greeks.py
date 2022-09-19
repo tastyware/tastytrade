@@ -5,26 +5,45 @@ from decimal import Decimal
 
 @dataclass
 class Greeks(object):
+    """
+    Container class for options greeks for a specific option.
+    """
+    #: underlying symbol
     symbol: str
+    #: identifier
     index: str
+    #: time that greeks were calculated in Unix time
     datetime: datetime
+    #: option price
     price: Decimal
+    #: calculated volatility
     volatility: Decimal
+    #: calculated delta
     delta: Decimal
+    #: calculated gamma
     gamma: Decimal
+    #: calculated theta
     theta: Decimal
+    #: calculated rho
     rho: Decimal
+    #: calculated vega
     vega: Decimal
 
     @classmethod
     def from_streamer_dict(cls, input_dict: dict):
         """
-        imports the Greeks data from a dictionary pulled from subscribed streamer data
-            sub_greeks = {"Greeks": [".SPY210419P410"]}
-            await streamer.add_data_sub(sub_greeks)
+        Imports the Greeks data from a dictionary pulled from subscribed streamer data.
 
-        Args:
-            input_dict (dict): dictionary from the streamer containing the greeks data for one options symbol
+        :param input_dict: dictionary containing streamer data
+
+        :return: :class:`Greeks` instance with the attributes from the streamer
+
+        Example::
+
+            session = TastyAPISession(username, password)
+            streamer = await DataStreamer.create(session)
+            data = await streamer.stream(SubscriptionType.GREEKS, ['.SPY220919P482'])
+            greeks = Greeks.from_streamer_dict(data[0])
 
         """
         self = Greeks(

@@ -1,5 +1,5 @@
-Models
-======
+tastyworks.models
+=================
 
 Greeks
 ------
@@ -14,15 +14,11 @@ Option
 
 .. module:: tastyworks.models.option
 
-.. autodata:: OptionType
+.. autoclass:: OptionType
+   :members:
 
 .. autoclass:: Option
    :members:
-
-Option Chain
-------------
-
-.. module:: tastyworks.models.option_chain
 
 .. autoclass:: OptionChain
    :members:
