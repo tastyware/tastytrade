@@ -70,10 +70,10 @@ async def main_loop(session: TastyAPISession, streamer: DataStreamer):
         options[idx_match].greeks = gd
         print('> Symbol: {}\tPrice: {}\tDelta {}'.format(gd.symbol, gd.price, gd.delta))
 
-	quote = await streamer.stream('Quote', sub_values)
-    print(f'Received item: {quote}')
+        quote = await streamer.stream('Quote', sub_values)
+        print(f'Received item: {quote}')
 
-await streamer.close()
+        await streamer.close()
 
 
 if __name__ == '__main__':
