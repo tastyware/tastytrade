@@ -1,3 +1,4 @@
+import os
 import asyncio
 from datetime import date
 from decimal import Decimal as D
@@ -77,7 +78,10 @@ async def main_loop(session: TastyAPISession, streamer: DataStreamer):
 
 
 if __name__ == '__main__':
-    tasty_client = tasty_session.create_new_session('foo', 'bar')
+    # Get environment variables
+    user = os.getenv('TASTY_USER')
+    password = os.environ.get('TASTY_PASSWORD')
+    tasty_client = tasty_session.create_new_session(user, password)
     streamer = DataStreamer(tasty_client)
     loop = asyncio.get_event_loop()
 
