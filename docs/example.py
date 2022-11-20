@@ -83,16 +83,5 @@ if __name__ == '__main__':
     password = os.environ.get('TASTY_PASSWORD')
     tasty_client = tasty_session.create_new_session(user, password)
     streamer = DataStreamer(tasty_client)
-    loop = asyncio.get_event_loop()
 
-    try:
-        loop.run_until_complete(main_loop(tasty_client, streamer))
-    except Exception:
-        print('Exception in main loop')
-    finally:
-        # find all futures/tasks still running and wait for them to finish
-        pending_tasks = [
-            task for task in asyncio.Task.all_tasks() if not task.done()
-        ]
-        loop.run_until_complete(asyncio.gather(*pending_tasks))
-        loop.close()
+    asyncio.run(main_loop(tasty_client, streamer))
