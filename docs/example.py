@@ -32,10 +32,10 @@ async def main_loop(session: TastyAPISession, streamer: DataStreamer):
     new_order = Order(details)
 
     opt = Option(
-        ticker='AKS',
+        ticker='SPY',
         quantity=1,
         expiry=get_third_friday(date.today()),
-        strike=D(3),
+        strike=D(400),
         option_type=OptionType.CALL,
         underlying_type=UnderlyingType.EQUITY
     )
@@ -45,7 +45,7 @@ async def main_loop(session: TastyAPISession, streamer: DataStreamer):
     print(f'Order executed successfully: {res}')
 
     # Get an options chain
-    undl = underlying.Underlying('AKS')
+    undl = underlying.Underlying('SPY')
 
     chain = await option_chain.get_option_chain(session, undl)
     print(f'Chain strikes: {chain.get_all_strikes()}')
