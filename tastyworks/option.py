@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
@@ -5,12 +6,10 @@ from enum import Enum
 from typing import Optional
 
 import aiohttp
-import logging
 
 from tastyworks.models.greeks import Greeks
 from tastyworks.models.security import Security
 from tastyworks.models.session import TastyAPISession
-from tastyworks.models.underlying import Underlying, UnderlyingType
 
 LOGGER = logging.getLogger(__name__)
 
@@ -23,6 +22,18 @@ class OptionType(str, Enum):
     CALL = 'C'
     #: a put option
     PUT = 'P'
+
+    
+class UnderlyingType(str, Enum):
+    """
+    This is an :class:`~enum.Enum` that contains the valid types of option underlyings and their abbreviations in the API.
+    """
+    #: an equity option
+    EQUITY = 'Equity'
+    #: an ETF option
+    ETF = 'ETF'
+    #: a futures option
+    FUTURES = 'Futures'
 
 
 @dataclass
@@ -94,7 +105,6 @@ class Option(Security):
             'quantity': self.quantity
         }
         return res
-
 
 
 class OptionChain(object):

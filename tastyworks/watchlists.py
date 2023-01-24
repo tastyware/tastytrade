@@ -79,9 +79,7 @@ class WatchlistGroup(object):
         return str(list(self.watchlists.keys()))
 
     @classmethod
-    async def get_watchlists(
-        cls, session: TastyAPISession, public: bool = True
-    ):
+    async def get_watchlists(cls, session: TastyAPISession, public: bool = True):
         """Get Watchlists
 
         Class Factory

@@ -1,13 +1,13 @@
 from dataclasses import dataclass
-from typing import List
 
 import aiohttp
 
 from tastyworks.models.order import Order, OrderPriceEffect
+from tastyworks.utils import API_URL
 
 
 @dataclass
-class TradingAccount(object):
+class TradingAccount:
     account_number: str
     external_id: str
     is_margin: bool
@@ -34,10 +34,7 @@ class TradingAccount(object):
         if not session.is_active():
             raise Exception('The supplied session is not active and valid')
 
-        url = '{}/accounts/{}/orders'.format(
-            session.API_url,
-            self.account_number
-        )
+        url = f'{API_URL}/accounts/{self.account_number}/orders'
         if dry_run:
             url = f'{url}/dry-run'
 
@@ -69,17 +66,19 @@ class TradingAccount(object):
         return TradingAccount(**new_data)
 
     @classmethod
-    async def get_remote_accounts(cls, session) -> List:
+    async def get_accounts(cls, session, include_closed=False) -> list:
         """
         Gets all trading accounts from the Tastyworks platform.
+        By default excludes closed accounts, but these can be added
+        by passing include_closed=True.
 
         Args:
-            session (TastyAPISession): An active and logged-in session object against which to query.
+            session (Session): An active and logged-in session object against which to query.
 
         Returns:
             list (TradingAccount): A list of trading accounts.
         """
-        url = f'{session.API_url}/customers/me/accounts'
+        url = f'{API_URL}/customers/me/accounts'
         res = []
 
         async with aiohttp.request('GET', url, headers=session.get_request_headers()) as response:
@@ -91,6 +90,8 @@ class TradingAccount(object):
             if entry['authority-level'] != 'owner':
                 continue
             acct_data = entry['account']
+            if not include_closed and acct_data['is-closed']:
+                continue
             acct = TradingAccount.from_dict(acct_data)
             res.append(acct)
 
@@ -105,10 +106,7 @@ class TradingAccount(object):
         Returns:
             dict: account attributes
         """
-        url = '{}/accounts/{}/balances'.format(
-            session.API_url,
-            self.account_number
-        )
+        url = f'{API_URL}/accounts/{self.account_number}/balances'
 
         async with aiohttp.request('GET', url, headers=session.get_request_headers(), **kwargs) as response:
             if response.status != 200:
@@ -125,10 +123,7 @@ class TradingAccount(object):
         Returns:
             dict: account attributes
         """
-        url = '{}/accounts/{}/positions'.format(
-            session.API_url,
-            self.account_number
-        )
+        url = f'{API_URL}/accounts/{self.account_number}/positions'
 
         async with aiohttp.request('GET', url, headers=session.get_request_headers(), **kwargs) as response:
             if response.status != 200:
@@ -145,10 +140,7 @@ class TradingAccount(object):
         Returns:
             dict: account attributes
         """
-        url = '{}/accounts/{}/orders/live'.format(
-            session.API_url,
-            self.account_number
-        )
+        url = f'{API_URL}/accounts/{self.account_number}/orders/live'
 
         async with aiohttp.request('GET', url, headers=session.get_request_headers(), **kwargs) as response:
             if response.status != 200:
@@ -165,10 +157,7 @@ class TradingAccount(object):
         Returns:
             dict: account attributes
         """
-        url = '{}/accounts/{}/transactions'.format(
-            session.API_url,
-            self.account_number
-        )
+        url = f'{API_URL}/accounts/{self.account_number}/transactions'
 
         PAGE_SIZE = 1024
 

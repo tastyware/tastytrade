@@ -10,10 +10,8 @@ from aiocometd import ConnectionType
 from tastyworks.dxfeed import DATA_CHANNEL, SUBSCRIPTION_CHANNEL
 from tastyworks.dxfeed.greeks import Greeks
 from tastyworks.dxfeed.quote import Quote
-from tastyworks.dxfeed.profile import Profile
-from tastyworks.dxfeed.summary import Summary
 from tastyworks.dxfeed.trade import Trade
-from tastyworks.models.session import TastyAPISession
+from tastyworks.utils import API_URL, Session
 
 LOGGER = logging.getLogger(__name__)
 logging.getLogger('aiocometd').setLevel(logging.CRITICAL)
@@ -23,14 +21,19 @@ class SubscriptionType(str, Enum):
     """
     This is an :class:`~enum.Enum` that contains the valid subscription types for the quote streamer.
     """
-
-    #: Used to stream the greeks (must be used with options symbols)
+    #: Used to stream options greeks (obviously only for options symbols)
     GREEKS = 'Greeks'
-    #: Used to stream price quotes (for either options or equity symbols)
+    #: Used to stream price quotes (for either options, ETF, futures, crypto or equity symbols)
     QUOTE = 'Quote'
+    #: Used currently only for IVR
+    TRADE = 'Trade'
+    #: Currently unused
+    PROFILE = 'Profile'
+    SUMMARY = 'Summary'
+    THEO_PRICE = 'TheoPrice'
 
 
-class DataStreamer(object):
+class DataStreamer:
     """
     A :class:`DataStreamer` object is used to fetch quotes or greeks for a given symbol or list of symbols. It should always be initialized using the :meth:`create` function, since the object cannot be fully instantiated without using async.
 
@@ -38,23 +41,23 @@ class DataStreamer(object):
 
     Example usage::
 
-        session = TastyAPISession('user', 'pass)
+        session = Session('user', 'pass)
         streamer = await DataStreamer.create(session)
 
         sub = ['SPY', 'GLD']  # list of quotes to fetch
         quote = await streamer.stream(SubscriptionType.QUOTE, sub)
 
     """
-    def __init__(self, session: TastyAPISession):
+    def __init__(self, session: Session):
         if not session.is_active():
             raise Exception('TastyWorks API session not active/valid')
         #: The active session used to initiate the streamer or make requests
-        self.tasty_session: TastyAPISession = session
+        self.tasty_session: Session = session
         #: The cometd client which handles requests behind the scenes
-        self.cometd_client: Optional[aiocometd.Client] = None
+        self.cometd_client: aiocometd.Client
 
     @classmethod
-    async def create(cls, session: TastyAPISession):
+    async def create(cls, session: Session):
         """
         async-compatible constructor for the :class:`DataStreamer` object. Simply calls the constructor and performs the asynchronous setup tasks. This should be used instead of the constructor.
 
@@ -113,7 +116,7 @@ class DataStreamer(object):
         if hasattr(self, 'streamer_data_created') and (datetime.datetime.now() - self.streamer_data_created).total_seconds() < 60:
             return self.streamer_data
 
-        resp = requests.get(f'{self.tasty_session.API_url}/quote-streamer-tokens', headers=self.tasty_session.get_request_headers())
+        resp = requests.get(f'{API_URL}/quote-streamer-tokens', headers=self.tasty_session.get_request_headers())
         if resp.status_code != 200:
             raise Exception('Could not get quote streamer data, error message: {}'.format(
                 resp.json()['error']['message']
@@ -152,7 +155,7 @@ class DataStreamer(object):
         """
         await self.cometd_client.close()
 
-    async def listen(self) -> AsyncIterator[Greeks | Quote]:
+    async def listen(self) -> AsyncIterator[Greeks | Quote | Trade]:
         """
         Using the existing subscriptions, pulls greeks or quotes and yield returns them. Never exits unless there's an error or the channel is closed.
         """
@@ -174,7 +177,7 @@ class DataStreamer(object):
         await self.add_data_sub(key, dxfeeds)
         data = []
         async for item in self.listen():
-            data.extend(item.data)
+            data.extend(item)
             if len(data) >= len(dxfeeds):
                 break
         await self.remove_data_sub(key, dxfeeds)
@@ -206,23 +209,23 @@ class AuthExtension(aiocometd.AuthExtension):
         pass
 
 
-def _map_message(message):
+def _map_message(message) -> Greeks | Quote | Trade:
     if isinstance(message[0], str):
         first_sample = False
+        msg_type = message[0]
     else:
         first_sample = True
-    msg_type = message[0][0] if first_sample else message[0]
+        msg_type = message[0][0]
+    # regardless, the second element will be the raw data
+    data = message[1]
 
-    if Quote.DXFEED_TEXT == msg_type:
-        res = Quote(data=message)
-    elif Greeks.DXFEED_TEXT == msg_type:
-        res = Greeks(data=message)
-    elif Trade.DXFEED_TEXT == msg_type:
-        res = Trade(data=message)
-    elif Summary.DXFEED_TEXT == msg_type:
-        res = Summary(data=message)
-    elif Profile.DXFEED_TEXT == msg_type:
-        res = Profile(data=message)
+    # parse type or warn for unknown type
+    if msg_type == SubscriptionType.QUOTE:
+        res = Quote.from_stream(data)
+    elif msg_type == SubscriptionType.GREEKS:
+        res = Greeks.from_stream(data)
+    elif msg_type == SubscriptionType.TRADE:
+        res = Trade.from_stream(data)
     else:
         LOGGER.warning("Unknown message type received from streamer: {}".format(message))
         res = [{'warning': 'Unknown message type received', 'message': message}]

@@ -1,14 +1,49 @@
-import datetime
+from dataclasses import dataclass
+from typing import Any
 
-from tastyworks.dxfeed.mapped_item import MappedItem
+N_FIELDS = 14
 
 
-class Trade(MappedItem):
-    DXFEED_TEXT = 'Trade'
+@dataclass
+class Trade:
+    #: underlying symbol
+    eventSymbol: str
+    eventTime: int
+    #: time at which the data is sent
+    time: int
+    timeNanoPart: int
+    sequence: int
+    #: code representing the exchange traded on
+    exchangeCode: str
+    #: a price quote, or the IV rank if the symbol ends in .IVR
+    price: float
+    #: day change in price
+    change: float
+    size: str
+    dayId: int
+    #: number of units traded today
+    dayVolume: int
+    dayTurnover: int
+    tickDirection: str
+    #: whether the symbol trades during extended hours
+    extendedTradingHours: bool
+        
+    @classmethod
+    def from_stream(cls, data: list[Any]) -> list['Trade']:
+        """
+        Takes a list of raw trade data fetched by :class:`~tastyworks.streamer.DataStreamer`
+        and returns a list of :class:`~tastyworks.dxfeed.trade.Trade` objects.
 
-    def _process_fields(self, data_dict: dict):
-        data_dict['time'] = datetime.datetime.fromtimestamp(data_dict['time'] / 1000_000_000)
-        return data_dict
+        :param data: list of raw trade data from streamer
 
-    def __init__(self, data=None):
-        super().__init__(data=data)
+        :return: list of :class:`~tastyworks.dxfeed.trade.Trade` objects from data
+        """
+        trades = []
+        multiples = len(data) / N_FIELDS
+        if not multiples.is_integer():
+            raise Exception('Mapper data input values are not an integer multiple of the key size')
+        for i in range(int(multiples)):
+            offset = i * N_FIELDS
+            local_values = data[offset:(i + 1) * N_FIELDS]
+            trades.append(Trade(*local_values))
+        return trades

@@ -1,2 +1,0 @@
-class Security(object):
-    pass
