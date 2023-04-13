@@ -1,6 +1,6 @@
 import aiohttp
 
-from tastyworks.models.session import TastyAPISession
+from tastytrade.models.session import TastyAPISession
 
 
 class Watchlist(object):

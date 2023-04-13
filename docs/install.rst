@@ -4,4 +4,4 @@ Installation
 pip
 ---
 
-:: pip install tastyworks-api
+:: pip install tastytrade

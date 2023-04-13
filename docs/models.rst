@@ -1,10 +1,10 @@
-tastyworks.models
+tastytrade.models
 =================
 
 Greeks
 ------
 
-.. module:: tastyworks.models.greeks
+.. module:: tastytrade.models.greeks
 
 .. autoclass:: Greeks
    :members:
@@ -12,7 +12,7 @@ Greeks
 Option
 ------
 
-.. module:: tastyworks.models.option
+.. module:: tastytrade.models.option
 
 .. autoclass:: OptionType
    :members:
@@ -28,7 +28,7 @@ Option
 Order
 -----
 
-.. module:: tastyworks.models.order
+.. module:: tastytrade.models.order
 
 .. autodata:: OrderType
 
@@ -47,14 +47,14 @@ Order
 Security
 --------
 
-.. module:: tastyworks.models.security
+.. module:: tastytrade.models.security
 
 .. autoclass:: Security
 
 Session
 -------
 
-.. module:: tastyworks.models.session
+.. module:: tastytrade.models.session
 
 .. autoclass:: TastyAPISession
    :members:
@@ -62,7 +62,7 @@ Session
 Trading Account
 ---------------
 
-.. module:: tastyworks.models.trading_account
+.. module:: tastytrade.models.trading_account
 
 .. autoclass:: TradingAccount
    :members:
@@ -70,7 +70,7 @@ Trading Account
 Underlying
 ----------
 
-.. module:: tastyworks.models.underlying
+.. module:: tastytrade.models.underlying
 
 .. autodata:: UnderlyingType
 
@@ -80,7 +80,7 @@ Underlying
 Watchlists
 ----------
 
-.. module:: tastyworks.models.watchlists
+.. module:: tastytrade.models.watchlists
 
 .. autoclass:: Watchlist
    :members:

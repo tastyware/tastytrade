@@ -1,5 +1,5 @@
-tastyworks-api: A reverse-engineered Python API for Tastyworks
-==============================================================
+tastytrade: A reverse-engineered Python API for Tastytrade
+==========================================================
 
 .. toctree::
    :maxdepth: 2
@@ -11,7 +11,7 @@ tastyworks-api: A reverse-engineered Python API for Tastyworks
    :maxdepth: 2
    :caption: API Reference:
 
-   tastyworks
+   tastytrade
    models
 
 Indices and tables

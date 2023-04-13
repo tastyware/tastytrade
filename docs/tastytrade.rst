@@ -1,9 +1,9 @@
-tastyworks
+tastytrade
 ==========
 
 Streamer
 --------
-.. module:: tastyworks.streamer
+.. module:: tastytrade.streamer
 
 .. autoclass:: SubscriptionType
    :members:
@@ -14,7 +14,7 @@ Streamer
 Utilities
 ---------
 
-.. module:: tastyworks.utils
+.. module:: tastytrade.utils
 
 .. autofunction:: get_third_friday
 

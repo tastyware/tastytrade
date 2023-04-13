@@ -7,11 +7,11 @@ import aiocometd
 import requests
 from aiocometd import ConnectionType
 
-from tastyworks.dxfeed import DATA_CHANNEL, SUBSCRIPTION_CHANNEL
-from tastyworks.dxfeed.greeks import Greeks
-from tastyworks.dxfeed.quote import Quote
-from tastyworks.dxfeed.trade import Trade
-from tastyworks.utils import API_URL, Session
+from tastytrade.dxfeed import DATA_CHANNEL, SUBSCRIPTION_CHANNEL
+from tastytrade.dxfeed.greeks import Greeks
+from tastytrade.dxfeed.quote import Quote
+from tastytrade.dxfeed.trade import Trade
+from tastytrade.utils import API_URL, Session
 
 LOGGER = logging.getLogger(__name__)
 logging.getLogger('aiocometd').setLevel(logging.CRITICAL)

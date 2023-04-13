@@ -7,7 +7,7 @@ import requests
 
 API_URL = 'https://api.tastyworks.com'
 LOGGER = logging.getLogger(__name__)
-VERSION = '5.0'
+VERSION = '1.0'
 
 
 class Session:

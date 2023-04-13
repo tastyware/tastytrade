@@ -1,6 +1,6 @@
 import unittest
 
-from tastyworks.models.order import OrderStatus
+from tastytrade.models.order import OrderStatus
 
 
 class TestOrderStatus(unittest.TestCase):

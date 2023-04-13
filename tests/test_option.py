@@ -2,8 +2,8 @@ import unittest
 from datetime import date
 from decimal import Decimal
 
-from tastyworks.models.option import Option, OptionType
-from tastyworks.models.underlying import UnderlyingType
+from tastytrade.models.option import Option, OptionType
+from tastytrade.models.underlying import UnderlyingType
 
 
 class TestOptionModel(unittest.TestCase):

@@ -7,7 +7,7 @@ from typing import List, Optional
 
 import aiohttp
 
-from tastyworks.models.security import Security
+from tastytrade.models.security import Security
 
 LOGGER = logging.getLogger(__name__)
 

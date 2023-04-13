@@ -7,9 +7,9 @@ from typing import Optional
 
 import aiohttp
 
-from tastyworks.models.greeks import Greeks
-from tastyworks.models.security import Security
-from tastyworks.models.session import TastyAPISession
+from tastytrade.models.greeks import Greeks
+from tastytrade.models.security import Security
+from tastytrade.models.session import TastyAPISession
 
 LOGGER = logging.getLogger(__name__)
 

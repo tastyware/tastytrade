@@ -2,8 +2,8 @@ from dataclasses import dataclass
 
 import aiohttp
 
-from tastyworks.models.order import Order, OrderPriceEffect
-from tastyworks.utils import API_URL
+from tastytrade.models.order import Order, OrderPriceEffect
+from tastytrade.utils import API_URL
 
 
 @dataclass
@@ -219,4 +219,5 @@ def _get_legs_request_data(order):
     for leg in order.details.legs:
         leg_dict = {**leg.to_tasty_json(), 'action': order_effect_str}
         res.append(leg_dict)
+        
     return res

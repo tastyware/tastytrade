@@ -2,7 +2,7 @@ import datetime
 import unittest
 from decimal import Decimal
 
-from tastyworks.models import option, order, trading_account, underlying
+from tastytrade.models import option, order, trading_account, underlying
 
 GTC_DATE = '2019-02-12'
 

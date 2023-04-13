@@ -1,7 +1,7 @@
 import asyncio
 
-from tastyworks.models.watchlists import WatchlistGroup
-from tastyworks.tastyworks_api import tasty_session
+from tastytrade.models.watchlists import WatchlistGroup
+from tastytrade.tastyworks_api import tasty_session
 
 
 class TestWatchlists(object):

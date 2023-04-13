@@ -2,7 +2,7 @@ import unittest
 from datetime import date
 from decimal import Decimal
 
-from tastyworks.models import option, option_chain, underlying
+from tastytrade.models import option, option_chain, underlying
 
 
 class TestOptionChain(unittest.TestCase):
