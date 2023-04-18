@@ -1,49 +1,33 @@
 from dataclasses import dataclass
-from typing import Any
-
-N_FIELDS = 12
+from .event import Event
 
 
 @dataclass
-class Quote:
-    #: underlying symbol
+class Quote(Event):
+    """
+    A Quote event is a snapshot of the best bid and ask prices, and other fields that change with each quote.
+    """
+    #: symbol of this event
     eventSymbol: str
+    #: time of this event
     eventTime: int
+    #: sequence of this quote
     sequence: int
+    #: microseconds and nanoseconds part of time of the last bid or ask change
     timeNanoPart: int
-    #: time at which bid was fetched
+    #: time of the last bid change
     bidTime: int
-    #: exchange from which bid was sourced
+    #: bid exchange code
     bidExchangeCode: str
-    #: bid value
+    #: bid price
     bidPrice: float
-    #: size of bid offer
-    bidSize: float
-    #: time at which ask was fetched
+    #: bid size as integer number (rounded toward zero)
+    bidSize: int
+    #: time of the last ask change
     askTime: int
-    #: exchange from which ask was sourced
+    #: ask exchange code
     askExchangeCode: str
-    #: ask value
+    #: ask price
     askPrice: float
-    #: size of ask offer
-    askSize: float
-    
-    @classmethod
-    def from_stream(cls, data: list[Any]) -> list['Quote']:
-        """
-        Takes a list of raw trade data fetched by :class:`~tastyworks.streamer.DataStreamer`
-        and returns a list of :class:`~tastyworks.dxfeed.quote.Quote` objects.
-
-        :param data: list of raw quote data from streamer
-
-        :return: list of :class:`~tastyworks.dxfeed.quote.Quote` objects from data
-        """
-        quotes = []
-        multiples = len(data) / N_FIELDS
-        if not multiples.is_integer():
-            raise Exception('Mapper data input values are not an integer multiple of the key size')
-        for i in range(int(multiples)):
-            offset = i * N_FIELDS
-            local_values = data[offset:(i + 1) * N_FIELDS]
-            quotes.append(Quote(*local_values))
-        return quotes
+    #: ask size as integer number (rounded toward zero)
+    askSize: int

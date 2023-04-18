@@ -1,49 +1,35 @@
 from dataclasses import dataclass
-from typing import Any
-
-N_FIELDS = 13
+from .event import Event
 
 
 @dataclass
-class Greeks:
-    #: options symbol in dxfeed format
+class Greeks(Event):
+    """
+    Greek ratios, or simply Greeks, are differential values that show how the price of an option depends on other market parameters: on the price of the underlying asset, its volatility, etc. Greeks are used to assess the risks of customer portfolios. Greeks are derivatives of the value of securities in different axes. If a derivative is very far from zero, then the portfolio has a risky sensitivity in this parameter.
+    """
+    #: symbol of this event
     eventSymbol: str
+    #: time of this event
     eventTime: int
+    #: transactional event flags
     eventFlags: int
+    #: unique per-symbol index of this event
     index: int
+    #: timestamp of this event in milliseconds
     time: int
+    #: sequence number of thie event to distinguish events that have the same time
     sequence: int
-    #: last traded price of the option
+    #: option market price
     price: float
-    #: implied volatility (IV) computed from price
+    #: Black-Scholes implied volatility of the option
     volatility: float
-    #: delta computed from price
+    #: option delta
     delta: float
-    #: gamma computed from price
+    #: option gamma
     gamma: float
-    #: theta computed from price
+    #: option theta
     theta: float
-    #: rho computed from price
+    #: option rho
     rho: float
-    #: vega computed from price
+    #: option vega
     vega: float
-
-    @classmethod
-    def from_stream(cls, data: list[Any]) -> list['Greeks']:
-        """
-        Takes a list of raw trade data fetched by :class:`~tastyworks.streamer.DataStreamer`
-        and returns a list of :class:`~tastyworks.dxfeed.greeks.Greeks` objects.
-
-        :param data: list of raw quote data from streamer
-
-        :return: list of :class:`~tastyworks.dxfeed.greeks.Greeks` objects from data
-        """
-        greeks = []
-        multiples = len(data) / N_FIELDS
-        if not multiples.is_integer():
-            raise Exception('Mapper data input values are not an integer multiple of the key size')
-        for i in range(int(multiples)):
-            offset = i * N_FIELDS
-            local_values = data[offset:(i + 1) * N_FIELDS]
-            greeks.append(Greeks(*local_values))
-        return greeks

@@ -7,27 +7,22 @@ import aiocometd
 import requests
 from aiocometd import ConnectionType
 
-from tastytrade.dxfeed import DATA_CHANNEL, SUBSCRIPTION_CHANNEL
-from tastytrade.dxfeed.greeks import Greeks
-from tastytrade.dxfeed.quote import Quote
-from tastytrade.dxfeed.trade import Trade
+from tastytrade.dxfeed import DATA_CHANNEL, SUBSCRIPTION_CHANNEL, Greeks, Quote, Profile, Summary, TheoPrice, Trade
 from tastytrade.utils import API_URL, Session
 
 LOGGER = logging.getLogger(__name__)
 logging.getLogger('aiocometd').setLevel(logging.CRITICAL)
 
 
-class SubscriptionType(str, Enum):
+class EventType(str, Enum):
     """
     This is an :class:`~enum.Enum` that contains the valid subscription types for the quote streamer.
+
+    Information on different types of events, their uses and their properties can be found at the `dxfeed Knowledge Base <https://kb.dxfeed.com/en/data-model/dxfeed-api-market-events.html>`_.
     """
-    #: Used to stream options greeks (obviously only for options symbols)
     GREEKS = 'Greeks'
-    #: Used to stream price quotes (for either options, ETF, futures, crypto or equity symbols)
     QUOTE = 'Quote'
-    #: Used currently only for IVR
     TRADE = 'Trade'
-    #: Currently unused
     PROFILE = 'Profile'
     SUMMARY = 'Summary'
     THEO_PRICE = 'TheoPrice'
@@ -45,7 +40,7 @@ class DataStreamer:
         streamer = await DataStreamer.create(session)
 
         sub = ['SPY', 'GLD']  # list of quotes to fetch
-        quote = await streamer.stream(SubscriptionType.QUOTE, sub)
+        quote = await streamer.stream(EventType.QUOTE, sub)
 
     """
     def __init__(self, session: Session):
@@ -67,7 +62,7 @@ class DataStreamer:
         await self._setup_connection()
         return self
 
-    async def add_data_sub(self, key: SubscriptionType, dxfeeds: list[str]):
+    async def add_data_sub(self, key: EventType, dxfeeds: list[str]):
         """
         Subscribes to quotes for given list of symbols. Used for recurring data feeds; if you just want to get a one-time quote, use :meth:`stream`.
 
@@ -78,7 +73,7 @@ class DataStreamer:
         LOGGER.debug(f'Adding subscription: {streamer_dict}')
         await self._send_msg(SUBSCRIPTION_CHANNEL, {'add': streamer_dict})
 
-    async def remove_data_sub(self, key: SubscriptionType, dxfeeds: list[str]):
+    async def remove_data_sub(self, key: EventType, dxfeeds: list[str]):
         """
         Removes existing subscription for given list of symbols.
 
@@ -165,7 +160,7 @@ class DataStreamer:
                 continue
             yield await self._consumer(msg['data'])
 
-    async def stream(self, key: SubscriptionType, dxfeeds: list[str]) -> list[dict[str, Any]]:
+    async def stream(self, key: EventType, dxfeeds: list[str]) -> list[dict[str, Any]]:
         """
         Using the given information, subscribes to the list of symbols passed, streams the requested information once, then unsubscribes. If you want to maintain the subscription open, add a subscription with :meth:`add_data_sub` and listen with :meth:`listen`.
 
@@ -220,14 +215,19 @@ def _map_message(message) -> Greeks | Quote | Trade:
     data = message[1]
 
     # parse type or warn for unknown type
-    if msg_type == SubscriptionType.QUOTE:
-        res = Quote.from_stream(data)
-    elif msg_type == SubscriptionType.GREEKS:
+    if msg_type == EventType.GREEKS:
         res = Greeks.from_stream(data)
-    elif msg_type == SubscriptionType.TRADE:
+    elif msg_type == EventType.PROFILE:
+        res = Profile.from_stream(data)
+    elif msg_type == EventType.QUOTE:
+        res = Quote.from_stream(data)
+    elif msg_type == EventType.SUMMARY:
+        res = Summary.from_stream(data)
+    elif msg_type == EventType.THEO_PRICE:
+        res = TheoPrice.from_stream(data)
+    elif msg_type == EventType.TRADE:
         res = Trade.from_stream(data)
     else:
-        LOGGER.warning("Unknown message type received from streamer: {}".format(message))
-        res = [{'warning': 'Unknown message type received', 'message': message}]
+        raise Exception(LOGGER.warning("Unknown message type received from streamer: {}".format(message)))
 
     return res

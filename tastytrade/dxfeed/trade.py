@@ -1,49 +1,38 @@
 from dataclasses import dataclass
-from typing import Any
-
-N_FIELDS = 14
+from .event import Event
 
 
 @dataclass
-class Trade:
-    #: underlying symbol
+class Trade(Event):
+    """
+    A Trade event provides prices and the volume of the last transaction in regular trading hours, as well as the total amount per day in the number of securities and in their value. This event does not contain information about all transactions, but only about the last transaction for a single instrument.
+    """
+    #: symbol of this event
     eventSymbol: str
+    #: time of this event
     eventTime: int
-    #: time at which the data is sent
+    #: time of the last trade
     time: int
+    #: microseconds and nanoseconds time part of the last trade
     timeNanoPart: int
+    #: sequence of the last trade
     sequence: int
-    #: code representing the exchange traded on
+    #: exchange code of the last trade
     exchangeCode: str
-    #: a price quote, or the IV rank if the symbol ends in .IVR
+    #: price of the last trade
     price: float
-    #: day change in price
+    #: change of the last trade
     change: float
-    size: str
+    #: size of the last trade as integer number (rounded toward zero)
+    size: int
+    #: identifier of the current trading day
     dayId: int
-    #: number of units traded today
+    #: total vlume traded for a day as integer number (rounded toward zero)
     dayVolume: int
-    dayTurnover: int
+    #: total turnover traded for a day
+    dayTurnover: float
+    #: tick direction of the last trade
+    #: possible values are DOWN | UNDEFINED | UP | ZERO | ZERO_DOWN | ZERO_UP
     tickDirection: str
-    #: whether the symbol trades during extended hours
+    #: whether the last trade was in extended trading hours
     extendedTradingHours: bool
-        
-    @classmethod
-    def from_stream(cls, data: list[Any]) -> list['Trade']:
-        """
-        Takes a list of raw trade data fetched by :class:`~tastyworks.streamer.DataStreamer`
-        and returns a list of :class:`~tastyworks.dxfeed.trade.Trade` objects.
-
-        :param data: list of raw trade data from streamer
-
-        :return: list of :class:`~tastyworks.dxfeed.trade.Trade` objects from data
-        """
-        trades = []
-        multiples = len(data) / N_FIELDS
-        if not multiples.is_integer():
-            raise Exception('Mapper data input values are not an integer multiple of the key size')
-        for i in range(int(multiples)):
-            offset = i * N_FIELDS
-            local_values = data[offset:(i + 1) * N_FIELDS]
-            trades.append(Trade(*local_values))
-        return trades

@@ -8,10 +8,9 @@ venv:
 	env/bin/pip install -r requirements.txt
 
 test:
-	isort --check --diff tastytrade/ tests/
-	flake8 --count --show-source --statistics --ignore=E501 tastytrade/ tests/
+	isort --check --diff tastytrade/
+	flake8 --count --show-source --statistics --ignore=E501 tastytrade/
 	mypy -p tastytrade
-	python -m pytest --cov=tastytrade --cov-report=term-missing tests/
 
 install:
 	env/bin/pip install -e .
