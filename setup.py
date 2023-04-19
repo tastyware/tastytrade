@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-from tastyworks.utils import VERSION
+from tastytrade import VERSION
 
 
 f = open('README.md', 'r')
@@ -8,14 +8,14 @@ LONG_DESCRIPTION = f.read()
 f.close()
 
 setup(
-    name='tastyworks-api',
+    name='tastytrade',
     version=VERSION,
-    description='An unofficial API for Tastyworks!',
+    description='An unofficial API for Tastytrade!',
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
     author='Graeme Holliday',
     author_email='graeme.holliday@pm.me',
-    url='https://github.com/tastyware/tastyworks-api',
+    url='https://github.com/tastyware/tastytrade',
     license='Apache',
     install_requires=[
         'aiohttp<4',

@@ -1,25 +1,24 @@
-dxfeed
-======
+tastytrade.dxfeed
+=================
 
-Mapped Item
------------
+For general dxfeed symbology, go to `Formats <https://kb.dxfeed.com/en/data-model/symbology-guide/general-provisions.html#formats-60641>`_, where you'll find information on various kinds of formatting.
 
-.. module:: tastyworks.dxfeed.mapped_item
+For options on futures symbology, go to `CME Group <https://cmegroup.com/>`_ and look at the 'Specs' section for the given futures symbol.
 
-.. autoclass:: MappedItem
+If you want to double-check you typed the symbol right, or want to troubleshoot a hanging request, go to `dxfeed Symbol Lookup <https://symbol-lookup.dxfeed.com/>`_ and type in the same symbol.
+
+Event
+-----
+
+.. module:: tastytrade.dxfeed.event
+
+.. autoclass:: Event
    :members:
-
-Mapper
-------
-
-.. module:: tastyworks.dxfeed.mapper
-
-.. autofunction:: map_message
 
 Greeks
 ------
 
-.. module:: tastyworks.dxfeed.greeks
+.. module:: tastytrade.dxfeed.greeks
 
 .. autoclass:: Greeks
    :members:
@@ -27,7 +26,7 @@ Greeks
 Profile
 -------
 
-.. module:: tastyworks.dxfeed.profile
+.. module:: tastytrade.dxfeed.profile
 
 .. autoclass:: Profile
    :members:
@@ -35,7 +34,7 @@ Profile
 Quote
 -----
 
-.. module:: tastyworks.dxfeed.quote
+.. module:: tastytrade.dxfeed.quote
 
 .. autoclass:: Quote
    :members:
@@ -43,15 +42,23 @@ Quote
 Summary
 -------
 
-.. module:: tastyworks.dxfeed.summary
+.. module:: tastytrade.dxfeed.summary
 
 .. autoclass:: Summary
    :members:
 
-Trade
-------
+TheoPrice
+---------
 
-.. module:: tastyworks.dxfeed.trade
+.. module:: tastytrade.dxfeed.theoprice
+
+.. autoclass:: TheoPrice
+   :members:
+
+Trade
+-----
+
+.. module:: tastytrade.dxfeed.trade
 
 .. autoclass:: Trade
    :members:

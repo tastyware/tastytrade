@@ -1,6 +1,7 @@
 import aiohttp
 
-from tastyworks.models.session import TastyAPISession
+from tastytrade import API_URL
+from tastytrade.session import Session
 
 
 class Watchlist(object):
@@ -21,9 +22,9 @@ class Watchlist(object):
         Notes:
             There is an instability issue with Tastyworks API.  Hence
             the need to catch an exceptions.  Special symbols don't have
-            instrument type's at all.
+            instrument types at all.
 
-            For stability & accessibility, all instrument type's are returned
+            For stability & accessibility, all instrument types are returned
             as 'instrument_type'.
 
         Args:
@@ -79,9 +80,7 @@ class WatchlistGroup(object):
         return str(list(self.watchlists.keys()))
 
     @classmethod
-    async def get_watchlists(
-        cls, session: TastyAPISession, public: bool = True
-    ):
+    async def get_watchlists(cls, session: Session, public: bool = True):
         """Get Watchlists
 
         Class Factory
@@ -98,7 +97,7 @@ class WatchlistGroup(object):
         Returns:
             WatchlistGroup: Instance of WatchlistGroup()
         """
-        url = f'{session.API_url}/public-watchlists' if public else f'{session.API_url}/watchlists'
+        url = f'{API_URL}/public-watchlists' if public else f'{API_URL}/watchlists'
 
         async with aiohttp.request('GET', url, headers=session.get_request_headers()) as resp:
             data = await resp.json()

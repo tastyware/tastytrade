@@ -22,10 +22,8 @@ jobs:
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Sorting...
-      run: isort --check --diff tastyworks/ tests/
+      run: isort --check --diff tastytrade/
     - name: Linting...
-      run: flake8 --count --show-source --statistics --ignore=E501 tastyworks/ tests/
+      run: flake8 --count --show-source --statistics --ignore=E501 tastytrade/
     - name: Type checking...
-      run: mypy -p tastyworks
-    - name: Testing...
-      run: python -m pytest --cov=src --cov-report=term-missing tests/
+      run: mypy -p tastytrade

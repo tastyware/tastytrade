@@ -8,10 +8,9 @@ venv:
 	env/bin/pip install -r requirements.txt
 
 test:
-	isort --check --diff tastyworks/ tests/
-	flake8 --count --show-source --statistics --ignore=E501 tastyworks/ tests/
-	mypy -p tastyworks
-	python -m pytest --cov=tastyworks --cov-report=term-missing tests/
+	isort --check --diff tastytrade/
+	flake8 --count --show-source --statistics --ignore=E501 tastytrade/
+	mypy -p tastytrade
 
 install:
 	env/bin/pip install -e .

@@ -1,7 +1,11 @@
 import logging
 import sys
 
+API_URL = 'https://api.tastyworks.com'
+VERSION = '1.0'
+
 log = logging.getLogger(__name__)
+logging.getLogger('aiocometd').setLevel(logging.CRITICAL)
 log.propagate = False
 out_hdlr = logging.StreamHandler(sys.stdout)
 out_hdlr.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
