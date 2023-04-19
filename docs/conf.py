@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'tastytrade'
-copyright = '2022, Graeme Holliday'
+copyright = '2023, Graeme Holliday'
 author = 'Graeme Holliday'
 release = '1.0'
 

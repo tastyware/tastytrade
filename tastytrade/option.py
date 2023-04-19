@@ -1,4 +1,3 @@
-import logging
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
@@ -7,11 +6,9 @@ from typing import Optional
 
 import aiohttp
 
-from tastytrade.models.greeks import Greeks
-from tastytrade.models.security import Security
-from tastytrade.models.session import TastyAPISession
-
-LOGGER = logging.getLogger(__name__)
+from tastytrade import log
+from tastytrade.dxfeed.greeks import Greeks
+from tastytrade.session import Session
 
 
 class OptionType(str, Enum):
@@ -23,7 +20,7 @@ class OptionType(str, Enum):
     #: a put option
     PUT = 'P'
 
-    
+
 class UnderlyingType(str, Enum):
     """
     This is an :class:`~enum.Enum` that contains the valid types of option underlyings and their abbreviations in the API.
@@ -37,7 +34,7 @@ class UnderlyingType(str, Enum):
 
 
 @dataclass
-class Option(Security):
+class Option:
     """
     Container class for an option object in the API.
     """
@@ -107,14 +104,14 @@ class Option(Security):
         return res
 
 
-class OptionChain(object):
+class OptionChain:
     """
     A collection of call and put options, usually with the same expiration date.
     Provides filter methods based on type, strike price, expiry, etc.
 
     Example::
 
-        session = TastyAPISession('username', 'password')
+        session = Session('username', 'password')
         underlying = Underlying('SPY')
         chain = await get_option_chain(session, underlying, date(2022, 10, 21))
 
@@ -149,7 +146,7 @@ class OptionChain(object):
         return self._get_filter_strategy('expiry')
 
 
-async def get_option_chain(session: TastyAPISession, underlying: Underlying, expiration: date = None) -> OptionChain:
+async def get_option_chain(session: Session, underlying: str, expiration: date = None) -> OptionChain:
     """
     Finds the option chain data for the given underlying and date.
 
@@ -159,7 +156,7 @@ async def get_option_chain(session: TastyAPISession, underlying: Underlying, exp
 
     :return: :class:`OptionChain` object with retrieved data
     """
-    LOGGER.debug('Getting options chain for ticker: %s', underlying.ticker)
+    log.debug('Getting options chain for ticker: %s', underlying)
     data = await _get_tasty_option_chain_data(session, underlying)
     res = []
 
@@ -173,7 +170,7 @@ async def get_option_chain(session: TastyAPISession, underlying: Underlying, exp
             strike_val = Decimal(strike['strike-price'])
             for option_types in OptionType:
                 new_option = Option(
-                    ticker=underlying.ticker,
+                    ticker=underlying,
                     expiry=exp_date,
                     strike=strike_val,
                     option_type=option_types,
@@ -186,11 +183,11 @@ async def get_option_chain(session: TastyAPISession, underlying: Underlying, exp
 async def _get_tasty_option_chain_data(session, underlying) -> dict:
     async with aiohttp.request(
             'GET',
-            f'{session.API_url}/option-chains/{underlying.ticker}/nested',
+            f'{session.API_url}/option-chains/{underlying}/nested',
             headers=session.get_request_headers()) as response:
 
         if response.status != 200:
-            raise Exception(f'Could not find option chain for symbol {underlying.ticker}')
+            raise Exception(f'Could not find option chain for symbol {underlying}')
         resp = await response.json()
 
         # NOTE: Have not seen an example with more than 1 item. No idea what that would be.

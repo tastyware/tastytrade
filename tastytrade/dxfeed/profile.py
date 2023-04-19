@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from .event import Event
 
 
@@ -23,6 +24,8 @@ class Profile(Event):
     statusReason: str
     #: starting time of the trading halt interval
     haltStartTime: int
+    #: ending time of the trading halt interval
+    haltEndTime: int
     #: maximal (high) allowed price
     highLimitPrice: float
     #: minimal (low) allowed price

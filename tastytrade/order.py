@@ -1,4 +1,3 @@
-import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
@@ -6,10 +5,6 @@ from enum import Enum
 from typing import List, Optional
 
 import aiohttp
-
-from tastytrade.models.security import Security
-
-LOGGER = logging.getLogger(__name__)
 
 
 class OrderType(Enum):
@@ -48,7 +43,7 @@ class OrderDetails(object):
     price: Optional[Decimal] = None
     price_effect: OrderPriceEffect = OrderPriceEffect.CREDIT
     status: Optional[OrderStatus] = None
-    legs: List[Security] = field(default_factory=list)
+    legs: List[str] = field(default_factory=list)
     source: str = 'WBT'
 
     def is_executable(self) -> bool:
@@ -75,7 +70,7 @@ class OrderDetails(object):
         return True
 
 
-class Order(Security):
+class Order:
     def __init__(self, order_details: OrderDetails):
         """
         Initiates a new order object.
@@ -88,7 +83,7 @@ class Order(Security):
     def check_is_order_executable(self):
         return self.details.is_executable()
 
-    def add_leg(self, security: Security):
+    def add_leg(self, security: str):
         self.details.legs.append(security)
 
     @classmethod

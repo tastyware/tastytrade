@@ -1,17 +1,21 @@
 import datetime
-import logging
 from enum import Enum
-from typing import Any, AsyncIterator
+from typing import AsyncIterator
 
 import aiocometd
 import requests
 from aiocometd import ConnectionType
 
-from tastytrade.dxfeed import DATA_CHANNEL, SUBSCRIPTION_CHANNEL, Greeks, Quote, Profile, Summary, TheoPrice, Trade
-from tastytrade.utils import API_URL, Session
-
-LOGGER = logging.getLogger(__name__)
-logging.getLogger('aiocometd').setLevel(logging.CRITICAL)
+from tastytrade import API_URL, log
+from tastytrade.dxfeed import DATA_CHANNEL, SUBSCRIPTION_CHANNEL
+from tastytrade.dxfeed.event import Event
+from tastytrade.dxfeed.greeks import Greeks
+from tastytrade.dxfeed.profile import Profile
+from tastytrade.dxfeed.quote import Quote
+from tastytrade.dxfeed.summary import Summary
+from tastytrade.dxfeed.theoprice import TheoPrice
+from tastytrade.dxfeed.trade import Trade
+from tastytrade.session import Session
 
 
 class EventType(str, Enum):
@@ -39,13 +43,13 @@ class DataStreamer:
         session = Session('user', 'pass)
         streamer = await DataStreamer.create(session)
 
-        sub = ['SPY', 'GLD']  # list of quotes to fetch
-        quote = await streamer.stream(EventType.QUOTE, sub)
+        subs = ['SPY', 'GLD']  # list of quotes to fetch
+        quote = await streamer.stream(EventType.QUOTE, subs)
 
     """
     def __init__(self, session: Session):
-        if not session.is_active():
-            raise Exception('TastyWorks API session not active/valid')
+        if not session.is_valid():
+            raise Exception('Tastyworks API session not active/valid')
         #: The active session used to initiate the streamer or make requests
         self.tasty_session: Session = session
         #: The cometd client which handles requests behind the scenes
@@ -62,6 +66,32 @@ class DataStreamer:
         await self._setup_connection()
         return self
 
+    async def _setup_connection(self):
+        aiocometd.client.DEFAULT_CONNECTION_TYPE = ConnectionType.WEBSOCKET
+        streamer_url = self._get_streamer_websocket_url()
+        log.debug('Connecting to url: %s', streamer_url)
+
+        auth_extension = AuthExtension(self._get_streamer_token())
+        cometd_client = aiocometd.Client(
+            streamer_url,
+            auth=auth_extension,
+        )
+        await cometd_client.open()
+        await cometd_client.subscribe(DATA_CHANNEL)
+
+        self.cometd_client = cometd_client
+        self.logged_in = True
+        log.debug('Connected and logged in to dxFeed data stream')
+
+        await self.reset_data_subs()
+
+    async def reset_data_subs(self):
+        """
+        Clears all existing subscriptions.
+        """
+        log.debug('Resetting data subscriptions')
+        await self._send_msg(SUBSCRIPTION_CHANNEL, {'reset': True})
+
     async def add_data_sub(self, key: EventType, dxfeeds: list[str]):
         """
         Subscribes to quotes for given list of symbols. Used for recurring data feeds; if you just want to get a one-time quote, use :meth:`stream`.
@@ -70,7 +100,7 @@ class DataStreamer:
         :param dxfeeds: list of symbols to subscribe for
         """
         streamer_dict = {key: dxfeeds}
-        LOGGER.debug(f'Adding subscription: {streamer_dict}')
+        log.debug(f'Adding subscription: {streamer_dict}')
         await self._send_msg(SUBSCRIPTION_CHANNEL, {'add': streamer_dict})
 
     async def remove_data_sub(self, key: EventType, dxfeeds: list[str]):
@@ -80,39 +110,23 @@ class DataStreamer:
         :param key: type of subscription to remove
         :param dxfeeds: list of symbols to unsubscribe from
         """
-        # NOTE: Experimental, unconfirmed. Needs testing
         streamer_dict = {key: dxfeeds}
-        LOGGER.debug(f'Removing subscription: {streamer_dict}')
+        log.debug(f'Removing subscription: {streamer_dict}')
         await self._send_msg(SUBSCRIPTION_CHANNEL, {'remove': streamer_dict})
 
-    async def _consumer(self, message):
-        return _map_message(message)
-
     async def _send_msg(self, channel, message):
-        if not self.logged_in:
-            raise Exception('Connection not made or logged in')
-        LOGGER.debug('[dxFeed] sending: %s on channel: %s', message, channel)
+        log.debug('[dxFeed] sending: %s on channel: %s', message, channel)
         await self.cometd_client.publish(channel, message)
 
-    async def reset_data_subs(self):
-        """
-        Clears all existing subscriptions.
-        """
-        LOGGER.debug('Resetting data subscriptions')
-        await self._send_msg(SUBSCRIPTION_CHANNEL, {'reset': True})
-
-    def get_streamer_token(self):
+    def _get_streamer_token(self):
         return self._get_streamer_data()['data']['token']
 
     def _get_streamer_data(self):
-        if not self.tasty_session.logged_in:
-            raise Exception('Logged in session required')
-
         if hasattr(self, 'streamer_data_created') and (datetime.datetime.now() - self.streamer_data_created).total_seconds() < 60:
             return self.streamer_data
 
         resp = requests.get(f'{API_URL}/quote-streamer-tokens', headers=self.tasty_session.get_request_headers())
-        if resp.status_code != 200:
+        if resp.status_code // 100 != 2:
             raise Exception('Could not get quote streamer data, error message: {}'.format(
                 resp.json()['error']['message']
             ))
@@ -125,42 +139,23 @@ class DataStreamer:
         full_url = '{}/cometd'.format(socket_url)
         return full_url
 
-    async def _setup_connection(self):
-        aiocometd.client.DEFAULT_CONNECTION_TYPE = ConnectionType.WEBSOCKET
-        streamer_url = self._get_streamer_websocket_url()
-        LOGGER.debug('Connecting to url: %s', streamer_url)
-
-        auth_extension = AuthExtension(self.get_streamer_token())
-        cometd_client = aiocometd.Client(
-            streamer_url,
-            auth=auth_extension,
-        )
-        await cometd_client.open()
-        await cometd_client.subscribe(DATA_CHANNEL)
-
-        self.cometd_client = cometd_client
-        self.logged_in = True
-        LOGGER.debug('Connected and logged in to dxFeed data stream')
-
-        await self.reset_data_subs()
-
     async def close(self):
         """
         Closes all existing subscriptions and the cometd client. Should be called to avoid asyncio exceptions when you finish using the streamer.
         """
         await self.cometd_client.close()
 
-    async def listen(self) -> AsyncIterator[Greeks | Quote | Trade]:
+    async def listen(self) -> AsyncIterator[list[Event]]:
         """
         Using the existing subscriptions, pulls greeks or quotes and yield returns them. Never exits unless there's an error or the channel is closed.
         """
         async for msg in self.cometd_client:
-            LOGGER.debug('[dxFeed] received: %s', msg)
+            log.debug('[dxFeed] received: %s', msg)
             if msg['channel'] != DATA_CHANNEL:
                 continue
-            yield await self._consumer(msg['data'])
+            yield _map_message(msg['data'])
 
-    async def stream(self, key: EventType, dxfeeds: list[str]) -> list[dict[str, Any]]:
+    async def stream(self, key: EventType, dxfeeds: list[str]) -> list[Event]:
         """
         Using the given information, subscribes to the list of symbols passed, streams the requested information once, then unsubscribes. If you want to maintain the subscription open, add a subscription with :meth:`add_data_sub` and listen with :meth:`listen`.
 
@@ -170,7 +165,7 @@ class DataStreamer:
         :return: list of quotes or greeks pulled.
         """
         await self.add_data_sub(key, dxfeeds)
-        data = []
+        data: list[Event] = []
         async for item in self.listen():
             data.extend(item)
             if len(data) >= len(dxfeeds):
@@ -204,12 +199,14 @@ class AuthExtension(aiocometd.AuthExtension):
         pass
 
 
-def _map_message(message) -> Greeks | Quote | Trade:
+def _map_message(message) -> list[Event]:
+    """
+    Takes the raw JSON data and returns a list of parsed :class:`~tastytrade.dxfeed.event.Event` objects.
+    """
+    # the first time around, types are shown
     if isinstance(message[0], str):
-        first_sample = False
         msg_type = message[0]
     else:
-        first_sample = True
         msg_type = message[0][0]
     # regardless, the second element will be the raw data
     data = message[1]
@@ -228,6 +225,6 @@ def _map_message(message) -> Greeks | Quote | Trade:
     elif msg_type == EventType.TRADE:
         res = Trade.from_stream(data)
     else:
-        raise Exception(LOGGER.warning("Unknown message type received from streamer: {}".format(message)))
+        raise Exception("Unknown message type received from streamer: {}".format(message))
 
     return res

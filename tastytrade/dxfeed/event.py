@@ -13,7 +13,7 @@ class Event(ABC):
         :return: list of :class:`~tastyworks.dxfeed.event.Event` objects from data
         """
         objs = []
-        size = len(cls.__dataclass_fields__)
+        size = len(cls.__dataclass_fields__)  # type: ignore
         multiples = len(data) / size
         if not multiples.is_integer():
             raise Exception('Mapper data input values are not an integer multiple of the key size')

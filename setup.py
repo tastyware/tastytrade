@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-from tastytrade.utils import VERSION
+from tastytrade import VERSION
 
 
 f = open('README.md', 'r')
