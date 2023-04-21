@@ -1,6 +1,6 @@
 [![Docs](https://readthedocs.org/projects/tastyworks-api/badge/?version=latest)](https://tastyworks-api.readthedocs.io/en/latest/?badge=latest)
 [![PyPI](https://img.shields.io/pypi/v/tastytrade)](https://pypi.org/project/tastytrade)
-[![Downloads](https://static.pepy.tech/badge/tastytrade)](https://pepy.tech/project/tastytrade)
+[![Downloads](https://static.pepy.tech/badge/tastytrade/month)](https://pepy.tech/project/tastytrade)
 
 # Tastytrade Python API
 
