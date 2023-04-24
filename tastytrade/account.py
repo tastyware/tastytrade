@@ -31,7 +31,7 @@ class TradingAccount:
         if not order.check_is_order_executable():
             raise Exception('Order is not executable, most likely due to missing data')
 
-        if not session.is_active():
+        if not session.is_valid():
             raise Exception('The supplied session is not active and valid')
 
         url = f'{API_URL}/accounts/{self.account_number}/orders'
