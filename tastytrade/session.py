@@ -10,7 +10,8 @@ class Session:
     def __init__(self, username: str, password: str):
         body = {
             'login': username,
-            'password': password
+            'password': password,
+            'remember-me': True
         }
         resp = requests.post(f'{API_URL}/sessions', json=body)
 
@@ -18,6 +19,7 @@ class Session:
             raise Exception('Failed to log in, message: {}'.format(resp.json()['error']['message']))
 
         self.session_token = resp.json()['data']['session-token']
+        self.remember_token = resp.json()['data']['remember-token']
         self.is_valid()
 
     def is_valid(self) -> bool:
@@ -50,4 +52,4 @@ class Session:
 
         :return: The request header containing session authorization data
         """
-        return {'Authorization': self.session_token}
+        return {'Authorization token': self.session_token, 'Remember token': self.remember_token}
