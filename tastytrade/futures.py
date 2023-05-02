@@ -8,21 +8,17 @@ from typing import Optional
 import aiohttp
 
 from tastytrade import API_URL, log
+from tastytrade.option import OptionType
 from tastytrade.session import Session
 
 
-class OptionType(str, Enum):
-    """
-    This is an :class:`~enum.Enum` that contains the valid types of options and their abbreviations in the API.
-    """
-    #: a call option
-    CALL = 'C'
-    #: a put option
-    PUT = 'P'
+@dataclass
+class Futures:
+    pass
 
 
 @dataclass
-class Option:
+class FuturesOption:
     """
     Container class for an option object in the API.
     This is agnostic to long/short or quantities, because
@@ -114,7 +110,7 @@ class Option:
         }
 
 
-class OptionChain:
+class FuturesOptionChain:
     """
     Object containing all available strikes for all expirations for a specific symbol.
     Provides easy access to a list of expirations or all strikes for a given expiration.
@@ -161,7 +157,7 @@ class OptionChain:
         # fetch chains for every date
         async with aiohttp.request(
             'GET',
-            f'{API_URL}/option-chains/{underlying}/nested',
+            f'{API_URL}/futures-option-chains/{underlying}/nested',
             headers=session.get_request_headers()
         ) as response:
             if response.status // 100 != 2:

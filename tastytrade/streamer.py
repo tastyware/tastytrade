@@ -147,7 +147,7 @@ class DataStreamer:
 
     async def listen(self) -> AsyncIterator[list[Event]]:
         """
-        Using the existing subscriptions, pulls greeks or quotes and yield returns them. Never exits unless there's an error or the channel is closed.
+        Using the existing subscriptions, listens for :class:`~tastytrade.dxfeed.event.Event`s and yield returns them. Never exits unless there's an error or the channel is closed.
         """
         async for msg in self.cometd_client:
             log.debug('[dxFeed] received: %s', msg)

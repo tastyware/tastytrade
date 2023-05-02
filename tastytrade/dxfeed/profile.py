@@ -14,11 +14,9 @@ class Profile(Event):
     eventTime: int
     #: description of the security instrument
     description: str
-    #: short sale restriction of the security instrument
-    #: possible values are ACTIVE | INACTIVE | UNDEFINED
+    #: short sale restriction of the security instrument; possible values are ACTIVE | INACTIVE | UNDEFINED
     shortSaleRestriction: str
-    #: trading status of the security instrument
-    #: possible values are ACTIVE | HALTED | UNDEFINED
+    #: trading status of the security instrument; possible values are ACTIVE | HALTED | UNDEFINED
     tradingStatus: str
     #: description of the reason that trading was halted
     statusReason: str

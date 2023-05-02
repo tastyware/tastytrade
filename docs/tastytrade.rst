@@ -44,12 +44,6 @@ Order
 .. autoclass:: Order
    :members:
 
-Search
-------
-.. module:: tastytrade.search
-
-.. autofunction:: symbol_search
-
 Session
 -------
 
@@ -73,6 +67,8 @@ Utils
 .. module:: tastytrade.utils
 
 .. autofunction:: get_third_friday
+
+.. autofunction:: symbol_search
 
 Watchlists
 ----------

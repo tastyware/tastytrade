@@ -32,8 +32,7 @@ class Trade(Event):
     dayVolume: int
     #: total turnover traded for a day
     dayTurnover: float
-    #: tick direction of the last trade
-    #: possible values are DOWN | UNDEFINED | UP | ZERO | ZERO_DOWN | ZERO_UP
+    #: tick direction of the last trade; possible values are DOWN | UNDEFINED | UP | ZERO | ZERO_DOWN | ZERO_UP
     tickDirection: str
     #: whether the last trade was in extended trading hours
     extendedTradingHours: bool

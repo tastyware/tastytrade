@@ -6,6 +6,7 @@ tastytrade: A reverse-engineered Python API for Tastytrade
    :caption: Documentation:
 
    install
+   usage
 
 .. toctree::
    :maxdepth: 2

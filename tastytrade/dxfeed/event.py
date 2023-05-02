@@ -2,6 +2,9 @@ from abc import ABC
 
 
 class Event(ABC):
+    """
+    Abstract class that represents one of the kinds of events that can be fetched with the :class:`~tastyworks.streamer.DataStreamer`.
+    """
     @classmethod
     def from_stream(cls, data: list) -> list['Event']:
         """

@@ -28,15 +28,13 @@ class Summary(Event):
     dayLowPrice: float
     #: the last (close) price for the day
     dayClosePrice: float
-    #: the price type of the last (close) price for the day
-    #: possible values are FINAL | INDICATIVE | PRELIMINARY | REGULAR
+    #: the price type of the last (close) price for the day; possible values are FINAL | INDICATIVE | PRELIMINARY | REGULAR
     dayClosePriceType: str
     #: identifier of the previous day that this summary represents
     prevDayId: int
     #: the last (close) price for the previous day
     prevDayClosePrice: float
-    #: the price type of the last (close) price for the previous day
-    #: possible values are FINAL | INDICATIVE | PRELIMINARY | REGULAR
+    #: the price type of the last (close) price for the previous day; possible values are FINAL | INDICATIVE | PRELIMINARY | REGULAR
     prevDayClosePriceType: str
     #: total volume traded for the previous day
     prevDayVolume: float
