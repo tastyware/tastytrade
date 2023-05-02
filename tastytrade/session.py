@@ -1,19 +1,26 @@
 import requests
 
-from tastytrade import API_URL
+from tastytrade import API_URL, CERT_URL
 
 
 class Session:
     """
     Contains a local user login which can then be used to interact with the remote API.
     """
-    def __init__(self, username: str, password: str):
+    def __init__(self, username: str, password: str, TwoFA: str = None):
         body = {
             'login': username,
             'password': password,
             'remember-me': True
         }
-        resp = requests.post(f'{API_URL}/sessions', json=body)
+        
+        if TwoFA: 
+            headers = {
+                'X-Tastyworks-OTP': TwoFA
+            }
+            resp = requests.post(f'{CERT_URL}/sessions', json=body, headers=headers)
+        else:
+            resp = requests.post(f'{API_URL}/sessions', json=body)
 
         if resp.status_code // 100 != 2:
             raise Exception('Failed to log in, message: {}'.format(resp.json()['error']['message']))

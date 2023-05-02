@@ -2,6 +2,7 @@ import logging
 import sys
 
 API_URL = 'https://api.tastyworks.com'
+CERT_URL = 'https://api.cert.tastyworks.com/sessions'
 VERSION = '1.0'
 
 log = logging.getLogger(__name__)
