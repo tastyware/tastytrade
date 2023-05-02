@@ -18,6 +18,39 @@ class Account:
     account_type_name: str
     #: user-facing account name e.g. "Roth IRA" or "Individual"
     nickname: str
+    opened_at: str
+
+    async def execute_order(self, order: Order, session, dry_run=True):
+        """
+        Execute an order. If doing a dry run, the order isn't placed but simulated (server-side).
+
+        Args:
+            order (Order): The order object to execute.
+            session (TastyAPISession): The tastyworks session onto which to execute the order.
+            dry_run (bool): Whether to do a test (dry) run.
+
+        Returns:
+            bool: Whether the order was successful.
+        """
+        if not order.check_is_order_executable():
+            raise Exception('Order is not executable, most likely due to missing data')
+
+        if not session.is_valid():
+            raise Exception('The supplied session is not active and valid')
+
+        url = f'{API_URL}/accounts/{self.account_number}/orders'
+        if dry_run:
+            url = f'{url}/dry-run'
+
+        body = _get_execute_order_json(order)
+
+        async with aiohttp.request('POST', url, headers=session.get_request_headers(), json=body) as resp:
+            if resp.status == 201:
+                return (await resp.json())['data']
+            elif resp.status == 400:
+                raise Exception('Order execution failed: {}'.format(await resp.text()))
+            else:
+                raise Exception('Unknown remote error {}: {}'.format(resp.status, await resp.text()))
 
     @classmethod
     async def get_accounts(cls, session: Session, include_closed: bool = False) -> list['Account']:
