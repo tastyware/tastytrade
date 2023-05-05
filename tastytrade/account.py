@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-import requests
 import aiohttp
+import requests
 
 from tastytrade import API_URL
 from tastytrade.order import Order, OrderPriceEffect
@@ -99,7 +99,7 @@ class TradingAccount:
 
         return res
 
-    async def get_balance(self, session, **kwargs):
+    def get_balance(self, session, **kwargs):
         """
         Get balance.
 
@@ -110,11 +110,12 @@ class TradingAccount:
         """
         url = f'{API_URL}/accounts/{self.account_number}/balances'
 
-        async with aiohttp.request('GET', url, headers=session.get_request_headers(), **kwargs) as response:
-            if response.status != 200:
-                raise Exception('Could not get trading account balance info from Tastyworks...')
-            data = (await response.json())['data']
+        response = requests.get(url, headers=session.get_request_headers(), **kwargs)
+        if response.status_code != 200:
+            raise Exception('Could not get trading account balance info from Tastyworks...')
+        data = response.json()['data']
         return data
+
 
     async def get_positions(self, session, **kwargs):
         """
