@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+import requests
 import aiohttp
 
 from tastytrade import API_URL
@@ -66,7 +67,7 @@ class TradingAccount:
         return TradingAccount(**new_data)
 
     @classmethod
-    async def get_accounts(cls, session, include_closed=False) -> list:
+    def get_accounts(cls, session, include_closed=False) -> list:
         """
         Gets all trading accounts from the Tastyworks platform.
         By default excludes closed accounts, but these can be added
@@ -81,10 +82,11 @@ class TradingAccount:
         url = f'{API_URL}/customers/me/accounts'
         res = []
 
-        async with aiohttp.request('GET', url, headers=session.get_request_headers()) as response:
-            if response.status != 200:
-                raise Exception('Could not get trading accounts info from Tastyworks...')
-            data = (await response.json())['data']
+        response = requests.get(url, headers=session.get_request_headers())
+        if response.status_code != 200:
+            raise Exception('Could not get trading accounts info from Tastyworks...')
+        data = response.json()['data']
+
 
         for entry in data['items']:
             if entry['authority-level'] != 'owner':
@@ -148,7 +150,7 @@ class TradingAccount:
             data = (await response.json())['data']['items']
         return data
 
-    async def get_history(self, session, **kwargs):
+    def get_history(self, session, **kwargs):
         """
         Get transaction history.
 
@@ -157,6 +159,7 @@ class TradingAccount:
         Returns:
             dict: account attributes
         """
+        
         url = f'{API_URL}/accounts/{self.account_number}/transactions'
 
         PAGE_SIZE = 1024
@@ -175,10 +178,10 @@ class TradingAccount:
             })
             kwargs['params'] = params
 
-            async with aiohttp.request('GET', url, headers=session.get_request_headers(), **kwargs) as response:
-                if response.status != 200:
-                    raise Exception('Could not get history info from Tastyworks...')
-                data = (await response.json())
+            response = requests.get(url, headers=session.get_request_headers(), **kwargs)
+            if response.status_code != 200:
+                raise Exception('Could not get history info from Tastyworks...')
+            data = response.json()
 
             page_offset += 1
             if total_pages is None:
@@ -221,3 +224,4 @@ def _get_legs_request_data(order):
         res.append(leg_dict)
 
     return res
+
