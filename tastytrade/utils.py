@@ -1,6 +1,26 @@
 import calendar
 from datetime import date, timedelta
 
+from requests import Response
+
+
+class TastytradeError(Exception):
+    """
+    An internal error raised by the Tastytrade API.
+    """
+    pass
+
+
+def validate_response(response: Response) -> None:
+    """
+    Checks if the given code is an error; if so, raises an exception.
+
+    :param json: data to check for errors
+    """
+    if response.status_code // 100 != 2:
+        content = response.json()['error']
+        raise TastytradeError(f"{content['code']}: {content['message']}")
+
 
 def get_third_friday(d: date) -> date:
     """
