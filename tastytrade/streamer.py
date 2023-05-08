@@ -51,8 +51,8 @@ class DataStreamer:
 
     """
     def __init__(self, session: Session):
-        if not session.is_valid():
-            raise Exception('Tastyworks API session not active/valid')
+        session.validate()
+
         #: The active session used to initiate the streamer or make requests
         self.tasty_session: Session = session
         #: The cometd client which handles requests behind the scenes

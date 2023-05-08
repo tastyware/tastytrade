@@ -184,7 +184,7 @@ async def _get_tasty_option_chain_data(session, underlying) -> dict:
     async with aiohttp.request(
             'GET',
             f'{session.API_url}/option-chains/{underlying}/nested',
-            headers=session.get_request_headers()) as response:
+            headers=session.headers) as response:
 
         if response.status != 200:
             raise Exception(f'Could not find option chain for symbol {underlying}')

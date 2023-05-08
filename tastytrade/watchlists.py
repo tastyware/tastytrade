@@ -99,7 +99,7 @@ class WatchlistGroup(object):
         """
         url = f'{API_URL}/public-watchlists' if public else f'{API_URL}/watchlists'
 
-        async with aiohttp.request('GET', url, headers=session.get_request_headers()) as resp:
+        async with aiohttp.request('GET', url, headers=session.headers) as resp:
             data = await resp.json()
             if resp.status != 200:
                 raise Exception(f'Failed retrieving watchlists, Response status: {resp.status}; message: {data["error"]["message"]}')

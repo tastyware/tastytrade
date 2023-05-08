@@ -1,4 +1,3 @@
-from typing import Optional
 import requests
 
 from tastytrade import API_URL
@@ -23,7 +22,7 @@ class Session:
         else:
             response = requests.post(f'{API_URL}/sessions', json=body)
         validate_response(response)  # throws exception if not 200
-        
+
         json = response.json()
         self.user = json['data']['user']
         self.session_token = json['data']['session-token']

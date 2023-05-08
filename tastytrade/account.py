@@ -40,7 +40,7 @@ class TradingAccount:
 
         body = _get_execute_order_json(order)
 
-        async with aiohttp.request('POST', url, headers=session.get_request_headers(), json=body) as resp:
+        async with aiohttp.request('POST', url, headers=session.headers, json=body) as resp:
             if resp.status == 201:
                 return (await resp.json())['data']
             elif resp.status == 400:
@@ -81,7 +81,7 @@ class TradingAccount:
         url = f'{API_URL}/customers/me/accounts'
         res = []
 
-        async with aiohttp.request('GET', url, headers=session.get_request_headers()) as response:
+        async with aiohttp.request('GET', url, headers=session.headers) as response:
             if response.status != 200:
                 raise Exception('Could not get trading accounts info from Tastyworks...')
             data = (await response.json())['data']
@@ -108,7 +108,7 @@ class TradingAccount:
         """
         url = f'{API_URL}/accounts/{self.account_number}/balances'
 
-        async with aiohttp.request('GET', url, headers=session.get_request_headers(), **kwargs) as response:
+        async with aiohttp.request('GET', url, headers=session.headers, **kwargs) as response:
             if response.status != 200:
                 raise Exception('Could not get trading account balance info from Tastyworks...')
             data = (await response.json())['data']
@@ -125,7 +125,7 @@ class TradingAccount:
         """
         url = f'{API_URL}/accounts/{self.account_number}/positions'
 
-        async with aiohttp.request('GET', url, headers=session.get_request_headers(), **kwargs) as response:
+        async with aiohttp.request('GET', url, headers=session.headers, **kwargs) as response:
             if response.status != 200:
                 raise Exception('Could not get open positions info from Tastyworks...')
             data = (await response.json())['data']['items']
@@ -142,7 +142,7 @@ class TradingAccount:
         """
         url = f'{API_URL}/accounts/{self.account_number}/orders/live'
 
-        async with aiohttp.request('GET', url, headers=session.get_request_headers(), **kwargs) as response:
+        async with aiohttp.request('GET', url, headers=session.headers, **kwargs) as response:
             if response.status != 200:
                 raise Exception('Could not get live orders info from Tastyworks...')
             data = (await response.json())['data']['items']
@@ -175,7 +175,7 @@ class TradingAccount:
             })
             kwargs['params'] = params
 
-            async with aiohttp.request('GET', url, headers=session.get_request_headers(), **kwargs) as response:
+            async with aiohttp.request('GET', url, headers=session.headers, **kwargs) as response:
                 if response.status != 200:
                     raise Exception('Could not get history info from Tastyworks...')
                 data = (await response.json())
