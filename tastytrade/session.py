@@ -1,53 +1,51 @@
 import requests
 
 from tastytrade import API_URL
+from tastytrade.utils import validate_response
 
 
 class Session:
     """
     Contains a local user login which can then be used to interact with the remote API.
     """
-    def __init__(self, username: str, password: str):
+    def __init__(self, login: str, password: str, remember_me: bool = False,
+                 two_factor_authentication: str = ''):
         body = {
-            'login': username,
-            'password': password
+            'login': login,
+            'password': password,
+            'remember-me': remember_me
         }
-        resp = requests.post(f'{API_URL}/sessions', json=body)
 
-        if resp.status_code // 100 != 2:
-            raise Exception('Failed to log in, message: {}'.format(resp.json()['error']['message']))
+        if two_factor_authentication:
+            headers = {'X-Tastyworks-OTP': two_factor_authentication}
+            response = requests.post(f'{API_URL}/sessions', json=body, headers=headers)
+        else:
+            response = requests.post(f'{API_URL}/sessions', json=body)
+        validate_response(response)  # throws exception if not 200
 
-        self.session_token = resp.json()['data']['session-token']
-        self.is_valid()
+        json = response.json()
+        self.user = json['data']['user']
+        self.session_token = json['data']['session-token']
+        self.remember_token = json['data']['remember-token'] if remember_me else None
+        self.headers = {'Authorization': self.session_token}
+        self.validate()
 
-    def is_valid(self) -> bool:
+    def validate(self) -> None:
         """
-        Performs a check to see if the session is legitimate.
-
-        :return: True if the session is valid and False otherwise.
+        Validates the current session by sending a request to the API. If the session is
+        invalid, an exception will be thrown.
         """
-        resp = requests.post(f'{API_URL}/sessions/validate', headers=self.get_request_headers())
-        if resp.status_code // 100 == 2:
-            return True
-        return False
+        response = requests.post(f'{API_URL}/sessions/validate', headers=self.headers)
+        validate_response(response)  # throws exception if not 200
 
-    def terminate_session(self) -> bool:
+    def destroy(self) -> bool:
         """
-        Sends a API request to delete the existing session. This will invalidate the
+        Sends a API request to log out of the existing session. This will invalidate the
         current session token and login.
 
         :return: True if the session was terminated and False otherwise.
         """
-        resp = requests.delete(f'{API_URL}/sessions', headers=self.get_request_headers())
-        if resp.status_code // 100 == 2:
-            self.session_token = None
+        response = requests.delete(f'{API_URL}/sessions', headers=self.headers)
+        if response.status_code // 100 == 2:
             return True
         return False
-
-    def get_request_headers(self) -> dict[str, str]:
-        """
-        Gets the session authentication data to be used with API requests.
-
-        :return: The request header containing session authorization data
-        """
-        return {'Authorization': self.session_token}

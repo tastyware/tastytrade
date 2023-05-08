@@ -22,7 +22,7 @@ async def symbol_search(session: Session, symbol: str) -> list[dict[str, str]]:
 
     url = f'{API_URL}/symbols/search/{symbol}'
 
-    async with aiohttp.request('GET', url, headers=session.get_request_headers()) as resp:
+    async with aiohttp.request('GET', url, headers=session.headers) as resp:
         data = await resp.json()
         if resp.status // 100 != 2:
             raise Exception(f'Failed to query symbols. Response status: {resp.status}; message: {data["error"]["message"]}')

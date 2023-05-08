@@ -17,6 +17,9 @@ from tastytrade.dxfeed.theoprice import TheoPrice
 from tastytrade.dxfeed.trade import Trade
 from tastytrade.session import Session
 
+CERT_STREAMER_URL = 'wss://streamer.cert.tastyworks.com'
+STREAMER_URL = 'wss://streamer.tastyworks.com'
+
 
 class EventType(str, Enum):
     """
@@ -48,8 +51,8 @@ class DataStreamer:
 
     """
     def __init__(self, session: Session):
-        if not session.is_valid():
-            raise Exception('Tastyworks API session not active/valid')
+        session.validate()
+
         #: The active session used to initiate the streamer or make requests
         self.tasty_session: Session = session
         #: The cometd client which handles requests behind the scenes
