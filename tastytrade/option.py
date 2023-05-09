@@ -6,7 +6,7 @@ from typing import Optional
 
 import aiohttp
 
-from tastytrade import log
+from tastytrade import logger
 from tastytrade.dxfeed.greeks import Greeks
 from tastytrade.session import Session
 
@@ -156,7 +156,7 @@ async def get_option_chain(session: Session, underlying: str, expiration: date =
 
     :return: :class:`OptionChain` object with retrieved data
     """
-    log.debug('Getting options chain for ticker: %s', underlying)
+    logger.debug('Getting options chain for ticker: %s', underlying)
     data = await _get_tasty_option_chain_data(session, underlying)
     res = []
 
