@@ -1,14 +1,13 @@
-import datetime
-from enum import Enum
+import asyncio
 from typing import AsyncIterator
 
-import aiocometd
+import json
 import requests
-from aiocometd import ConnectionType
+import websockets
 
-from tastytrade import API_URL, log
-from tastytrade.dxfeed import DATA_CHANNEL, SUBSCRIPTION_CHANNEL
-from tastytrade.dxfeed.event import Event
+from tastytrade import logger
+from tastytrade.dxfeed import Channel
+from tastytrade.dxfeed.event import Event, EventType
 from tastytrade.dxfeed.greeks import Greeks
 from tastytrade.dxfeed.profile import Profile
 from tastytrade.dxfeed.quote import Quote
@@ -16,34 +15,20 @@ from tastytrade.dxfeed.summary import Summary
 from tastytrade.dxfeed.theoprice import TheoPrice
 from tastytrade.dxfeed.trade import Trade
 from tastytrade.session import Session
-
-CERT_STREAMER_URL = 'wss://streamer.cert.tastyworks.com'
-STREAMER_URL = 'wss://streamer.tastyworks.com'
-
-
-class EventType(str, Enum):
-    """
-    This is an :class:`~enum.Enum` that contains the valid subscription types for the quote streamer.
-
-    Information on different types of events, their uses and their properties can be found at the `dxfeed Knowledge Base <https://kb.dxfeed.com/en/data-model/dxfeed-api-market-events.html>`_.
-    """
-    GREEKS = 'Greeks'
-    QUOTE = 'Quote'
-    TRADE = 'Trade'
-    PROFILE = 'Profile'
-    SUMMARY = 'Summary'
-    THEO_PRICE = 'TheoPrice'
+from tastytrade.utils import TastytradeError, validate_response
 
 
 class DataStreamer:
     """
-    A :class:`DataStreamer` object is used to fetch quotes or greeks for a given symbol or list of symbols. It should always be initialized using the :meth:`create` function, since the object cannot be fully instantiated without using async.
+    A :class:`DataStreamer` object is used to fetch quotes or greeks for a given symbol
+    or list of symbols. It should always be initialized using the :meth:`create` function,
+    since the object cannot be fully instantiated without using async.
 
     :param session: active user session to use
 
     Example usage::
 
-        session = Session('user', 'pass)
+        session = Session('user', 'pass')
         streamer = await DataStreamer.create(session)
 
         subs = ['SPY', 'GLD']  # list of quotes to fetch
@@ -51,155 +36,205 @@ class DataStreamer:
 
     """
     def __init__(self, session: Session):
-        session.validate()
-
         #: The active session used to initiate the streamer or make requests
-        self.tasty_session: Session = session
-        #: The cometd client which handles requests behind the scenes
-        self.cometd_client: aiocometd.Client
+        self.session: Session = session
+
+        self._counter = 0
+        self._lock = asyncio.Lock()
+        self._queue = asyncio.Queue()
+        self._done = False
+        #: The unique client identifier received from the server
+        self.client_id = None
+        
+        response = requests.get(f'{session.base_url}/quote-streamer-tokens', headers=session.headers)
+        validate_response(response)
+        logger.debug('response %s', json.dumps(response.json()))
+        self._auth_token = response.json()['data']['token']
+        url = response.json()['data']['websocket-url'] + '/cometd'
+        self._wss_url = url.replace('https', 'wss')
 
     @classmethod
-    async def create(cls, session: Session):
+    async def create(cls, session: Session) -> 'DataStreamer':
         """
-        async-compatible constructor for the :class:`DataStreamer` object. Simply calls the constructor and performs the asynchronous setup tasks. This should be used instead of the constructor.
+        Factory method for the :class:`DataStreamer` object. Simply calls the
+        constructor and performs the asynchronous setup tasks. This should be used
+        instead of the constructor.
 
         :param session: active user session to use
         """
-        self = DataStreamer(session)
-        await self._setup_connection()
+        self = cls(session)
+        self._connect_task = asyncio.create_task(self._connect())
+        while not self.client_id:
+            await asyncio.sleep(0.25)
+
         return self
 
-    async def _setup_connection(self):
-        aiocometd.client.DEFAULT_CONNECTION_TYPE = ConnectionType.WEBSOCKET
-        streamer_url = self._get_streamer_websocket_url()
-        log.debug('Connecting to url: %s', streamer_url)
+    async def _next_id(self):
+        async with self._lock:
+            self._counter += 1
+        return self._counter
 
-        auth_extension = AuthExtension(self._get_streamer_token())
-        cometd_client = aiocometd.Client(
-            streamer_url,
-            auth=auth_extension,
-        )
-        await cometd_client.open()
-        await cometd_client.subscribe(DATA_CHANNEL)
-
-        self.cometd_client = cometd_client
-        self.logged_in = True
-        log.debug('Connected and logged in to dxFeed data stream')
-
-        await self.reset_data_subs()
-
-    async def reset_data_subs(self):
+    async def _connect(self) -> None:
         """
-        Clears all existing subscriptions.
+        Connect to the websocket server using the URL and authorization token provided
+        during initialization. 
         """
-        log.debug('Resetting data subscriptions')
-        await self._send_msg(SUBSCRIPTION_CHANNEL, {'reset': True})
+        headers = {'Authorization': 'Bearer ' + self._auth_token}
 
-    async def add_data_sub(self, key: EventType, dxfeeds: list[str]):
+        async with websockets.connect(self._wss_url, extra_headers=headers) as websocket:
+            self.websocket = websocket
+            await self._handshake()
+
+            while not self.client_id:
+                raw_message = await self.websocket.recv()
+                message = json.loads(raw_message)[0]
+                
+                logger.debug('received: %s', message)
+                if message['channel'] == Channel.HANDSHAKE:
+                    if message['successful']:
+                        self.client_id = message['clientId']
+                        self._heartbeat_task = asyncio.create_task(self._heartbeat())
+                    else:
+                        raise TastytradeError('Handshake failed')
+        
+            while not self._done:
+                raw_message = await self.websocket.recv()
+                message = json.loads(raw_message)[0]
+                
+                if message['channel'] == Channel.DATA:
+                    logger.debug('queueing received: %s', message)
+                    await self._queue.put(message['data'])
+                elif message['channel'] == Channel.SUBSCRIPTION:
+                    logger.debug('sub received: %s', message)
+
+    async def _handshake(self) -> None:
         """
-        Subscribes to quotes for given list of symbols. Used for recurring data feeds; if you just want to get a one-time quote, use :meth:`stream`.
+        Sends a handshake message to the specified WebSocket connection.
+
+        The handshake message is a JSON-encoded dictionary with the following keys:
+        - id: a unique identifier for the message
+        - version: the version of the Bayeux protocol used
+        - minimumVersion: the minimum version of the Bayeux protocol supported
+        - channel: the channel to which the message is being sent
+        - supportedConnectionTypes: a list of supported connection types
+        - ext: an extension dictionary containing additional data
+        - advice: an advice dictionary with the following keys:
+            - timeout: the maximum time to wait for a response
+            - interval: the minimum time between retries
+
+        The handshake message is sent as a JSON-encoded array with a single element,
+        containing the handshake message as its only element.
+        """
+        id = await self._next_id()
+        message = {
+            'id': id,
+            'version': '1.0',
+            'minimumVersion': '1.0',
+            'channel': Channel.HANDSHAKE,
+            'supportedConnectionTypes': ['websocket', 'long-polling', 'callback-polling'],
+            'ext': {'com.devexperts.auth.AuthToken': self._auth_token},
+            'advice': {
+                'timeout': 60000,
+                'interval': 0
+            }
+        }
+        await self.websocket.send(json.dumps([message]))
+
+    async def listen(self) -> AsyncIterator[list[Event]]:
+        """
+        Using the existing subscriptions, pulls greeks or quotes and yield returns them.
+        Never exits unless there's an error or the channel is closed.
+        """
+        while True:
+            message = await self._queue.get()
+            logger.debug('popped message: %s', message)
+            yield _map_message(message)
+
+    async def close(self) -> None:
+        """
+        Closes the websocket connection and cancels the heartbeat task.
+        """
+        self._done = True
+        await asyncio.gather(self._connect_task, self._heartbeat_task)
+
+    async def _heartbeat(self) -> None:
+        """
+        Sends a heartbeat message every 10 seconds to keep the connection alive.
+        """
+        while not self._done:
+            id = await self._next_id()
+            message = {
+                'id': id,
+                'channel': Channel.HEARTBEAT,
+                'clientId': self.client_id,
+                'connectionType': 'websocket'
+            }
+            logger.debug('sending heartbeat: %s', message)
+            await self.websocket.send(json.dumps([message]))
+            # send the heartbeat every 10 seconds
+            await asyncio.sleep(10)
+
+    async def subscribe(self, key: EventType, dxfeeds: list[str]) -> None:
+        """
+        Subscribes to quotes for given list of symbols. Used for recurring data feeds;
+        if you just want to get a one-time quote, use :meth:`stream`.
 
         :param key: type of subscription to add
         :param dxfeeds: list of symbols to subscribe for
         """
-        streamer_dict = {key: dxfeeds}
-        log.debug(f'Adding subscription: {streamer_dict}')
-        await self._send_msg(SUBSCRIPTION_CHANNEL, {'add': streamer_dict})
+        id = await self._next_id()
+        message = {
+            'id': id,
+            'channel': Channel.SUBSCRIPTION,
+            'data': {
+                'reset': True,
+                'add': {key: dxfeeds}
+            },
+            'clientId': self.client_id
+        }
+        logger.debug('sending subscription: %s', message)
+        await self.websocket.send(json.dumps([message]))
 
-    async def remove_data_sub(self, key: EventType, dxfeeds: list[str]):
+    async def unsubscribe(self, key: EventType, dxfeeds: list[str]) -> None:
         """
         Removes existing subscription for given list of symbols.
 
         :param key: type of subscription to remove
         :param dxfeeds: list of symbols to unsubscribe from
         """
-        streamer_dict = {key: dxfeeds}
-        log.debug(f'Removing subscription: {streamer_dict}')
-        await self._send_msg(SUBSCRIPTION_CHANNEL, {'remove': streamer_dict})
-
-    async def _send_msg(self, channel, message):
-        log.debug('[dxFeed] sending: %s on channel: %s', message, channel)
-        await self.cometd_client.publish(channel, message)
-
-    def _get_streamer_token(self):
-        return self._get_streamer_data()['data']['token']
-
-    def _get_streamer_data(self):
-        if hasattr(self, 'streamer_data_created') and (datetime.datetime.now() - self.streamer_data_created).total_seconds() < 60:
-            return self.streamer_data
-
-        resp = requests.get(f'{API_URL}/quote-streamer-tokens', headers=self.tasty_session.get_request_headers())
-        if resp.status_code // 100 != 2:
-            raise Exception('Could not get quote streamer data, error message: {}'.format(
-                resp.json()['error']['message']
-            ))
-        self.streamer_data = resp.json()
-        self.streamer_data_created = datetime.datetime.now()
-        return resp.json()
-
-    def _get_streamer_websocket_url(self):
-        socket_url = self._get_streamer_data()['data']['websocket-url']
-        full_url = '{}/cometd'.format(socket_url)
-        return full_url
-
-    async def close(self):
-        """
-        Closes all existing subscriptions and the cometd client. Should be called to avoid asyncio exceptions when you finish using the streamer.
-        """
-        await self.cometd_client.close()
-
-    async def listen(self) -> AsyncIterator[list[Event]]:
-        """
-        Using the existing subscriptions, pulls greeks or quotes and yield returns them. Never exits unless there's an error or the channel is closed.
-        """
-        async for msg in self.cometd_client:
-            log.debug('[dxFeed] received: %s', msg)
-            if msg['channel'] != DATA_CHANNEL:
-                continue
-            yield _map_message(msg['data'])
+        id = await self._next_id()
+        message = {
+            'id': id,
+            'channel': Channel.SUBSCRIPTION,
+            'clientId': self.client_id,
+            'data': {
+                'reset': True,
+                'remove': {key: dxfeeds}
+            }
+        }
+        logger.debug('sending unsubscription: %s', message)
+        await self.websocket.send(json.dumps([message]))
 
     async def stream(self, key: EventType, dxfeeds: list[str]) -> list[Event]:
         """
-        Using the given information, subscribes to the list of symbols passed, streams the requested information once, then unsubscribes. If you want to maintain the subscription open, add a subscription with :meth:`add_data_sub` and listen with :meth:`listen`.
+        Using the given information, subscribes to the list of symbols passed, streams
+        the requested information once, then unsubscribes. If you want to maintain the
+        subscription open, add a subscription with :meth:`subscribe` and listen with
+        :meth:`listen`.
 
         :param key: the type of subscription to stream, either greeks or quotes
         :param dxfeeds: list of symbols to subscribe to
 
-        :return: list of quotes or greeks pulled.
+        :return: list of :class:`~tastytrade.dxfeed.event.Event`s pulled.
         """
-        await self.add_data_sub(key, dxfeeds)
-        data: list[Event] = []
+        await self.subscribe(key, dxfeeds)
+        data = []
         async for item in self.listen():
             data.extend(item)
             if len(data) >= len(dxfeeds):
                 break
-        await self.remove_data_sub(key, dxfeeds)
+        await self.unsubscribe(key, dxfeeds)
         return data
-
-
-class AuthExtension(aiocometd.AuthExtension):
-    def __init__(self, streamer_token: str):
-        self.streamer_token = streamer_token
-
-    def _get_login_msg(self):
-        return {'ext': {'com.devexperts.auth.AuthToken': f'{self.streamer_token}'}}
-
-    def _get_advice_msg(self):
-        return {
-            'timeout': 60 * 1000,
-            'interval': 0
-        }
-
-    async def incoming(self, payload, headers=None):
-        pass
-
-    async def outgoing(self, payload, headers=None):
-        for entry in payload:
-            if 'clientId' not in entry:
-                entry.update(self._get_login_msg())
-
-    async def authenticate(self):
-        pass
 
 
 def _map_message(message) -> list[Event]:
@@ -228,6 +263,6 @@ def _map_message(message) -> list[Event]:
     elif msg_type == EventType.TRADE:
         res = Trade.from_stream(data)
     else:
-        raise Exception("Unknown message type received from streamer: {}".format(message))
+        raise TastytradeError(f'Unknown message type received from streamer: {message}')
 
     return res
