@@ -1,7 +1,8 @@
 import asyncio
-from typing import AsyncIterator
-
 import json
+from asyncio import Lock, Queue, Task
+from typing import AsyncIterator, Optional
+
 import requests
 import websockets
 
@@ -40,12 +41,13 @@ class DataStreamer:
         self.session: Session = session
 
         self._counter = 0
-        self._lock = asyncio.Lock()
-        self._queue = asyncio.Queue()
+        self._lock: Lock = Lock()
+        self._queue: Queue = Queue()
         self._done = False
+        self._connect_task: Optional[Task] = None
         #: The unique client identifier received from the server
         self.client_id = None
-        
+
         response = requests.get(f'{session.base_url}/quote-streamer-tokens', headers=session.headers)
         validate_response(response)
         logger.debug('response %s', json.dumps(response.json()))
@@ -77,18 +79,18 @@ class DataStreamer:
     async def _connect(self) -> None:
         """
         Connect to the websocket server using the URL and authorization token provided
-        during initialization. 
+        during initialization.
         """
         headers = {'Authorization': 'Bearer ' + self._auth_token}
 
-        async with websockets.connect(self._wss_url, extra_headers=headers) as websocket:
+        async with websockets.connect(self._wss_url, extra_headers=headers) as websocket:  # type: ignore
             self.websocket = websocket
             await self._handshake()
 
             while not self.client_id:
                 raw_message = await self.websocket.recv()
                 message = json.loads(raw_message)[0]
-                
+
                 logger.debug('received: %s', message)
                 if message['channel'] == Channel.HANDSHAKE:
                     if message['successful']:
@@ -96,11 +98,11 @@ class DataStreamer:
                         self._heartbeat_task = asyncio.create_task(self._heartbeat())
                     else:
                         raise TastytradeError('Handshake failed')
-        
+
             while not self._done:
                 raw_message = await self.websocket.recv()
                 message = json.loads(raw_message)[0]
-                
+
                 if message['channel'] == Channel.DATA:
                     logger.debug('queueing received: %s', message)
                     await self._queue.put(message['data'])
@@ -155,6 +157,7 @@ class DataStreamer:
         Closes the websocket connection and cancels the heartbeat task.
         """
         self._done = True
+        assert(self._connect_task is not None)  # something went horribly wrong
         await asyncio.gather(self._connect_task, self._heartbeat_task)
 
     async def _heartbeat(self) -> None:

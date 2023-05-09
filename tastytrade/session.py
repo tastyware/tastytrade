@@ -1,4 +1,5 @@
 from typing import Optional
+
 import requests
 
 from tastytrade import API_URL, CERT_URL
