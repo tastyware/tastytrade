@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 
 import requests
 
@@ -66,3 +66,14 @@ class Session:
         """
         response = requests.delete(f'{self.base_url}/sessions', headers=self.headers)
         return (response.status_code // 100 == 2)
+    
+    def get_customer(self) -> dict[str, Any]:
+        """
+        Gets the customer dict from the API.
+
+        :return: the customer dict.
+        """
+        response = requests.get(f'{self.base_url}/customers/me', headers=self.headers)
+        validate_response(response)  # throws exception if not 200
+
+        return response.json()['data']
