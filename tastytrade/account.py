@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Any, Optional
 
 import requests
@@ -9,7 +9,7 @@ from tastytrade.utils import validate_response
 
 
 @dataclass
-class TradingAccount:
+class Account:
     account_number: str
     opened_at: datetime
     nickname: str
@@ -58,7 +58,7 @@ class TradingAccount:
             headers=session.headers
         )
         validate_response(response)  # throws exception if not 200
-        
+
         accounts = []
         data = response.json()['data']
         for entry in data['items']:
@@ -68,7 +68,7 @@ class TradingAccount:
             accounts.append(cls(account))
 
         return accounts
-    
+
     @classmethod
     def get_account(cls, session: Session, account_id: str) -> 'Account':
         """
@@ -102,7 +102,7 @@ class TradingAccount:
         validate_response(response)  # throws exception if not 200
 
         return response.json()['data']
-    
+
     def get_balances(self, session: Session) -> dict[str, Any]:
         """
         Get the current balances of the account.
@@ -114,9 +114,9 @@ class TradingAccount:
             headers=session.headers
         )
         validate_response(response)  # throws exception if not 200
-        
+
         return response.json()['data']
-    
+
     def get_balance_snapshots(self, session: Session, snapshot_date: Optional[date] = None,
                               time_of_day: Optional[str] = None) -> list[dict[str, Any]]:
         """
@@ -138,10 +138,10 @@ class TradingAccount:
         response = requests.get(
             f'{session.base_url}/accounts/{self.account_number}/balance-snapshots',
             headers=session.headers,
-            params={k: v for k, v in params.items() if v is not None}
+            params={k: v for k, v in params.items() if v is not None}  # type: ignore
         )
         validate_response(response)  # throws exception if not 200
-        
+
         return response.json()['data']['items']
 
     def get_positions(self, session: Session, underlying_symbols: Optional[list[str]] = None,
@@ -177,7 +177,7 @@ class TradingAccount:
         response = requests.get(
             f'{session.base_url}/accounts/{self.account_number}/positions',
             headers=session.headers,
-            params={k: v for k, v in params.items() if v is not None}
+            params={k: v for k, v in params.items() if v is not None}  # type: ignore
         )
         validate_response(response)  # throws exception if not 200
 

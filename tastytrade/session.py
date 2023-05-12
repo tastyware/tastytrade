@@ -66,7 +66,7 @@ class Session:
         """
         response = requests.delete(f'{self.base_url}/sessions', headers=self.headers)
         return (response.status_code // 100 == 2)
-    
+
     def get_customer(self) -> dict[str, Any]:
         """
         Gets the customer dict from the API.
