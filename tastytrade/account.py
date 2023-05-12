@@ -36,7 +36,7 @@ class Account:
 
     def __init__(self, json: dict[str, Any]):
         """
-        Creates an Account object from the JSON returned by the Tastytrade API.
+        Creates an Account object from the Tastytrade 'Account' object in JSON format.
         """
         for key in json:
             snake_case = key.replace('-', '_')
@@ -50,7 +50,7 @@ class Account:
 
         :param session: the session to use for the request.
 
-        :return: a list of Account objects.
+        :return: a list of :class:`Account` objects.
         """
 
         response = requests.get(
@@ -77,7 +77,7 @@ class Account:
         :param session: the session to use for the request.
         :param account_id: the account ID to get.
 
-        :return: account corresponding to the given ID.
+        :return: :class:`Account` object corresponding to the given ID.
         """
 
         response = requests.get(
@@ -94,6 +94,8 @@ class Account:
         Get the trading status of the account.
 
         :param session: the session to use for the request.
+
+        :return: a Tastytrade 'TradingStatus' object in JSON format.
         """
         response = requests.get(
             f'{session.base_url}/accounts/{self.account_number}/trading-status',
@@ -108,6 +110,8 @@ class Account:
         Get the current balances of the account.
 
         :param session: the session to use for the request.
+
+        :return: a Tastytrade 'AccountBalance' object in JSON format.
         """
         response = requests.get(
             f'{session.base_url}/accounts/{self.account_number}/balances',
@@ -117,8 +121,11 @@ class Account:
 
         return response.json()['data']
 
-    def get_balance_snapshots(self, session: Session, snapshot_date: Optional[date] = None,
-                              time_of_day: Optional[str] = None) -> list[dict[str, Any]]:
+    def get_balance_snapshots(
+        self, session: Session,
+        snapshot_date: Optional[date] = None,
+        time_of_day: Optional[str] = None
+    ) -> list[dict[str, Any]]:
         """
         Returns a list of two balance snapshots. The first one is the specified date,
         or, if not provided, the oldest snapshot available. The second one is the most
@@ -129,6 +136,8 @@ class Account:
         :param session: the session to use for the request.
         :param snapshot_date: the date of the snapshot to get.
         :param time_of_day: the time of day of the snapshot to get, either 'EOD' or 'BOD'.
+
+        :return: a list of two Tastytrade 'AccountBalanceSnapshot' objects in JSON format.
         """
         params = {
             'snapshot-date': snapshot_date,
@@ -144,11 +153,17 @@ class Account:
 
         return response.json()['data']['items']
 
-    def get_positions(self, session: Session, underlying_symbols: Optional[list[str]] = None,
-                      symbol: Optional[str] = None, instrument_type: Optional[str] = None,
-                      include_closed: bool = False, underlying_product_code: Optional[str] = None,
-                      partition_keys: Optional[list[str]] = None, net_positions: bool = False,
-                      include_marks: bool = False) -> list[dict[str, Any]]:
+    def get_positions(
+        self, session: Session,
+        underlying_symbols: Optional[list[str]] = None,
+        symbol: Optional[str] = None,
+        instrument_type: Optional[str] = None,
+        include_closed: bool = False,
+        underlying_product_code: Optional[str] = None,
+        partition_keys: Optional[list[str]] = None,
+        net_positions: bool = False,
+        include_marks: bool = False
+    ) -> list[dict[str, Any]]:
         """
         Get the current positions of the account.
 
@@ -163,6 +178,8 @@ class Account:
         :param partition_keys: account partition keys.
         :param net_positions: returns net positions grouped by instrument type and symbol.
         :param include_marks: include current quote mark (note: can decrease performance).
+
+        :return: a list of Tastytrade 'CurrentPosition' objects in JSON format.
         """
         params = {
             'underlying-symbol': underlying_symbols,
@@ -182,3 +199,132 @@ class Account:
         validate_response(response)  # throws exception if not 200
 
         return response.json()['data']['items']
+
+    def get_history(
+        self,
+        session: Session,
+        per_page: int = 250,
+        page_offset: Optional[int] = None,
+        sort: str = 'Desc',
+        type: Optional[str] = None,
+        sub_types: Optional[list[str]] = None,
+        start_date: Optional[date] = None,
+        end_date: date = date.today(),
+        instrument_type: Optional[str] = None,
+        symbol: Optional[str] = None,
+        underlying_symbol: Optional[str] = None,
+        action: Optional[str] = None,
+        partition_key: Optional[str] = None,
+        futures_symbol: Optional[str] = None,
+        start_at: Optional[datetime] = None,
+        end_at: Optional[datetime] = None
+    ) -> list[dict[str, Any]]:
+        """
+        Get transaction history of the account.
+
+        :param session: the session to use for the request.
+        :param per_page: the number of transactions to return per page.
+        :param page_offset: the page to fetch. Use this if you only want a specific page.
+        :param sort: the order to sort results in, either 'Desc' or 'Asc'.
+        :param type: the type of transaction.
+        :param sub_types: an array of transaction subtypes to filter by.
+        :param start_date: the start date of transactions to query.
+        :param end_date: the end date of transactions to query.
+        :param instrument_type:
+            the type of instrument, i.e. Bond, Cryptocurrency, Equity, Equity Offering,
+            Equity Option, Future, Future Option, Index, Unknown or Warrant.
+        :param symbol: a single symbol.
+        :param underlying_symbol: the underlying symbol.
+        :param action:
+            the action of the transaction: 'Sell to Open', 'Sell to Close', 'Buy to Open',
+            'Buy to Close', 'Sell' or 'Buy'.
+        :param partition_key: account partition key.
+        :param futures_symbol: the full TW Future Symbol, e.g. /ESZ9, /NGZ19.
+        :param start_at: datetime start range for filtering transactions in full date-time.
+        :param end_at: datetime end range for filtering transactions in full date-time.
+
+        :return: a list of Tastytrade 'Transaction' objects in JSON format.
+        """
+        params = {
+            'per-page': per_page,
+            'page-offset': page_offset,
+            'sort': sort,
+            'type': type,
+            'sub-type': sub_types,
+            'start-date': start_date,
+            'end-date': end_date,
+            'instrument-type': instrument_type,
+            'symbol': symbol,
+            'underlying-symbol': underlying_symbol,
+            'action': action,
+            'partition-key': partition_key,
+            'futures-symbol': futures_symbol,
+            'start-at': start_at,
+            'end-at': end_at
+        }
+        # if page offset is specified, only get that page
+        if params['page-offset']:
+            is_paged = False
+        # if page offset is not specified, get all pages
+        else:
+            is_paged = True
+            params['page-offset'] = 0
+
+        # loop through pages and get all transactions
+        results = []
+        while True:
+            response = requests.get(
+                f'{session.base_url}/accounts/{self.account_number}/transactions',
+                headers=session.headers,
+                params={k: v for k, v in params.items() if v is not None}  # type: ignore
+            )
+            validate_response(response)
+
+            data = response.json()
+            results.extend(data['data']['items'])
+
+            if not is_paged:
+                break
+
+            pagination = data['pagination']
+            if pagination['page-offset'] >= pagination['total-pages'] - 1:
+                break
+            params['page-offset'] += 1  # type: ignore
+
+        return results
+
+    def get_transaction(self, session: Session, id: int) -> dict[str, Any]:
+        """
+        Get a single transaction by ID.
+
+        :param session: the session to use for the request.
+        :param id: the ID of the transaction to fetch.
+
+        :return: a Tastytrade 'Transaction' object in JSON format.
+        """
+        response = requests.get(
+            f'{session.base_url}/accounts/{self.account_number}/transactions/{id}',
+            headers=session.headers
+        )
+        validate_response(response)
+
+        return response.json()['data']
+
+    def get_total_fees(self, session: Session, date: date = date.today()) -> dict[str, Any]:
+        """
+        Get the total fees for a given date.
+
+        :param session: the session to use for the request.
+        :param date: the date to get fees for.
+
+        :return: a dict containing the total fees and the price effect.
+        """
+        params = {'date': date}
+        response = requests.get(
+            f'{session.base_url}/accounts/{self.account_number}/transactions/total-fees',
+            headers=session.headers,
+            params=params  # type: ignore
+        )
+        validate_response(response)
+
+        return response.json()['data']
