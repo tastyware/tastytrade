@@ -13,7 +13,8 @@ class Session:
     :param login: tastytrade username or email
     :param password: tastytrade password or a remember token obtained previously
     :param remember_me:
-        whether or not to generate a token which can be used to login without a password
+        whether or not to generate a token which can be used to login without a password;
+        appears to be bugged currently.
     :param two_factor_authentication:
         if two factor authentication is enabled, this is the code sent to the user's device
     :param is_certification: whether or not to use the certification API
@@ -38,7 +39,7 @@ class Session:
         validate_response(response)  # throws exception if not 200
 
         json = response.json()
-        #: The user dict returned by the API; contains email, username and ID
+        #: The user dict returned by the API; contains basic user information
         self.user: dict[str, str] = json['data']['user']
         #: The session token used to authenticate requests
         self.session_token: str = json['data']['session-token']
