@@ -122,10 +122,10 @@ class Account:
         return response.json()['data']
 
     def get_balance_snapshots(
-            self, session: Session,
-            snapshot_date: Optional[date] = None,
-            time_of_day: Optional[str] = None
-        ) -> list[dict[str, Any]]:
+        self, session: Session,
+        snapshot_date: Optional[date] = None,
+        time_of_day: Optional[str] = None
+    ) -> list[dict[str, Any]]:
         """
         Returns a list of two balance snapshots. The first one is the specified date,
         or, if not provided, the oldest snapshot available. The second one is the most
@@ -154,16 +154,16 @@ class Account:
         return response.json()['data']['items']
 
     def get_positions(
-            self, session: Session,
-            underlying_symbols: Optional[list[str]] = None,
-            symbol: Optional[str] = None,
-            instrument_type: Optional[str] = None,
-            include_closed: bool = False,
-            underlying_product_code: Optional[str] = None,
-            partition_keys: Optional[list[str]] = None,
-            net_positions: bool = False,
-            include_marks: bool = False
-        ) -> list[dict[str, Any]]:
+        self, session: Session,
+        underlying_symbols: Optional[list[str]] = None,
+        symbol: Optional[str] = None,
+        instrument_type: Optional[str] = None,
+        include_closed: bool = False,
+        underlying_product_code: Optional[str] = None,
+        partition_keys: Optional[list[str]] = None,
+        net_positions: bool = False,
+        include_marks: bool = False
+    ) -> list[dict[str, Any]]:
         """
         Get the current positions of the account.
 
@@ -201,24 +201,24 @@ class Account:
         return response.json()['data']['items']
 
     def get_history(
-            self,
-            session: Session,
-            per_page: int = 250,
-            page_offset: Optional[int] = None,
-            sort: str = 'Desc',
-            type: Optional[str] = None,
-            sub_types: Optional[list[str]] = None,
-            start_date: Optional[date] = None,
-            end_date: date = date.today(),
-            instrument_type: Optional[str] = None,
-            symbol: Optional[str] = None,
-            underlying_symbol: Optional[str] = None,
-            action: Optional[str] = None,
-            partition_key: Optional[str] = None,
-            futures_symbol: Optional[str] = None,
-            start_at: Optional[datetime] = None,
-            end_at: Optional[datetime] = None
-        ) -> list[dict[str, Any]]:
+        self,
+        session: Session,
+        per_page: int = 250,
+        page_offset: Optional[int] = None,
+        sort: str = 'Desc',
+        type: Optional[str] = None,
+        sub_types: Optional[list[str]] = None,
+        start_date: Optional[date] = None,
+        end_date: date = date.today(),
+        instrument_type: Optional[str] = None,
+        symbol: Optional[str] = None,
+        underlying_symbol: Optional[str] = None,
+        action: Optional[str] = None,
+        partition_key: Optional[str] = None,
+        futures_symbol: Optional[str] = None,
+        start_at: Optional[datetime] = None,
+        end_at: Optional[datetime] = None
+    ) -> list[dict[str, Any]]:
         """
         Get transaction history of the account.
 
@@ -289,7 +289,7 @@ class Account:
             pagination = data['pagination']
             if pagination['page-offset'] >= pagination['total-pages'] - 1:
                 break
-            params['page-offset'] += 1
+            params['page-offset'] += 1  # type: ignore
 
         return results
 
@@ -323,7 +323,7 @@ class Account:
         response = requests.get(
             f'{session.base_url}/accounts/{self.account_number}/transactions/total-fees',
             headers=session.headers,
-            params=params
+            params=params  # type: ignore
         )
         validate_response(response)
 
