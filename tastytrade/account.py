@@ -5,7 +5,7 @@ from typing import Any, Optional
 import requests
 
 from tastytrade.session import Session
-from tastytrade.utils import validate_response
+from tastytrade.utils import TastytradeError, validate_response
 
 
 @dataclass
@@ -122,7 +122,8 @@ class Account:
         return response.json()['data']
 
     def get_balance_snapshots(
-        self, session: Session,
+        self,
+        session: Session,
         snapshot_date: Optional[date] = None,
         time_of_day: Optional[str] = None
     ) -> list[dict[str, Any]]:
@@ -154,7 +155,8 @@ class Account:
         return response.json()['data']['items']
 
     def get_positions(
-        self, session: Session,
+        self,
+        session: Session,
         underlying_symbols: Optional[list[str]] = None,
         symbol: Optional[str] = None,
         instrument_type: Optional[str] = None,
@@ -324,6 +326,76 @@ class Account:
             f'{session.base_url}/accounts/{self.account_number}/transactions/total-fees',
             headers=session.headers,
             params=params  # type: ignore
+        )
+        validate_response(response)
+
+        return response.json()['data']
+
+    def get_net_liquidating_value_history(
+        self,
+        session: Session,
+        time_back: Optional[str] = None,
+        start_time: Optional[datetime] = None
+    ) -> list[dict[str, Any]]:
+        """
+        Returns a list of account net liquidating value snapshots over the specified time period.
+
+        :param session: the session to use for the request.
+        :param time_back:
+            the time period to get net liquidating value snapshots for. This param is required
+            if start_time is not given. Possible values are: '1d', '1m', '3m', '6m', '1y', 'all'.
+        :param start_time:
+            the start point for the query. This param is required is time-back is not given.
+            If given, will take precedence over time-back.
+
+        :return: a list of Tastytrade 'NetLiqOhlc' objects in JSON format.
+        """
+        if start_time:
+            # format to Tastytrade DateTime format
+            start_time = str(start_time).replace(' ', 'T').split('.')[0] + 'Z'
+            params = {'start-time': start_time}
+        elif not time_back:
+            raise TastytradeError('Either time_back or start_time must be specified.')
+        else:
+            params = {'time-back': time_back}
+
+        response = requests.get(
+            f'{session.base_url}/accounts/{self.account_number}/net-liq/history',
+            headers=session.headers,
+            params=params  # type: ignore
+        )
+        validate_response(response)
+
+        return response.json()['data']['items']
+
+    def get_position_limit(self, session: Session) -> dict[str, Any]:
+        """
+        Get the maximum order size information for the account.
+
+        :param session: the session to use for the request.
+
+        :return: a Tastytrade 'PositionLimit' object in JSON format.
+        """
+        response = requests.get(
+            f'{session.base_url}/accounts/{self.account_number}/position-limit',
+            headers=session.headers
+        )
+        validate_response(response)
+
+        return response.json()['data']
+    
+    def get_effective_margin_requirements(self, session: Session, symbol: str) -> dict[str, Any]:
+        """
+        Get the effective margin requirements for a given symbol.
+
+        :param session: the session to use for the request.
+        :param symbol: the symbol to get margin requirements for.
+
+        :return: a Tastytrade 'MarginRequirement' object in JSON format.
+        """
+        response = requests.get(
+            f'{session.base_url}/accounts/{self.account_number}/margin-requirements/{symbol}/effective',
+            headers=session.headers
         )
         validate_response(response)
 

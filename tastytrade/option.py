@@ -191,4 +191,5 @@ async def _get_tasty_option_chain_data(session, underlying) -> dict:
         resp = await response.json()
 
         # NOTE: Have not seen an example with more than 1 item. No idea what that would be.
+        # oops! Looks like futures options and index options can have more than one.
         return resp['data']['items'][0]
