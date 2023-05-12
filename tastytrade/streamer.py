@@ -46,7 +46,7 @@ class AlertStreamer:
 
         session = Session('user', 'pass')
         streamer = await AlertStreamer.create(session)
-        
+
         await streamer.public_watchlists_subscribe()
         await streamer.quote_alerts_subscribe()
         await streamer.user_message_subscribe(session)
@@ -61,8 +61,8 @@ class AlertStreamer:
         self.base_url = CERT_STREAMER_URL if session.is_certification else STREAMER_URL
 
         self._done = False
-        self._queue = Queue()
-        self._websocket = None
+        self._queue: Queue = Queue()
+        self._connect_task: Optional[Task] = None
 
     @classmethod
     async def create(cls, session: Session) -> 'AlertStreamer':
@@ -77,7 +77,6 @@ class AlertStreamer:
         self._connect_task = asyncio.create_task(self._connect())
         while not self._websocket:
             await asyncio.sleep(0.1)
-        self._heartbeat_task = asyncio.create_task(self._heartbeat())
 
         return self
 
@@ -89,12 +88,13 @@ class AlertStreamer:
         headers = {'Authorization': f'Bearer {self.token}'}
         async with websockets.connect(self.base_url, extra_headers=headers) as websocket:  # type: ignore
             self._websocket = websocket
+            self._heartbeat_task = asyncio.create_task(self._heartbeat())
 
             while not self._done:
                 raw_message = await self._websocket.recv()
                 logger.debug('raw message: %s', raw_message)
                 await self._queue.put(json.loads(raw_message))
-                
+
     async def listen(self) -> AsyncIterator[Any]:
         """
         Iterate over non-heartbeat messages received from the streamer.
@@ -107,7 +107,7 @@ class AlertStreamer:
     async def account_subscribe(self, accounts: list[Account]) -> None:
         """
         Subscribes to account-level updates (balances, orders, positions).
-        
+
         :param accounts: list of :class:`Account`s to subscribe to updates for
         """
         await self._subscribe(SubscriptionType.ACCOUNT, [acc.account_number for acc in accounts])
@@ -158,7 +158,7 @@ class AlertStreamer:
             'action': subscription
         }
         if value:
-            message['value'] = value
+            message['value'] = value  # type: ignore
         logger.debug('sending alert subscription: %s', message)
         await self._websocket.send(json.dumps(message))
 
@@ -223,7 +223,7 @@ class DataStreamer:
         Connect to the websocket server using the URL and authorization token provided
         during initialization.
         """
-        headers = {'Authorization': 'Bearer ' + self._auth_token}
+        headers = {'Authorization': f'Bearer {self._auth_token}'}
 
         async with websockets.connect(self._wss_url, extra_headers=headers) as websocket:  # type: ignore
             self._websocket = websocket
