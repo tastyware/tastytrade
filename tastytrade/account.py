@@ -350,9 +350,10 @@ class Account:
 
         :return: a list of Tastytrade 'NetLiqOhlc' objects in JSON format.
         """
+        params: dict[str, Any] = {}
         if start_time:
             # format to Tastytrade DateTime format
-            start_time = str(start_time).replace(' ', 'T').split('.')[0] + 'Z'
+            start_time = str(start_time).replace(' ', 'T').split('.')[0] + 'Z'  # type: ignore
             params = {'start-time': start_time}
         elif not time_back:
             raise TastytradeError('Either time_back or start_time must be specified.')
@@ -362,7 +363,7 @@ class Account:
         response = requests.get(
             f'{session.base_url}/accounts/{self.account_number}/net-liq/history',
             headers=session.headers,
-            params=params  # type: ignore
+            params=params
         )
         validate_response(response)
 
@@ -383,7 +384,7 @@ class Account:
         validate_response(response)
 
         return response.json()['data']
-    
+
     def get_effective_margin_requirements(self, session: Session, symbol: str) -> dict[str, Any]:
         """
         Get the effective margin requirements for a given symbol.
