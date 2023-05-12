@@ -7,7 +7,7 @@ from tastytrade.order import Order, OrderPriceEffect
 
 
 @dataclass
-class TradingAccount:
+class Account:
     account_number: str
     external_id: str
     is_margin: bool
@@ -63,7 +63,7 @@ class TradingAccount:
             'opened_at': data['opened-at']
         }
 
-        return TradingAccount(**new_data)
+        return Account(**new_data)
 
     @classmethod
     async def get_accounts(cls, session, include_closed=False) -> list:
@@ -92,7 +92,7 @@ class TradingAccount:
             acct_data = entry['account']
             if not include_closed and acct_data['is-closed']:
                 continue
-            acct = TradingAccount.from_dict(acct_data)
+            acct = Account.from_dict(acct_data)
             res.append(acct)
 
         return res

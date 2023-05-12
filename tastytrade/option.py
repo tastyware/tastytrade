@@ -183,7 +183,7 @@ async def get_option_chain(session: Session, underlying: str, expiration: date =
 async def _get_tasty_option_chain_data(session, underlying) -> dict:
     async with aiohttp.request(
             'GET',
-            f'{session.API_url}/option-chains/{underlying}/nested',
+            f'{session.base_url}/option-chains/{underlying}/nested',
             headers=session.headers) as response:
 
         if response.status != 200:
