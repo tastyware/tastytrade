@@ -1,223 +1,184 @@
 from dataclasses import dataclass
+from datetime import date, datetime
+from typing import Any, Optional
 
-import aiohttp
+import requests
 
-from tastytrade import API_URL
-from tastytrade.order import Order, OrderPriceEffect
+from tastytrade.session import Session
+from tastytrade.utils import validate_response
 
 
 @dataclass
 class Account:
     account_number: str
-    external_id: str
-    is_margin: bool
-    is_closed: bool
-    account_type_name: str
+    opened_at: datetime
     nickname: str
-    opened_at: str
+    account_type_name: str
+    is_closed: bool
+    day_trader_status: Optional[str] = None
+    closed_at: Optional[str] = None
+    is_firm_error: Optional[bool] = None
+    is_firm_proprietary: Optional[bool] = None
+    is_futures_approved: Optional[bool] = None
+    is_test_drive: Optional[str] = None
+    margin_or_cash: Optional[str] = None
+    is_foreign: Optional[str] = None
+    funding_date: Optional[date] = None
+    investment_objective: Optional[str] = None
+    liquidity_needs: Optional[str] = None
+    risk_tolerance: Optional[str] = None
+    investment_time_horizon: Optional[str] = None
+    futures_account_purpose: Optional[str] = None
+    external_fdid: Optional[str] = None
+    suitable_options_level: Optional[str] = None
+    created_at: Optional[datetime] = None
+    submitting_user_id: Optional[str] = None
 
-    async def execute_order(self, order: Order, session, dry_run=True):
+    def __init__(self, json: dict[str, Any]):
         """
-        Execute an order. If doing a dry run, the order isn't placed but simulated (server-side).
-
-        Args:
-            order (Order): The order object to execute.
-            session (TastyAPISession): The tastyworks session onto which to execute the order.
-            dry_run (bool): Whether to do a test (dry) run.
-
-        Returns:
-            bool: Whether the order was successful.
+        Creates an Account object from the JSON returned by the Tastytrade API.
         """
-        if not order.check_is_order_executable():
-            raise Exception('Order is not executable, most likely due to missing data')
-
-        if not session.is_valid():
-            raise Exception('The supplied session is not active and valid')
-
-        url = f'{API_URL}/accounts/{self.account_number}/orders'
-        if dry_run:
-            url = f'{url}/dry-run'
-
-        body = _get_execute_order_json(order)
-
-        async with aiohttp.request('POST', url, headers=session.headers, json=body) as resp:
-            if resp.status == 201:
-                return (await resp.json())['data']
-            elif resp.status == 400:
-                raise Exception('Order execution failed: {}'.format(await resp.text()))
-            else:
-                raise Exception('Unknown remote error {}: {}'.format(resp.status, await resp.text()))
+        for key in json:
+            snake_case = key.replace('-', '_')
+            setattr(self, snake_case, json[key])
 
     @classmethod
-    def from_dict(cls, data: dict):
+    def get_accounts(cls, session: Session, include_closed=False) -> list['Account']:
         """
-        Parses a TradingAccount object from a dict.
+        Gets all trading accounts from the Tastyworks platform. By default
+        excludes closed accounts from the results.
+
+        :param session: the session to use for the request.
+
+        :return: a list of Account objects.
         """
-        new_data = {
-            'is_margin': True if data['margin-or-cash'] == 'Margin' else False,
-            'account_number': data['account-number'],
-            'external_id': data['external-id'],
-            'is_closed': True if data['is-closed'] else False,
-            'account_type_name': data['account-type-name'],
-            'nickname': data['nickname'],
-            'opened_at': data['opened-at']
+
+        response = requests.get(
+            f'{session.base_url}/customers/me/accounts',
+            headers=session.headers
+        )
+        validate_response(response)  # throws exception if not 200
+
+        accounts = []
+        data = response.json()['data']
+        for entry in data['items']:
+            account = entry['account']
+            if not include_closed and account['is-closed']:
+                continue
+            accounts.append(cls(account))
+
+        return accounts
+
+    @classmethod
+    def get_account(cls, session: Session, account_id: str) -> 'Account':
+        """
+        Returns a new :class:`Account` object for the given account ID.
+
+        :param session: the session to use for the request.
+        :param account_id: the account ID to get.
+
+        :return: account corresponding to the given ID.
+        """
+
+        response = requests.get(
+            f'{session.base_url}/customers/me/accounts/{account_id}',
+            headers=session.headers
+        )
+        validate_response(response)  # throws exception if not 200
+
+        account = response.json()['data']
+        return cls(account)
+
+    def get_trading_status(self, session: Session) -> dict[str, Any]:
+        """
+        Get the trading status of the account.
+
+        :param session: the session to use for the request.
+        """
+        response = requests.get(
+            f'{session.base_url}/accounts/{self.account_number}/trading-status',
+            headers=session.headers
+        )
+        validate_response(response)  # throws exception if not 200
+
+        return response.json()['data']
+
+    def get_balances(self, session: Session) -> dict[str, Any]:
+        """
+        Get the current balances of the account.
+
+        :param session: the session to use for the request.
+        """
+        response = requests.get(
+            f'{session.base_url}/accounts/{self.account_number}/balances',
+            headers=session.headers
+        )
+        validate_response(response)  # throws exception if not 200
+
+        return response.json()['data']
+
+    def get_balance_snapshots(self, session: Session, snapshot_date: Optional[date] = None,
+                              time_of_day: Optional[str] = None) -> list[dict[str, Any]]:
+        """
+        Returns a list of two balance snapshots. The first one is the specified date,
+        or, if not provided, the oldest snapshot available. The second one is the most
+        recent snapshot.
+
+        If you provide the snapshot date, you must also provide the time of day.
+
+        :param session: the session to use for the request.
+        :param snapshot_date: the date of the snapshot to get.
+        :param time_of_day: the time of day of the snapshot to get, either 'EOD' or 'BOD'.
+        """
+        params = {
+            'snapshot-date': snapshot_date,
+            'time-of-day': time_of_day
         }
 
-        return Account(**new_data)
+        response = requests.get(
+            f'{session.base_url}/accounts/{self.account_number}/balance-snapshots',
+            headers=session.headers,
+            params={k: v for k, v in params.items() if v is not None}  # type: ignore
+        )
+        validate_response(response)  # throws exception if not 200
 
-    @classmethod
-    async def get_accounts(cls, session, include_closed=False) -> list:
+        return response.json()['data']['items']
+
+    def get_positions(self, session: Session, underlying_symbols: Optional[list[str]] = None,
+                      symbol: Optional[str] = None, instrument_type: Optional[str] = None,
+                      include_closed: bool = False, underlying_product_code: Optional[str] = None,
+                      partition_keys: Optional[list[str]] = None, net_positions: bool = False,
+                      include_marks: bool = False) -> list[dict[str, Any]]:
         """
-        Gets all trading accounts from the Tastyworks platform.
-        By default excludes closed accounts, but these can be added
-        by passing include_closed=True.
+        Get the current positions of the account.
 
-        Args:
-            session (Session): An active and logged-in session object against which to query.
-
-        Returns:
-            list (TradingAccount): A list of trading accounts.
+        :param session: the session to use for the request.
+        :param underlying_symbols: an array of underlying symbols for positions.
+        :param symbol: a single symbol.
+        :param instrument_type:
+            the type of instrument. Available values: Bond, Cryptocurrency, Currency Pair,
+            Equity, Equity Offering, Equity Option, Future, Future Option, Index, Unknown, Warrant.
+        :param include_closed: if closed positions should be included in the query.
+        :param underlying_product_code: the underlying future's product code.
+        :param partition_keys: account partition keys.
+        :param net_positions: returns net positions grouped by instrument type and symbol.
+        :param include_marks: include current quote mark (note: can decrease performance).
         """
-        url = f'{API_URL}/customers/me/accounts'
-        res = []
+        params = {
+            'underlying-symbol': underlying_symbols,
+            'symbol': symbol,
+            'instrument-type': instrument_type,
+            'include-closed-positions': include_closed,
+            'underlying-product-code': underlying_product_code,
+            'partition-keys': partition_keys,
+            'net-positions': net_positions,
+            'include-marks': include_marks
+        }
+        response = requests.get(
+            f'{session.base_url}/accounts/{self.account_number}/positions',
+            headers=session.headers,
+            params={k: v for k, v in params.items() if v is not None}  # type: ignore
+        )
+        validate_response(response)  # throws exception if not 200
 
-        async with aiohttp.request('GET', url, headers=session.headers) as response:
-            if response.status != 200:
-                raise Exception('Could not get trading accounts info from Tastyworks...')
-            data = (await response.json())['data']
-
-        for entry in data['items']:
-            if entry['authority-level'] != 'owner':
-                continue
-            acct_data = entry['account']
-            if not include_closed and acct_data['is-closed']:
-                continue
-            acct = Account.from_dict(acct_data)
-            res.append(acct)
-
-        return res
-
-    async def get_balance(self, session, **kwargs):
-        """
-        Get balance.
-
-        Args:
-            session (TastyAPISession): An active and logged-in session object against which to query.
-        Returns:
-            dict: account attributes
-        """
-        url = f'{API_URL}/accounts/{self.account_number}/balances'
-
-        async with aiohttp.request('GET', url, headers=session.headers, **kwargs) as response:
-            if response.status != 200:
-                raise Exception('Could not get trading account balance info from Tastyworks...')
-            data = (await response.json())['data']
-        return data
-
-    async def get_positions(self, session, **kwargs):
-        """
-        Get Open Positions.
-
-        Args:
-            session (TastyAPISession): An active and logged-in session object against which to query.
-        Returns:
-            dict: account attributes
-        """
-        url = f'{API_URL}/accounts/{self.account_number}/positions'
-
-        async with aiohttp.request('GET', url, headers=session.headers, **kwargs) as response:
-            if response.status != 200:
-                raise Exception('Could not get open positions info from Tastyworks...')
-            data = (await response.json())['data']['items']
-        return data
-
-    async def get_live_orders(self, session, **kwargs):
-        """
-        Get live Orders.
-
-        Args:
-            session (TastyAPISession): An active and logged-in session object against which to query.
-        Returns:
-            dict: account attributes
-        """
-        url = f'{API_URL}/accounts/{self.account_number}/orders/live'
-
-        async with aiohttp.request('GET', url, headers=session.headers, **kwargs) as response:
-            if response.status != 200:
-                raise Exception('Could not get live orders info from Tastyworks...')
-            data = (await response.json())['data']['items']
-        return data
-
-    async def get_history(self, session, **kwargs):
-        """
-        Get transaction history.
-
-        Args:
-            session (TastyAPISession): An active and logged-in session object against which to query.
-        Returns:
-            dict: account attributes
-        """
-        url = f'{API_URL}/accounts/{self.account_number}/transactions'
-
-        PAGE_SIZE = 1024
-
-        page_offset = 0
-        total_pages = None
-        total_items = 0
-        all_items = []
-
-        while total_pages is None or page_offset < total_pages:
-            # print(f'Getting page {page_offset}')
-            params = kwargs.pop('params', {})
-            params.update({
-                'per-page': PAGE_SIZE,
-                'page-offset': page_offset,
-            })
-            kwargs['params'] = params
-
-            async with aiohttp.request('GET', url, headers=session.headers, **kwargs) as response:
-                if response.status != 200:
-                    raise Exception('Could not get history info from Tastyworks...')
-                data = (await response.json())
-
-            page_offset += 1
-            if total_pages is None:
-                pagination = data['pagination']
-                total_pages = pagination['total-pages']
-                total_items = pagination['total-items']
-
-            items = data['data']['items']
-            if items:
-                all_items.extend(items)
-
-        if len(all_items) != total_items:
-            raise Exception('Could not fetch some items in paginated request.')
-
-        return all_items
-
-
-def _get_execute_order_json(order: Order):
-    order_json = {
-        'source': order.details.source,
-        'order-type': order.details.type.value,
-        'price': f'{order.details.price:.2f}',
-        'price-effect': order.details.price_effect.value,
-        'time-in-force': order.details.time_in_force.value,
-        'legs': _get_legs_request_data(order)
-    }
-
-    if order.details.gtc_date:
-        order_json['gtc-date'] = order.details.gtc_date.strftime('%Y-%m-%d')
-
-    return order_json
-
-
-def _get_legs_request_data(order):
-    res = []
-    order_effect = order.details.price_effect
-    order_effect_str = 'Sell to Open' if order_effect == OrderPriceEffect.CREDIT else 'Buy to Open'
-    for leg in order.details.legs:
-        leg_dict = {**leg.to_tasty_json(), 'action': order_effect_str}
-        res.append(leg_dict)
-
-    return res
+        return response.json()['data']['items']
