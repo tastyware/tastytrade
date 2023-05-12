@@ -72,7 +72,7 @@ class Session:
         """
         Gets the customer dict from the API.
 
-        :return: the customer dict.
+        :return: a Tastytrade 'Customer' object in JSON format.
         """
         response = requests.get(f'{self.base_url}/customers/me', headers=self.headers)
         validate_response(response)  # throws exception if not 200
