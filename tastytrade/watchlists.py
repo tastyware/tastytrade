@@ -1,119 +1,163 @@
-import aiohttp
+from dataclasses import dataclass
+from typing import Any
 
-from tastytrade import API_URL
+import requests
+
 from tastytrade.session import Session
+from tastytrade.utils import validate_response
 
 
-class Watchlist(object):
-    """Watchlist Class"""
-
-    def __init__(self):
-        """init"""
-        self.name = None
-        self.group_name = None
-        self.securities = {}
+@dataclass
+class PairsWatchlist:
+    name: str
+    pairs_equations: list[dict[str, Any]]
+    order_index: int
 
     @classmethod
-    def from_list(cls, data: list):
-        """From List
-
-        Class Factory
-
-        Notes:
-            There is an instability issue with Tastyworks API.  Hence
-            the need to catch an exceptions.  Special symbols don't have
-            instrument types at all.
-
-            For stability & accessibility, all instrument types are returned
-            as 'instrument_type'.
-
-        Args:
-            data (list):   List of dict objects containing symbol &
-                           instrument_type
-
-        Returns:
-            Watchlist:  Instance of Watchlist()
+    def from_dict(cls, json: dict[str, Any]):
         """
-        inst = cls()
-        for item in data:
-            try:
-                inst.securities[item['symbol']] = {
-                    'instrument_type': item['instrument-type']
-                }
-            except KeyError:
-                try:
-                    inst.securities[item['symbol']] = {
-                        'instrument_type': item['instrument_type']
-                    }
-                except KeyError:
-                    inst.securities[item['symbol']] = {
-                        'instrument_type': None
-                    }
-        return inst
-
-    def __str__(self):
-        """String Representation"""
-        return str(self.__dict__)
-
-
-class WatchlistGroup(object):
-    """WatchlistGroup Class"""
-
-    def __init__(self):
-        """init"""
-        self.watchlists = {}
-
-    def __iter__(self):
-        """Iterator"""
-        return iter(self.watchlists)
-
-    def __getitem__(self, item):
-        """Subscriptor"""
-        return self.watchlists[item]
-
-    def __repr__(self):
-        """Object Representation"""
-        return str(self.watchlists)
-
-    def __str__(self):
-        """String Representation"""
-        return str(list(self.watchlists.keys()))
+        Creates a PairsWatchlist object from the Tastytrade 'PairsWatchlist' object in JSON format.
+        """
+        snake_json = {key.replace('-', '_'): value for key, value in json.items()}
+        return cls(**snake_json)
 
     @classmethod
-    async def get_watchlists(cls, session: Session, public: bool = True):
-        """Get Watchlists
-
-        Class Factory
-
-        Retrieves a watchlist group (either public or private).
-
-        Notes:
-            Not all Watchlist's have group names.
-
-        Args:
-            session (TastyAPISession): A TastyAPISession object
-            public (bool): Retrive public or private watchlists
-
-        Returns:
-            WatchlistGroup: Instance of WatchlistGroup()
+    def get_pairs_watchlists(cls, session: Session) -> list['PairsWatchlist']:
         """
-        url = f'{API_URL}/public-watchlists' if public else f'{API_URL}/watchlists'
+        Fetches a list of all Tastytrade public pairs watchlists.
 
-        async with aiohttp.request('GET', url, headers=session.headers) as resp:
-            data = await resp.json()
-            if resp.status != 200:
-                raise Exception(f'Failed retrieving watchlists, Response status: {resp.status}; message: {data["error"]["message"]}')
+        :param session: the session to use for the request.
 
-        data = data['data']['items']
-        inst = cls()
-        for entry in data:
-            list_data = entry['watchlist-entries']
-            wlist = Watchlist.from_list(list_data)
-            wlist.name = entry['name']
-            try:
-                wlist.group_name = entry['group-name']
-            except KeyError:
-                pass
-            inst.watchlists[wlist.name] = wlist
+        :return: a list of :class:`PairsWatchlist` objects.
+        """
+        response = requests.get(f'{session.base_url}/pairs-watchlists', headers=session.headers)
+        validate_response(response)
+        watchlists = response.json()['data']['items']
+        watchlists = [cls.from_dict(w) for w in watchlists]
 
-        return inst
+        return watchlists
+
+    @classmethod
+    def get_pairs_watchlist(cls, session: Session, name: str) -> 'PairsWatchlist':
+        """
+        Fetches a Tastytrade public pairs watchlist by name.
+
+        :param session: the session to use for the request.
+        :param name: the name of the pairs watchlist to fetch.
+
+        :return: a :class:`PairsWatchlist` object.
+        """
+        response = requests.get(f'{session.base_url}/pairs-watchlists/{name}', headers=session.headers)
+        validate_response(response)
+
+        return cls.from_dict(response.json()['data'])
+
+
+@dataclass
+class Watchlist:
+    name: str
+    watchlist_entries: list[dict[str, Any]]
+    order_index: int
+    group_name: str = 'default'
+
+    @classmethod
+    def from_dict(cls, json: dict[str, Any]):
+        """
+        Creates a Watchlist object from the Tastytrade 'Watchlist' object in JSON format.
+        """
+        snake_json = {key.replace('-', '_'): value for key, value in json.items()}
+        return cls(**snake_json)
+
+    @classmethod
+    def get_public_watchlists(cls, session: Session, counts_only: bool = False) -> list['Watchlist']:
+        """
+        Fetches a list of all Tastytrade public watchlists.
+
+        :param session: the session to use for the request.
+        :param counts_only: whether to only fetch the counts of the watchlists.
+
+        :return: a list of :class:`Watchlist` objects.
+        """
+        response = requests.get(
+            f'{session.base_url}/public-watchlists',
+            headers=session.headers,
+            params={'counts-only': counts_only}
+        )
+        validate_response(response)
+        watchlists = response.json()['data']['items']
+        print(watchlists)
+        watchlists = [cls.from_dict(w) for w in watchlists]
+
+        return watchlists
+
+    @classmethod
+    def get_public_watchlist(cls, session: Session, name: str) -> 'Watchlist':
+        """
+        Fetches a Tastytrade public watchlist by name.
+
+        :param session: the session to use for the request.
+        :param name: the name of the watchlist to fetch.
+
+        :return: a :class:`Watchlist` object.
+        """
+        response = requests.get(f'{session.base_url}/public-watchlists/{name}', headers=session.headers)
+        validate_response(response)
+
+        return cls.from_dict(response.json()['data'])
+
+    @classmethod
+    def get_private_watchlists(cls, session: Session) -> list['Watchlist']:
+        """
+        Fetches a the user's private watchlists.
+
+        :param session: the session to use for the request.
+
+        :return: a list of :class:`Watchlist` objects.
+        """
+        response = requests.get(f'{session.base_url}/watchlists', headers=session.headers)
+        validate_response(response)
+        watchlists = response.json()['data']['items']
+        watchlists = [cls.from_dict(w) for w in watchlists]
+
+        return watchlists
+
+    @classmethod
+    def get_private_watchlist(cls, session: Session, name: str) -> 'Watchlist':
+        """
+        Fetches a user's watchlist by name.
+
+        :param session: the session to use for the request.
+        :param name: the name of the watchlist to fetch.
+
+        :return: a :class:`Watchlist` object.
+        """
+        response = requests.get(f'{session.base_url}/watchlists/{name}', headers=session.headers)
+        validate_response(response)
+
+        return cls.from_dict(response.json()['data'])
+
+    @classmethod
+    def remove_private_watchlist(cls, session: Session, name: str) -> None:
+        """
+        Deletes the named private watchlist.
+
+        :param session: the session to use for the request.
+        :param name: the name of the watchlist to delete.
+        """
+        response = requests.delete(f'{session.base_url}/watchlists/{name}', headers=session.headers)
+        validate_response(response)
+
+    def create_private_watchlist(self, session: Session) -> None:
+        """
+        Creates a private remote watchlist identical to this local one.
+
+        :param session: the session to use for the request.
+        """
+        json = {key.replace('_', '-'): value for key, value in self.__dict__.items()}
+        print(json)
+        response = requests.post(
+            f'{session.base_url}/watchlists',
+            headers=session.headers,
+            json=json
+        )
+        validate_response(response)

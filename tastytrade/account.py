@@ -15,6 +15,7 @@ class Account:
     nickname: str
     account_type_name: str
     is_closed: bool
+    external_id: Optional[str] = None
     day_trader_status: Optional[str] = None
     closed_at: Optional[str] = None
     is_firm_error: Optional[bool] = None
@@ -34,13 +35,13 @@ class Account:
     created_at: Optional[datetime] = None
     submitting_user_id: Optional[str] = None
 
-    def __init__(self, json: dict[str, Any]):
+    @classmethod
+    def from_dict(cls, json: dict[str, Any]):
         """
-        Creates an Account object from the Tastytrade 'Account' object in JSON format.
+        Creates a :class:`Account` object from the Tastytrade 'Account' object in JSON format.
         """
-        for key in json:
-            snake_case = key.replace('-', '_')
-            setattr(self, snake_case, json[key])
+        snake_json = {key.replace('-', '_'): value for key, value in json.items()}
+        return cls(**snake_json)
 
     @classmethod
     def get_accounts(cls, session: Session, include_closed=False) -> list['Account']:
@@ -65,29 +66,28 @@ class Account:
             account = entry['account']
             if not include_closed and account['is-closed']:
                 continue
-            accounts.append(cls(account))
+            accounts.append(cls.from_dict(account))
 
         return accounts
 
     @classmethod
-    def get_account(cls, session: Session, account_id: str) -> 'Account':
+    def get_account(cls, session: Session, account_number: str) -> 'Account':
         """
         Returns a new :class:`Account` object for the given account ID.
 
         :param session: the session to use for the request.
-        :param account_id: the account ID to get.
+        :param account_number: the account ID to get.
 
         :return: :class:`Account` object corresponding to the given ID.
         """
-
         response = requests.get(
-            f'{session.base_url}/customers/me/accounts/{account_id}',
+            f'{session.base_url}/customers/me/accounts/{account_number}',
             headers=session.headers
         )
         validate_response(response)  # throws exception if not 200
 
         account = response.json()['data']
-        return cls(account)
+        return cls.from_dict(account)
 
     def get_trading_status(self, session: Session) -> dict[str, Any]:
         """
@@ -396,6 +396,22 @@ class Account:
         """
         response = requests.get(
             f'{session.base_url}/accounts/{self.account_number}/margin-requirements/{symbol}/effective',
+            headers=session.headers
+        )
+        validate_response(response)
+
+        return response.json()['data']
+
+    def get_margin_requirements(self, session: Session) -> dict[str, Any]:
+        """
+        Get the margin requirements for the account.
+
+        :param session: the session to use for the request.
+
+        :return: a Tastytrade 'MarginRequirement' object in JSON format.
+        """
+        response = requests.get(
+            f'{session.base_url}/margin/accounts/{self.account_number}/requirements',
             headers=session.headers
         )
         validate_response(response)
