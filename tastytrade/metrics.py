@@ -1,7 +1,8 @@
 from datetime import date
-from typing import Any, Optional
+from typing import Any
 
 import requests
+
 from tastytrade.session import Session
 from tastytrade.utils import validate_response
 
@@ -56,7 +57,7 @@ def get_earnings(session: Session, symbol: str, start_date: date) -> dict[str, A
     response = requests.get(
         f'{session.base_url}/market-metrics/historic-corporate-events/earnings-reports/{symbol}',
         headers=session.headers,
-        params={'start-date': start_date}
+        params={'start-date': start_date}  # type: ignore
     )
     validate_response(response)
 
