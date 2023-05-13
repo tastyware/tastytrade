@@ -36,7 +36,7 @@ class PairsWatchlist:
         watchlists = [cls.from_dict(w) for w in watchlists]
 
         return watchlists
-    
+
     @classmethod
     def get_pairs_watchlist(cls, session: Session, name: str) -> 'PairsWatchlist':
         """
@@ -89,7 +89,7 @@ class Watchlist:
         watchlists = [cls.from_dict(w) for w in watchlists]
 
         return watchlists
-    
+
     @classmethod
     def get_public_watchlist(cls, session: Session, name: str) -> 'Watchlist':
         """
@@ -120,7 +120,7 @@ class Watchlist:
         watchlists = [cls.from_dict(w) for w in watchlists]
 
         return watchlists
-    
+
     @classmethod
     def get_private_watchlist(cls, session: Session, name: str) -> 'Watchlist':
         """
@@ -135,7 +135,7 @@ class Watchlist:
         validate_response(response)
 
         return cls.from_dict(response.json()['data'])
-    
+
     @classmethod
     def remove_private_watchlist(cls, session: Session, name: str) -> None:
         """
