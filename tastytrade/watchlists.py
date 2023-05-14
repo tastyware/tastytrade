@@ -69,6 +69,13 @@ class Watchlist:
         return cls(**snake_json)
 
     @classmethod
+    def create_empty(cls, name: str):
+        """
+        Creates an empty watchlist with the given name.
+        """
+        return cls(name=name, watchlist_entries=[], order_index=9999)
+
+    @classmethod
     def get_public_watchlists(cls, session: Session, counts_only: bool = False) -> list['Watchlist']:
         """
         Fetches a list of all Tastytrade public watchlists.
@@ -147,17 +154,42 @@ class Watchlist:
         response = requests.delete(f'{session.base_url}/watchlists/{name}', headers=session.headers)
         validate_response(response)
 
-    def create_private_watchlist(self, session: Session) -> None:
+    def upload_private_watchlist(self, session: Session) -> None:
         """
         Creates a private remote watchlist identical to this local one.
 
         :param session: the session to use for the request.
         """
         json = {key.replace('_', '-'): value for key, value in self.__dict__.items()}
-        print(json)
         response = requests.post(
             f'{session.base_url}/watchlists',
             headers=session.headers,
             json=json
         )
         validate_response(response)
+
+    def update_private_watchlist(self, session: Session) -> None:
+        """
+        Updates the existing private remote watchlist.
+
+        :param session: the session to use for the request.
+        """
+        json = {key.replace('_', '-'): value for key, value in self.__dict__.items()}
+        response = requests.put(
+            f'{session.base_url}/watchlists/{self.name}',
+            headers=session.headers,
+            json=json
+        )
+        validate_response(response)
+
+    def add_symbol(self, symbol: str, instrument_type: str) -> None:
+        """
+        Adds a symbol to the watchlist.
+        """
+        self.watchlist_entries.append({'symbol': symbol, 'instrument-type': instrument_type})
+
+    def remove_symbol(self, symbol: str, instrument_type: str) -> None:
+        """
+        Removes a symbol from the watchlist.
+        """
+        self.watchlist_entries.remove({'symbol': symbol, 'instrument-type': instrument_type})

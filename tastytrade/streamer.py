@@ -1,6 +1,7 @@
 import asyncio
 import json
-from asyncio import Lock, Queue, Task
+from asyncio import Lock, Queue
+from datetime import datetime
 from enum import Enum
 from typing import Any, AsyncIterator, Optional
 
@@ -10,6 +11,7 @@ import websockets
 from tastytrade import logger
 from tastytrade.account import Account
 from tastytrade.dxfeed import Channel
+from tastytrade.dxfeed.candle import Candle
 from tastytrade.dxfeed.event import Event, EventType
 from tastytrade.dxfeed.greeks import Greeks
 from tastytrade.dxfeed.profile import Profile
@@ -62,7 +64,8 @@ class AlertStreamer:
 
         self._done = False
         self._queue: Queue = Queue()
-        self._connect_task: Optional[Task] = None
+
+        self._connect_task = asyncio.create_task(self._connect())
 
     @classmethod
     async def create(cls, session: Session) -> 'AlertStreamer':
@@ -74,7 +77,6 @@ class AlertStreamer:
         :param session: active user session to use
         """
         self = cls(session)
-        self._connect_task = asyncio.create_task(self._connect())
         while not self._websocket:
             await asyncio.sleep(0.1)
 
@@ -136,7 +138,6 @@ class AlertStreamer:
         Closes the websocket connection and cancels the heartbeat task.
         """
         self._done = True
-        assert(self._connect_task is not None)  # something went horribly wrong
         await asyncio.gather(self._connect_task, self._heartbeat_task)
 
     async def _heartbeat(self) -> None:
@@ -185,8 +186,8 @@ class DataStreamer:
         self._counter = 0
         self._lock: Lock = Lock()
         self._queue: Queue = Queue()
+        self._queue_candle: Queue = Queue()
         self._done = False
-        self._connect_task: Optional[Task] = None
         #: The unique client identifier received from the server
         self.client_id = None
 
@@ -196,6 +197,8 @@ class DataStreamer:
         self._auth_token = response.json()['data']['token']
         url = response.json()['data']['websocket-url'] + '/cometd'
         self._wss_url = url.replace('https', 'wss')
+
+        self._connect_task = asyncio.create_task(self._connect())
 
     @classmethod
     async def create(cls, session: Session) -> 'DataStreamer':
@@ -207,7 +210,6 @@ class DataStreamer:
         :param session: active user session to use
         """
         self = cls(session)
-        self._connect_task = asyncio.create_task(self._connect())
         while not self.client_id:
             await asyncio.sleep(0.1)
 
@@ -246,8 +248,11 @@ class DataStreamer:
                 message = json.loads(raw_message)[0]
 
                 if message['channel'] == Channel.DATA:
-                    logger.debug('queueing received: %s', message)
+                    logger.debug('data received: %s', message)
                     await self._queue.put(message['data'])
+                elif message['channel'] == Channel.CANDLE:
+                    logger.debug('candle received: %s', message)
+                    await self._queue_candle.put(message['data'])
                 elif message['channel'] == Channel.SUBSCRIPTION:
                     logger.debug('sub received: %s', message)
 
@@ -286,8 +291,8 @@ class DataStreamer:
 
     async def listen(self) -> AsyncIterator[Event]:
         """
-        Using the existing subscriptions, pulls greeks or quotes and yield returns them.
-        Never exits unless there's an error or the channel is closed.
+        Using the existing subscriptions, pulls :class:`~tastytrade.dxfeed.event.Event`s
+        and yield returns them. Never exits unless there's an error or the channel is closed.
         """
         while True:
             raw_data = await self._queue.get()
@@ -295,12 +300,21 @@ class DataStreamer:
             for message in messages:
                 yield message
 
+    async def listen_candle(self) -> AsyncIterator[list[Candle]]:
+        """
+        Using the existing subscriptions, pulls candles and yield returns them.
+        Never exits unless there's an error or the channel is closed.
+        """
+        while True:
+            raw_data = await self._queue_candle.get()
+            messages = _map_message(raw_data)
+            yield messages  # type: ignore
+
     async def close(self) -> None:
         """
         Closes the websocket connection and cancels the heartbeat task.
         """
         self._done = True
-        assert(self._connect_task is not None)  # something went horribly wrong
         await asyncio.gather(self._connect_task, self._heartbeat_task)
 
     async def _heartbeat(self) -> None:
@@ -323,7 +337,7 @@ class DataStreamer:
     async def subscribe(self, key: EventType, dxfeeds: list[str], reset: bool = False) -> None:
         """
         Subscribes to quotes for given list of symbols. Used for recurring data feeds;
-        if you just want to get a one-time quote, use :meth:`stream`.
+        if you just want to get a one-time quote, use :meth:`oneshot`.
 
         :param key: type of subscription to add
         :param dxfeeds: list of symbols to subscribe for
@@ -343,6 +357,32 @@ class DataStreamer:
         logger.debug('sending subscription: %s', message)
         await self._websocket.send(json.dumps([message]))
 
+    async def subscribe_candle(self, ticker: str, start_time: datetime, interval: str = '1d') -> None:
+        """
+        Subscribes to candle-style 'OHLC' date the for given symbol. Used for recurring
+        data feeds; if you just want to get data once, use :meth:`oneshot_candle`.
+
+        :param ticker: symbol to get date for
+        :param start_time: starting time for the data range
+        :param interval: the width of each candle in time
+        """
+        id = await self._next_id()
+        message = {
+            'id': id,
+            'channel': Channel.SUBSCRIPTION,
+            'data': {
+                'addTimeSeries': {
+                    'Candle': [{
+                        'eventSymbol': f'{ticker}{{={interval}}}',
+                        'fromTime': int(start_time.timestamp())
+                    }]
+                }
+            },
+            'clientId': self.client_id
+        }
+        logger.debug('sending subscription: %s', message)
+        await self._websocket.send(json.dumps([message]))
+
     async def unsubscribe(self, key: EventType, dxfeeds: list[str]) -> None:
         """
         Removes existing subscription for given list of symbols.
@@ -354,16 +394,35 @@ class DataStreamer:
         message = {
             'id': id,
             'channel': Channel.SUBSCRIPTION,
-            'clientId': self.client_id,
             'data': {
                 'reset': False,
                 'remove': {key: dxfeeds}
-            }
+            },
+            'clientId': self.client_id
         }
         logger.debug('sending unsubscription: %s', message)
         await self._websocket.send(json.dumps([message]))
 
-    async def stream(self, key: EventType, dxfeeds: list[str]) -> list[Event]:
+    async def unsubscribe_candle(self, ticker: str, interval: str = '1d') -> None:
+        """
+        Removes existing :class:`~tastytrade.dxfeed.event.Candle` subscription for given list of symbols.
+
+        :param ticker: symbol to unsubscribe from
+        :param interval: candle width to unsubscribe from
+        """
+        id = await self._next_id()
+        message = {
+            'id': id,
+            'channel': Channel.SUBSCRIPTION,
+            'data': {
+                'removeTimeSeries': {'Candle': [f'{ticker}{{={interval}}}']}
+            },
+            'clientId': self.client_id
+        }
+        logger.debug('sending unsubscription: %s', message)
+        await self._websocket.send(json.dumps([message]))
+
+    async def oneshot(self, key: EventType, dxfeeds: list[str]) -> list[Event]:
         """
         Using the given information, subscribes to the list of symbols passed, streams
         the requested information once, then unsubscribes. If you want to maintain the
@@ -388,6 +447,30 @@ class DataStreamer:
         await self.unsubscribe(key, dxfeeds)
         return data
 
+    async def oneshot_candle(self, ticker: str, start_time: datetime, interval: str) -> list[Candle]:
+        """
+        Using the given information, subscribes to the list of symbols passed, streams
+        the requested information once, then unsubscribes. If you want to maintain the
+        subscription open, add a subscription with :meth:`subscribe_candle` and listen
+        with :meth:`listen_candle`.
+
+        If you use this alongside :meth:`listen_candle`, you will get some unexpected
+        behavior. Most apps should use either this or :meth:`listen_candle` but not both.
+
+        :param ticker: the symbol to chart for
+        :param start_time: the time to start the chart at
+        :param interval: the time interval for each candle
+
+        :return: list of :class:`~tastytrade.dxfeed.candle.Candle`s pulled.
+        """
+        await self.subscribe_candle(ticker, start_time, interval)
+        async for item in self.listen_candle():
+            data = item
+            break
+        await self.unsubscribe_candle(ticker, interval)
+
+        return data
+
 
 def _map_message(message) -> list[Event]:
     """
@@ -402,7 +485,9 @@ def _map_message(message) -> list[Event]:
     data = message[1]
 
     # parse type or warn for unknown type
-    if msg_type == EventType.GREEKS:
+    if msg_type == EventType.CANDLE:
+        res = Candle.from_stream(data)
+    elif msg_type == EventType.GREEKS:
         res = Greeks.from_stream(data)
     elif msg_type == EventType.PROFILE:
         res = Profile.from_stream(data)
