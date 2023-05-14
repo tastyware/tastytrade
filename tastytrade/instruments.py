@@ -7,10 +7,9 @@ from tastytrade.session import Session
 
 
 class Instruments:
-    def __init__(self, session: Session):
-        self.session = session
-
-    def get_cryptocurrencies(self, symbols: List[str] = None) -> List[dict]:
+    def get_cryptocurrencies(
+        self, session: Session, symbols: List[str] = None
+    ) -> List[dict]:
         if symbols:
             symbol_params = "&".join([f"symbol[]={s}" for s in symbols])
             url = f"{session.base_url}/instruments/cryptocurrencies?{symbol_params}"
