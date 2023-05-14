@@ -1,8 +1,8 @@
 import requests
-from typing import List
-from tastytrade.session import Session
-
 import json
+from typing import List
+
+from tastytrade.session import Session
 
 
 class Instruments:
