@@ -23,5 +23,5 @@ class Instruments:
             return cryptocurrencies
         else:
             raise Exception(
-                f"Error getting cryptocurrencies: {response.status_code} - {response.content}"
+                f"Error getting cryptocurrencies: {response.status_code} - {response.content.decode('utf-8')}"
             )
