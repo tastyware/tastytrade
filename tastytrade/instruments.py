@@ -1,0 +1,27 @@
+import requests
+from typing import List
+from tastytrade.session import Session
+
+import json
+
+
+class Instruments:
+    def __init__(self, session: Session):
+        self.session = session
+
+    def get_cryptocurrencies(self, symbols: List[str] = None) -> List[dict]:
+        if symbols:
+            symbol_params = "&".join([f"symbol[]={s}" for s in symbols])
+            url = f"{session.base_url}/instruments/cryptocurrencies?{symbol_params}"
+        else:
+            url = f"{session.base_url}/instruments/cryptocurrencies"
+
+        response = requests.get(url, headers=session.headers)
+        if response.status_code == 200:
+            response_data = json.loads(response.content)
+            cryptocurrencies = response_data["data"]["items"]
+            return cryptocurrencies
+        else:
+            raise Exception(
+                f"Error getting cryptocurrencies: {response.status_code} - {response.content}"
+            )
