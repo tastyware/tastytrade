@@ -186,6 +186,7 @@ class DataStreamer:
         self._counter = 0
         self._lock: Lock = Lock()
         self._queue: Queue = Queue()
+        self._queue_candle: Queue = Queue()
         self._done = False
         #: The unique client identifier received from the server
         self.client_id = None
@@ -246,9 +247,12 @@ class DataStreamer:
                 raw_message = await self._websocket.recv()
                 message = json.loads(raw_message)[0]
 
-                if message['channel'] == Channel.DATA or message['channel'] == Channel.CANDLE:
-                    logger.debug('queueing received: %s', message)
+                if message['channel'] == Channel.DATA:
+                    logger.debug('data received: %s', message)
                     await self._queue.put(message['data'])
+                elif message['channel'] == Channel.CANDLE:
+                    logger.debug('candle received: %s', message)
+                    await self._queue_candle.put(message['data'])
                 elif message['channel'] == Channel.SUBSCRIPTION:
                     logger.debug('sub received: %s', message)
 
@@ -287,18 +291,24 @@ class DataStreamer:
 
     async def listen(self) -> AsyncIterator[Event]:
         """
-        Using the existing subscriptions, pulls greeks or quotes and yield returns them.
-        Never exits unless there's an error or the channel is closed.
+        Using the existing subscriptions, pulls :class:`~tastytrade.dxfeed.event.Event`s
+        and yield returns them. Never exits unless there's an error or the channel is closed.
         """
         while True:
             raw_data = await self._queue.get()
             messages = _map_message(raw_data)
-            # in the case of a candle, we want to yield the entire list
-            if isinstance(messages[0], Candle):
-                yield messages
-            else:
-                for message in messages:
-                    yield message
+            for message in messages:
+                yield message
+
+    async def listen_candle(self) -> AsyncIterator[list[Candle]]:
+        """
+        Using the existing subscriptions, pulls candles and yield returns them.
+        Never exits unless there's an error or the channel is closed.
+        """
+        while True:
+            raw_data = await self._queue_candle.get()
+            messages = _map_message(raw_data)
+            yield messages
 
     async def close(self) -> None:
         """
@@ -349,13 +359,12 @@ class DataStreamer:
 
     async def subscribe_candle(self, ticker: str, start_time: datetime, interval: str = '1d') -> None:
         """
-        Subscribes to quotes for given list of symbols. Used for recurring data feeds;
-        if you just want to get a one-time quote, use :meth:`stream`.
+        Subscribes to candle-style 'OHLC' date the for given symbol. Used for recurring
+        data feeds; if you just want to get date once, use :meth:`stream_candle`.
 
-        :param key: type of subscription to add
-        :param dxfeeds: list of symbols to subscribe for
-        :param reset:
-            whether to reset the subscription list (remove all other subscriptions of all types)
+        :param ticker: symbol to get date for
+        :param start_time: starting time for the data range
+        :param interval: the width of each candle in time
         """
         id = await self._next_id()
         message = {
@@ -398,8 +407,8 @@ class DataStreamer:
         """
         Removes existing :class:`~tastytrade.dxfeed.event.Candle` subscription for given list of symbols.
 
-        :param key: type of subscription to remove
-        :param dxfeeds: list of symbols to unsubscribe from
+        :param ticker: symbol to unsubscribe from
+        :param interval: candle width to unsubscribe from
         """
         id = await self._next_id()
         message = {
@@ -443,11 +452,10 @@ class DataStreamer:
         Using the given information, subscribes to the list of symbols passed, streams
         the requested information once, then unsubscribes. If you want to maintain the
         subscription open, add a subscription with :meth:`subscribe_candle` and listen
-        with :meth:`listen`.
+        with :meth:`listen_candle`.
 
-        If you use this alongside :meth:`subscribe` and :meth:`listen`, you will get
-        some unexpected behavior. Most apps should use either this or :meth:`listen`
-        but not both.
+        If you use this alongside :meth:`listen_candle`, you will get some unexpected
+        behavior. Most apps should use either this or :meth:`listen_candle` but not both.
 
         :param ticker: the symbol to chart for
         :param start_time: the time to start the chart at
@@ -456,8 +464,7 @@ class DataStreamer:
         :return: list of :class:`~tastytrade.dxfeed.candle.Candle`s pulled.
         """
         await self.subscribe_candle(ticker, start_time, interval)
-        data = None
-        async for item in self.listen():
+        async for item in self.listen_candle():
             data = item
             break
         await self.unsubscribe_candle(ticker, interval)
