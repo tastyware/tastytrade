@@ -8,6 +8,7 @@ class EventType(str, Enum):
 
     Information on different types of events, their uses and their properties can be found at the `dxfeed Knowledge Base <https://kb.dxfeed.com/en/data-model/dxfeed-api-market-events.html>`_.
     """
+    CANDLE = 'Candle'
     GREEKS = 'Greeks'
     QUOTE = 'Quote'
     TRADE = 'Trade'

@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 import json
 from asyncio import Lock, Queue, Task
 from enum import Enum
@@ -10,6 +11,7 @@ import websockets
 from tastytrade import logger
 from tastytrade.account import Account
 from tastytrade.dxfeed import Channel
+from tastytrade.dxfeed.candle import Candle
 from tastytrade.dxfeed.event import Event, EventType
 from tastytrade.dxfeed.greeks import Greeks
 from tastytrade.dxfeed.profile import Profile
@@ -62,7 +64,8 @@ class AlertStreamer:
 
         self._done = False
         self._queue: Queue = Queue()
-        self._connect_task: Optional[Task] = None
+
+        self._connect_task = asyncio.create_task(self._connect())
 
     @classmethod
     async def create(cls, session: Session) -> 'AlertStreamer':
@@ -74,7 +77,6 @@ class AlertStreamer:
         :param session: active user session to use
         """
         self = cls(session)
-        self._connect_task = asyncio.create_task(self._connect())
         while not self._websocket:
             await asyncio.sleep(0.1)
 
@@ -136,7 +138,6 @@ class AlertStreamer:
         Closes the websocket connection and cancels the heartbeat task.
         """
         self._done = True
-        assert(self._connect_task is not None)  # something went horribly wrong
         await asyncio.gather(self._connect_task, self._heartbeat_task)
 
     async def _heartbeat(self) -> None:
@@ -186,7 +187,6 @@ class DataStreamer:
         self._lock: Lock = Lock()
         self._queue: Queue = Queue()
         self._done = False
-        self._connect_task: Optional[Task] = None
         #: The unique client identifier received from the server
         self.client_id = None
 
@@ -196,6 +196,8 @@ class DataStreamer:
         self._auth_token = response.json()['data']['token']
         url = response.json()['data']['websocket-url'] + '/cometd'
         self._wss_url = url.replace('https', 'wss')
+
+        self._connect_task = asyncio.create_task(self._connect())
 
     @classmethod
     async def create(cls, session: Session) -> 'DataStreamer':
@@ -207,7 +209,6 @@ class DataStreamer:
         :param session: active user session to use
         """
         self = cls(session)
-        self._connect_task = asyncio.create_task(self._connect())
         while not self.client_id:
             await asyncio.sleep(0.1)
 
@@ -245,7 +246,7 @@ class DataStreamer:
                 raw_message = await self._websocket.recv()
                 message = json.loads(raw_message)[0]
 
-                if message['channel'] == Channel.DATA:
+                if message['channel'] == Channel.DATA or message['channel'] == Channel.CANDLE:
                     logger.debug('queueing received: %s', message)
                     await self._queue.put(message['data'])
                 elif message['channel'] == Channel.SUBSCRIPTION:
@@ -292,15 +293,18 @@ class DataStreamer:
         while True:
             raw_data = await self._queue.get()
             messages = _map_message(raw_data)
-            for message in messages:
-                yield message
+            # in the case of a candle, we want to yield the entire list
+            if isinstance(messages[0], Candle):
+                yield messages
+            else:
+                for message in messages:
+                    yield message
 
     async def close(self) -> None:
         """
         Closes the websocket connection and cancels the heartbeat task.
         """
         self._done = True
-        assert(self._connect_task is not None)  # something went horribly wrong
         await asyncio.gather(self._connect_task, self._heartbeat_task)
 
     async def _heartbeat(self) -> None:
@@ -343,6 +347,33 @@ class DataStreamer:
         logger.debug('sending subscription: %s', message)
         await self._websocket.send(json.dumps([message]))
 
+    async def subscribe_candle(self, ticker: str, start_time: datetime, interval: str = '1d') -> None:
+        """
+        Subscribes to quotes for given list of symbols. Used for recurring data feeds;
+        if you just want to get a one-time quote, use :meth:`stream`.
+
+        :param key: type of subscription to add
+        :param dxfeeds: list of symbols to subscribe for
+        :param reset:
+            whether to reset the subscription list (remove all other subscriptions of all types)
+        """
+        id = await self._next_id()
+        message = {
+            'id': id,
+            'channel': Channel.SUBSCRIPTION,
+            'data': {
+                'addTimeSeries': {
+                    'Candle': [{
+                        'eventSymbol': f'{ticker}{{={interval}}}',
+                        'fromTime': int(start_time.timestamp())
+                    }]
+                }
+            },
+            'clientId': self.client_id
+        }
+        logger.debug('sending subscription: %s', message)
+        await self._websocket.send(json.dumps([message]))
+
     async def unsubscribe(self, key: EventType, dxfeeds: list[str]) -> None:
         """
         Removes existing subscription for given list of symbols.
@@ -354,16 +385,35 @@ class DataStreamer:
         message = {
             'id': id,
             'channel': Channel.SUBSCRIPTION,
-            'clientId': self.client_id,
             'data': {
                 'reset': False,
                 'remove': {key: dxfeeds}
-            }
+            },
+            'clientId': self.client_id
         }
         logger.debug('sending unsubscription: %s', message)
         await self._websocket.send(json.dumps([message]))
 
-    async def stream(self, key: EventType, dxfeeds: list[str]) -> list[Event]:
+    async def unsubscribe_candle(self, ticker: str, interval: str = '1d') -> None:
+        """
+        Removes existing :class:`~tastytrade.dxfeed.event.Candle` subscription for given list of symbols.
+
+        :param key: type of subscription to remove
+        :param dxfeeds: list of symbols to unsubscribe from
+        """
+        id = await self._next_id()
+        message = {
+            'id': id,
+            'channel': Channel.SUBSCRIPTION,
+            'data': {
+                'removeTimeSeries': {'Candle': [f'{ticker}{{={interval}}}']}
+            },
+            'clientId': self.client_id
+        }
+        logger.debug('sending unsubscription: %s', message)
+        await self._websocket.send(json.dumps([message]))
+
+    async def oneshot(self, key: EventType, dxfeeds: list[str]) -> list[Event]:
         """
         Using the given information, subscribes to the list of symbols passed, streams
         the requested information once, then unsubscribes. If you want to maintain the
@@ -388,6 +438,32 @@ class DataStreamer:
         await self.unsubscribe(key, dxfeeds)
         return data
 
+    async def oneshot_candle(self, ticker: str, start_time: datetime, interval: str) -> list[Candle]:
+        """
+        Using the given information, subscribes to the list of symbols passed, streams
+        the requested information once, then unsubscribes. If you want to maintain the
+        subscription open, add a subscription with :meth:`subscribe_candle` and listen
+        with :meth:`listen`.
+
+        If you use this alongside :meth:`subscribe` and :meth:`listen`, you will get
+        some unexpected behavior. Most apps should use either this or :meth:`listen`
+        but not both.
+
+        :param ticker: the symbol to chart for
+        :param start_time: the time to start the chart at
+        :param interval: the time interval for each candle
+
+        :return: list of :class:`~tastytrade.dxfeed.candle.Candle`s pulled.
+        """
+        await self.subscribe_candle(ticker, start_time, interval)
+        data = None
+        async for item in self.listen():
+            data = item
+            break
+        await self.unsubscribe_candle(ticker, interval)
+
+        return data
+
 
 def _map_message(message) -> list[Event]:
     """
@@ -402,7 +478,9 @@ def _map_message(message) -> list[Event]:
     data = message[1]
 
     # parse type or warn for unknown type
-    if msg_type == EventType.GREEKS:
+    if msg_type == EventType.CANDLE:
+        res = Candle.from_stream(data)
+    elif msg_type == EventType.GREEKS:
         res = Greeks.from_stream(data)
     elif msg_type == EventType.PROFILE:
         res = Profile.from_stream(data)
