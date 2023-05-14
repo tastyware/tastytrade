@@ -308,7 +308,7 @@ class DataStreamer:
         while True:
             raw_data = await self._queue_candle.get()
             messages = _map_message(raw_data)
-            yield messages
+            yield messages  # type: ignore
 
     async def close(self) -> None:
         """
