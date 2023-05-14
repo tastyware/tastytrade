@@ -67,7 +67,7 @@ class Watchlist:
         """
         snake_json = {key.replace('-', '_'): value for key, value in json.items()}
         return cls(**snake_json)
-    
+
     @classmethod
     def create_empty(cls, name: str):
         """
