@@ -337,7 +337,7 @@ class DataStreamer:
     async def subscribe(self, key: EventType, dxfeeds: list[str], reset: bool = False) -> None:
         """
         Subscribes to quotes for given list of symbols. Used for recurring data feeds;
-        if you just want to get a one-time quote, use :meth:`stream`.
+        if you just want to get a one-time quote, use :meth:`oneshot`.
 
         :param key: type of subscription to add
         :param dxfeeds: list of symbols to subscribe for
@@ -360,7 +360,7 @@ class DataStreamer:
     async def subscribe_candle(self, ticker: str, start_time: datetime, interval: str = '1d') -> None:
         """
         Subscribes to candle-style 'OHLC' date the for given symbol. Used for recurring
-        data feeds; if you just want to get date once, use :meth:`stream_candle`.
+        data feeds; if you just want to get data once, use :meth:`oneshot_candle`.
 
         :param ticker: symbol to get date for
         :param start_time: starting time for the data range
