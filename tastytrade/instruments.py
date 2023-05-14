@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 import requests
 
@@ -14,8 +14,8 @@ class DestinationVenueSymbol:
     symbol: str
     destination_venue: str
     routable: bool
-    max_quantity_precision: int = None
-    max_price_precision: int = None
+    max_quantity_precision: Optional[int] = None
+    max_price_precision: Optional[int] = None
 
 
 @dataclass
