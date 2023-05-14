@@ -5,7 +5,7 @@ from typing import List
 import requests
 
 from tastytrade.session import Session
-from utils import validate_response
+from tastytrade.utils import validate_response
 
 
 @dataclass
