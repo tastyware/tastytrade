@@ -13,6 +13,7 @@ def symbol_search(session: Session, symbol: str) -> list[dict[str, str]]:
 
     :return: a list of symbols and descriptions that match the search phrase
     """
+    symbol = symbol.replace('/', '%2F')
     response = requests.get(
         f'{session.base_url}/symbols/search/{symbol}',
         headers=session.headers

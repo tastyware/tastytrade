@@ -1,11 +1,12 @@
-tastytrade: A reverse-engineered Python API for Tastytrade
-==========================================================
+tastytrade: An unofficial Python SDK for Tastytrade!
+====================================================
 
 .. toctree::
    :maxdepth: 2
    :caption: Documentation:
 
    install
+   getting-started
 
 .. toctree::
    :maxdepth: 2

@@ -35,6 +35,7 @@ def get_dividends(session: Session, symbol: str) -> dict[str, Any]:
 
     :return: a list of Tastytrade 'DividendInfo' objects in JSON format.
     """
+    symbol = symbol.replace('/', '%2F')
     response = requests.get(
         f'{session.base_url}/market-metrics/historic-corporate-events/dividends/{symbol}',
         headers=session.headers
@@ -54,6 +55,7 @@ def get_earnings(session: Session, symbol: str, start_date: date) -> dict[str, A
 
     :return: a list of Tastytrade 'EarningsInfo' objects in JSON format.
     """
+    symbol = symbol.replace('/', '%2F')
     response = requests.get(
         f'{session.base_url}/market-metrics/historic-corporate-events/earnings-reports/{symbol}',
         headers=session.headers,

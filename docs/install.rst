@@ -3,5 +3,8 @@ Installation
 
 pip
 ---
+Installation is straightforward from PyPI:
 
-:: pip install tastytrade
+.. code-block:: bash
+    
+    $ pip install tastytrade
