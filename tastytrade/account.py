@@ -184,12 +184,12 @@ class Account:
         :return: a list of Tastytrade 'CurrentPosition' objects in JSON format.
         """
         params = {
-            'underlying-symbol': underlying_symbols,
+            'underlying-symbol[]': underlying_symbols,
             'symbol': symbol,
             'instrument-type': instrument_type,
             'include-closed-positions': include_closed,
             'underlying-product-code': underlying_product_code,
-            'partition-keys': partition_keys,
+            'partition-keys[]': partition_keys,
             'net-positions': net_positions,
             'include-marks': include_marks
         }
@@ -209,6 +209,7 @@ class Account:
         page_offset: Optional[int] = None,
         sort: str = 'Desc',
         type: Optional[str] = None,
+        types: Optional[list[str]] = None,
         sub_types: Optional[list[str]] = None,
         start_date: Optional[date] = None,
         end_date: date = date.today(),
@@ -229,6 +230,7 @@ class Account:
         :param page_offset: the page to fetch. Use this if you only want a specific page.
         :param sort: the order to sort results in, either 'Desc' or 'Asc'.
         :param type: the type of transaction.
+        :param types: a list of transaction types to filter by.
         :param sub_types: an array of transaction subtypes to filter by.
         :param start_date: the start date of transactions to query.
         :param end_date: the end date of transactions to query.
@@ -252,7 +254,8 @@ class Account:
             'page-offset': page_offset,
             'sort': sort,
             'type': type,
-            'sub-type': sub_types,
+            'types[]': types,
+            'sub-type[]': sub_types,
             'start-date': start_date,
             'end-date': end_date,
             'instrument-type': instrument_type,
@@ -394,6 +397,8 @@ class Account:
 
         :return: a Tastytrade 'MarginRequirement' object in JSON format.
         """
+        if symbol:
+            symbol = symbol.replace('/', '%2F')
         response = requests.get(
             f'{session.base_url}/accounts/{self.account_number}/margin-requirements/{symbol}/effective',
             headers=session.headers
