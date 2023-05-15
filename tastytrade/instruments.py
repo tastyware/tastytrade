@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Any, List, Optional
+from typing import Any, list, Optional
 
 import requests
 
@@ -95,8 +95,8 @@ class Equity:
     is_illiquid: bool
     is_etf: bool
     streamer_symbol: str
-    tick_sizes: List[TickSizes]
-    option_tick_sizes: Optional[List[TickSizes]]
+    tick_sizes: list[TickSizes]
+    option_tick_sizes: Optional[list[TickSizes]]
     borrow_rate: Optional[str] = None
     cusip: Optional[str] = None
     is_fractional_quantity_eligible: Optional[bool] = None
@@ -155,7 +155,7 @@ class Pagination:
 @dataclass
 class ActiveEquitiesResponse:
     context: str
-    equities: List[Equity]
+    equities: list[Equity]
     pagination: Pagination
 
 
