@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Any, Optional
+from typing import Any, Optional, List
 
 import requests
 
@@ -35,21 +35,20 @@ class Cryptocurrency:
     def from_dict(cls, json: dict[str, Any]) -> 'Cryptocurrency':
         snake_json = snakeify(json)
         snake_json['destination_venue_symbols'] = [
-            DestinationVenueSymbol(**snakeify(dvs)) for dvs in snake_json.pop('destination_venue_symbols')
+            DestinationVenueSymbol(**snakeify(dvs))
+            for dvs in snake_json.pop('destination_venue_symbols')
         ]
         return cls(**snake_json)
 
     @classmethod
     def get_cryptocurrencies(
-        cls,
-        session: Session,
-        symbols: list[str] = []
+        cls, session: Session, symbols: list[str] = []
     ) -> list['Cryptocurrency']:
         params = {'symbol[]': symbols} if symbols else None
         response = requests.get(
             f'{session.base_url}/instruments/cryptocurrencies',
             headers=session.headers,
-            params=params
+            params=params,
         )
         validate_response(response)
 
@@ -59,15 +58,11 @@ class Cryptocurrency:
         return cryptocurrencies
 
     @classmethod
-    def get_cryptocurrency(
-        cls,
-        session: Session,
-        symbol: str
-    ) -> 'Cryptocurrency':
+    def get_cryptocurrency(cls, session: Session, symbol: str) -> 'Cryptocurrency':
         symbol = symbol.replace('/', '%2F')
         response = requests.get(
             f'{session.base_url}/instruments/cryptocurrencies/{symbol}',
-            headers=session.headers
+            headers=session.headers,
         )
         validate_response(response)
 
@@ -77,7 +72,15 @@ class Cryptocurrency:
 
 
 @dataclass
+class TickSizes:
+    value: str
+    threshold: Optional[str] = None
+    symbol: Optional[str] = None
+
+
+@dataclass
 class Equity:
+    id: int
     symbol: str
     instrument_type: str
     short_description: str
@@ -85,19 +88,75 @@ class Equity:
     listed_market: str
     description: str
     lendability: str
-    borrow_rate: float
-    halted_at: str
-    stops_trading_at: str
     market_time_instrument_collection: str
     is_closing_only: bool
     is_options_closing_only: bool
     active: bool
-    is_fractional_quantity_eligible: bool
     is_illiquid: bool
     is_etf: bool
     streamer_symbol: str
-    tick_sizes: dict[str, Any]
-    option_tick_sizes: dict[str, Any]
+    tick_sizes: List[TickSizes]
+    option_tick_sizes: Optional[List[TickSizes]]
+    borrow_rate: Optional[str] = None
+    cusip: Optional[str] = None
+    is_fractional_quantity_eligible: Optional[bool] = None
+
+    @classmethod
+    def get_active_equities(
+        self,
+        session: Session,
+        per_page: int = 1000,
+        page_offset: int = 0,
+        lendability: Optional[str] = None,
+    ) -> "ActiveEquitiesResponse":
+        url = f'{session.base_url}/instruments/equities/active'
+        params = {
+            'per-page': per_page,
+            'page-offset': page_offset,
+            'lendability': lendability,
+        }
+        response = requests.get(url, headers=session.headers, params=params)
+        validate_response(response)
+        response_data = response.json()
+        print(response_data['data'].keys())
+        equities = [
+            Equity(
+                tick_sizes=[TickSizes(**ts) for ts in equity.pop('tick-sizes', [])],
+                option_tick_sizes=[
+                    TickSizes(**ots) for ots in equity.pop('option-tick-sizes', [])
+                ],
+                **{k.replace('-', '_'): v for k, v in equity.items()},
+            )
+            for equity in response_data['data']['items']
+        ]
+        pagination_data = {
+            k.replace('-', '_'): v for k, v in response_data['pagination'].items()
+        }
+        pagination = Pagination(**pagination_data)
+
+        return ActiveEquitiesResponse(
+            context=response_data["context"], equities=equities, pagination=pagination
+        )
+
+
+@dataclass
+class Pagination:
+    per_page: int
+    page_offset: int
+    item_offset: int
+    total_items: int
+    total_pages: int
+    current_item_count: int
+    previous_link: Optional[str]
+    next_link: Optional[str]
+    paging_link_template: Optional[str]
+
+
+@dataclass
+class ActiveEquitiesResponse:
+    context: str
+    equities: List[Equity]
+    pagination: Pagination
 
 
 @dataclass
@@ -124,6 +183,19 @@ class EquityOption:
     is_closing_only: bool
     old_security_number: str
     streamer_symbol: str
+
+
+@dataclass
+class Pagination:
+    per_page: int
+    page_offset: int
+    item_offset: int
+    total_items: int
+    total_pages: int
+    current_item_count: int
+    previous_link: Optional[str]
+    next_link: Optional[str]
+    paging_link_template: Optional[str]
 
 
 @dataclass
