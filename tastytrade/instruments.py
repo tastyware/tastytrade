@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Any, list, Optional
+from typing import Any, Optional
 
 import requests
 
@@ -152,32 +152,39 @@ class Equity:
         lendability: Optional[str] = None,
     ) -> "ActiveEquitiesResponse":
         url = f'{session.base_url}/instruments/equities/active'
-        params = {
-            'per-page': per_page,
-            'page-offset': page_offset,
-            'lendability': lendability,
-        }
-        response = requests.get(url, headers=session.headers, params=params)
-        validate_response(response)
-        response_data = response.json()
-        print(response_data['data'].keys())
-        equities = [
-            Equity(
-                tick_sizes=[TickSizes(**ts) for ts in equity.pop('tick-sizes', [])],
-                option_tick_sizes=[
-                    TickSizes(**ots) for ots in equity.pop('option-tick-sizes', [])
-                ],
-                **{k.replace('-', '_'): v for k, v in equity.items()},
+        equities = []
+        while True:
+            params = {
+                'per-page': per_page,
+                'page-offset': page_offset,
+                'lendability': lendability,
+            }
+            response = requests.get(url, headers=session.headers, params=params)
+            validate_response(response)
+            response_data = response.json()
+            equities.extend(
+                [
+                    Equity(
+                        tick_sizes=[
+                            TickSizes(**ts) for ts in equity.pop('tick-sizes', [])
+                        ],
+                        option_tick_sizes=[
+                            TickSizes(**ots)
+                            for ots in equity.pop('option-tick-sizes', [])
+                        ],
+                        **{k.replace('-', '_'): v for k, v in equity.items()},
+                    )
+                    for equity in response_data['data']['items']
+                ]
             )
-            for equity in response_data['data']['items']
-        ]
-        pagination_data = {
-            k.replace('-', '_'): v for k, v in response_data['pagination'].items()
-        }
-        pagination = Pagination(**pagination_data)
+            total_items = response_data['pagination']['total-items']
+            if page_offset * per_page >= total_items:
+                break
+            else:
+                page_offset += 1
 
         return ActiveEquitiesResponse(
-            context=response_data["context"], equities=equities, pagination=pagination
+            context=response_data["context"], equities=equities
         )
 
     @classmethod
@@ -244,7 +251,6 @@ class Equity:
 class ActiveEquitiesResponse:
     context: str
     equities: list[Equity]
-    pagination: Pagination
 
 
 @dataclass
