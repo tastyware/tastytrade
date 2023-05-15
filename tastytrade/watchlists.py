@@ -4,7 +4,7 @@ from typing import Any
 import requests
 
 from tastytrade.session import Session
-from tastytrade.utils import validate_response
+from tastytrade.utils import desnakeify, snakeify, validate_response
 
 
 @dataclass
@@ -18,7 +18,7 @@ class PairsWatchlist:
         """
         Creates a PairsWatchlist object from the Tastytrade 'PairsWatchlist' object in JSON format.
         """
-        snake_json = {key.replace('-', '_'): value for key, value in json.items()}
+        snake_json = snakeify(json)
         return cls(**snake_json)
 
     @classmethod
@@ -65,7 +65,7 @@ class Watchlist:
         """
         Creates a Watchlist object from the Tastytrade 'Watchlist' object in JSON format.
         """
-        snake_json = {key.replace('-', '_'): value for key, value in json.items()}
+        snake_json = snakeify(json)
         return cls(**snake_json)
 
     @classmethod
@@ -160,7 +160,7 @@ class Watchlist:
 
         :param session: the session to use for the request.
         """
-        json = {key.replace('_', '-'): value for key, value in self.__dict__.items()}
+        json = desnakeify(self.__dict__)
         response = requests.post(
             f'{session.base_url}/watchlists',
             headers=session.headers,

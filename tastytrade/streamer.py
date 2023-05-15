@@ -30,7 +30,7 @@ class SubscriptionType(str, Enum):
     """
     This is an :class:`~enum.Enum` that contains the subscription types for the alert streamer.
     """
-    ACCOUNT = 'connect'  # 'account-subscribe' may be deprecated in the future, but is equivalent
+    ACCOUNT = 'account-subscribe'  # 'account-subscribe' may be deprecated in the future
     HEARTBEAT = 'heartbeat'
     PUBLIC_WATCHLISTS = 'public-watchlists-subscribe'
     QUOTE_ALERTS = 'quote-alerts-subscribe'
@@ -64,6 +64,7 @@ class AlertStreamer:
 
         self._done = False
         self._queue: Queue = Queue()
+        self._websocket = None
 
         self._connect_task = asyncio.create_task(self._connect())
 
@@ -93,7 +94,7 @@ class AlertStreamer:
             self._heartbeat_task = asyncio.create_task(self._heartbeat())
 
             while not self._done:
-                raw_message = await self._websocket.recv()
+                raw_message = await self._websocket.recv()  # type: ignore
                 logger.debug('raw message: %s', raw_message)
                 await self._queue.put(json.loads(raw_message))
 
@@ -103,7 +104,7 @@ class AlertStreamer:
         """
         while True:
             data = await self._queue.get()
-            if data['action'] != SubscriptionType.HEARTBEAT:
+            if data.get('action') != SubscriptionType.HEARTBEAT:
                 yield data
 
     async def account_subscribe(self, accounts: list[Account]) -> None:
@@ -161,7 +162,7 @@ class AlertStreamer:
         if value:
             message['value'] = value  # type: ignore
         logger.debug('sending alert subscription: %s', message)
-        await self._websocket.send(json.dumps(message))
+        await self._websocket.send(json.dumps(message))  # type: ignore
 
 
 class DataStreamer:
