@@ -5,7 +5,7 @@ from typing import Any, Optional
 import requests
 
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeError, validate_response
+from tastytrade.utils import TastytradeError, snakeify, validate_response
 
 
 @dataclass
@@ -15,15 +15,16 @@ class Account:
     nickname: str
     account_type_name: str
     is_closed: bool
-    external_id: Optional[str] = None
-    day_trader_status: Optional[str] = None
+    external_id: str
+    day_trader_status: str
+    is_firm_error: bool
+    is_firm_proprietary: bool
+    is_futures_approved: bool
+    is_test_drive: bool
+    margin_or_cash: str
+    is_foreign: bool
+    created_at: datetime
     closed_at: Optional[str] = None
-    is_firm_error: Optional[bool] = None
-    is_firm_proprietary: Optional[bool] = None
-    is_futures_approved: Optional[bool] = None
-    is_test_drive: Optional[str] = None
-    margin_or_cash: Optional[str] = None
-    is_foreign: Optional[str] = None
     funding_date: Optional[date] = None
     investment_objective: Optional[str] = None
     liquidity_needs: Optional[str] = None
@@ -32,7 +33,6 @@ class Account:
     futures_account_purpose: Optional[str] = None
     external_fdid: Optional[str] = None
     suitable_options_level: Optional[str] = None
-    created_at: Optional[datetime] = None
     submitting_user_id: Optional[str] = None
 
     @classmethod
@@ -40,7 +40,7 @@ class Account:
         """
         Creates a :class:`Account` object from the Tastytrade 'Account' object in JSON format.
         """
-        snake_json = {key.replace('-', '_'): value for key, value in json.items()}
+        snake_json = snakeify(json)
         return cls(**snake_json)
 
     @classmethod
@@ -61,8 +61,8 @@ class Account:
         validate_response(response)  # throws exception if not 200
 
         accounts = []
-        data = response.json()['data']
-        for entry in data['items']:
+        data = response.json()['data']['items']
+        for entry in data:
             account = entry['account']
             if not include_closed and account['is-closed']:
                 continue

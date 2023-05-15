@@ -1,5 +1,6 @@
 import calendar
 from datetime import date, timedelta
+from typing import Any
 
 from requests import Response
 
@@ -40,3 +41,25 @@ def get_third_friday(d: date) -> date:
             candidate += timedelta(weeks=1)
 
     return candidate
+
+
+def snakeify(json: dict[str, Any]) -> dict[str, Any]:
+    """
+    Converts all keys in the given dictionary to snake case.
+
+    :param json: dictionary to convert
+
+    :return: dictionary with snake case keys
+    """
+    return {key.replace('-', '_'): value for key, value in json.items()}
+
+
+def desnakeify(json: dict[str, Any]) -> dict[str, Any]:
+    """
+    Converts all keys in the given dictionary from underscores to dashes.
+
+    :param json: dictionary to convert
+
+    :return: dictionary with dashed keys
+    """
+    return {key.replace('_', '-'): value for key, value in json.items()}

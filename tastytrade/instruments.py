@@ -5,7 +5,7 @@ from typing import Any, Optional
 import requests
 
 from tastytrade.session import Session
-from tastytrade.utils import validate_response
+from tastytrade.utils import snakeify, validate_response
 
 
 @dataclass
@@ -28,37 +28,52 @@ class Cryptocurrency:
     is_closing_only: bool
     active: bool
     tick_size: float
-    streamer_symbol: str
     destination_venue_symbols: list[DestinationVenueSymbol]
+    streamer_symbol: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, json: dict[str, Any]) -> 'Cryptocurrency':
+        snake_json = snakeify(json)
+        snake_json['destination_venue_symbols'] = [
+            DestinationVenueSymbol(**snakeify(dvs)) for dvs in snake_json.pop('destination_venue_symbols')
+        ]
+        return cls(**snake_json)
 
     @classmethod
     def get_cryptocurrencies(
-        self, session: Session, symbols: list[str] = None
+        cls,
+        session: Session,
+        symbols: list[str] = []
     ) -> list['Cryptocurrency']:
-        url = f'{session.base_url}/instruments/cryptocurrencies'
-        params = None
-        if symbols:
-            params = {'symbol[]': symbols}
-
-        response = requests.get(url, headers=session.headers, params=params)
+        params = {'symbol[]': symbols} if symbols else None
+        response = requests.get(
+            f'{session.base_url}/instruments/cryptocurrencies',
+            headers=session.headers,
+            params=params
+        )
         validate_response(response)
 
         data = response.json()['data']['items']
-        cryptocurrencies = []
-        for crypto in data:
-            crypto = {
-                k.replace('-', '_'): v for k, v in data.items()
-            }  # replace hyphens with underscores in keys
-            destination_venue_symbols = [
-                DestinationVenueSymbol(
-                    **{k.replace('-', '_'): v for k, v in dvs.items()}
-                )
-                for dvs in crypto.pop('destination_venue_symbols')
-            ]
-            cryptocurrencies.append(
-                Cryptocurrency(destination_venue_symbols=destination_venue_symbols, **crypto)
-            )
+        cryptocurrencies = [cls.from_dict(entry) for entry in data]
+
         return cryptocurrencies
+
+    @classmethod
+    def get_cryptocurrency(
+        cls,
+        session: Session,
+        symbol: str
+    ) -> 'Cryptocurrency':
+        symbol = symbol.replace('/', '%2F')
+        response = requests.get(
+            f'{session.base_url}/instruments/cryptocurrencies/{symbol}',
+            headers=session.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']
+
+        return cls.from_dict(data)
 
 
 @dataclass
