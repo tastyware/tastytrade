@@ -135,7 +135,7 @@ class Equity:
     ) -> list['Equity']:
         """
         Returns a list of :class:`Equity` objects from the given symbols.
-        
+
         :param session: the session to use for the request.
         :param symbols: the symbols to get the equities for.
         :param lendability:
@@ -167,7 +167,7 @@ class Equity:
     def get_equity(cls, session: Session, symbol: str) -> 'Equity':
         """
         Returns a :class:`Equity` object from the given symbol.
-        
+
         :param session: the session to use for the request.
         :param symbol: the symbol to get the equity for.
 
