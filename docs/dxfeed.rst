@@ -15,6 +15,14 @@ Event
 .. autoclass:: Event
    :members:
 
+Candle
+------
+
+.. module:: tastytrade.dxfeed.candle
+
+.. autoclass:: Candle
+   :members:
+
 Greeks
 ------
 

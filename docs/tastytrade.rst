@@ -3,46 +3,48 @@ tastytrade
 
 Account
 -------
-
 .. module:: tastytrade.account
 
-.. autoclass:: TradingAccount
+.. autoclass:: Account
    :members:
 
-Option
-------
+Instruments
+-----------
+.. module:: tastytrade.instruments
 
-.. module:: tastytrade.option
-
-.. autoclass:: OptionType
+.. autoclass:: Cryptocurrency
    :members:
 
-.. autoclass:: Option
+.. autoclass:: Equity
    :members:
 
-.. autoclass:: OptionChain
+.. autoclass:: EquityOption
    :members:
 
-.. autofunction:: get_option_chain
-
-Order
------
-
-.. module:: tastytrade.order
-
-.. autodata:: OrderType
-
-.. autodata:: OrderPriceEffect
-
-.. autodata:: OrderStatus
-
-.. autodata:: TimeInForce
-
-.. autoclass:: OrderDetails
+.. autoclass:: Future
    :members:
 
-.. autoclass:: Order
+.. autoclass:: FutureProduct
    :members:
+
+.. autoclass:: FutureOption
+   :members:
+
+.. autoclass:: FutureOptionProduct
+   :members:
+
+.. autoclass:: Warrant
+   :members:
+
+Metrics
+-------
+.. module:: tastytrade.metrics
+
+.. autofunction:: get_market_metrics
+
+.. autofunction:: get_dividends
+
+.. autofunction:: get_earnings
 
 Search
 ------
@@ -52,7 +54,6 @@ Search
 
 Session
 -------
-
 .. module:: tastytrade.session
 
 .. autoclass:: Session
@@ -62,15 +63,25 @@ Streamer
 --------
 .. module:: tastytrade.streamer
 
-.. autoclass:: EventType
+.. autoclass:: SubscriptionType
+   :members:
+
+.. autoclass:: AlertStreamer
    :members:
 
 .. autoclass:: DataStreamer
    :members:
 
+.. autofunction:: _map_message
+
 Utils
 -----
 .. module:: tastytrade.utils
+
+.. autoclass:: TastytradeError
+   :members:
+
+.. autofunction:: validate_response
 
 .. autofunction:: get_third_friday
 
@@ -79,8 +90,8 @@ Watchlists
 
 .. module:: tastytrade.watchlists
 
-.. autoclass:: Watchlist
+.. autoclass:: PairsWatchlist
    :members:
 
-.. autoclass:: WatchlistGroup
+.. autoclass:: Watchlist
    :members:

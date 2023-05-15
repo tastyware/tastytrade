@@ -33,6 +33,9 @@ class Cryptocurrency:
 
     @classmethod
     def from_dict(cls, json: dict[str, Any]) -> 'Cryptocurrency':
+        """
+        Creates a :class:`Cryptocurrency` object from the Tastytrade 'Cryptocurrency' object in JSON format.
+        """
         snake_json = snakeify(json)
         snake_json['destination_venue_symbols'] = [
             DestinationVenueSymbol(**snakeify(dvs))
@@ -44,6 +47,14 @@ class Cryptocurrency:
     def get_cryptocurrencies(
         cls, session: Session, symbols: list[str] = []
     ) -> list['Cryptocurrency']:
+        """
+        Returns a list of :class:`Cryptocurrency` objects from the given symbols.
+
+        :param session: the session to use for the request.
+        :param symbols: the symbols to get the cryptocurrencies for.
+
+        :return: a list of :class:`Cryptocurrency` objects.
+        """
         params = {'symbol[]': symbols} if symbols else None
         response = requests.get(
             f'{session.base_url}/instruments/cryptocurrencies',
@@ -59,6 +70,14 @@ class Cryptocurrency:
 
     @classmethod
     def get_cryptocurrency(cls, session: Session, symbol: str) -> 'Cryptocurrency':
+        """
+        Returns a :class:`Cryptocurrency` object from the given symbol.
+
+        :param session: the session to use for the request.
+        :param symbol: the symbol to get the cryptocurrency for.
+
+        :return: a :class:`Cryptocurrency` object.
+        """
         symbol = symbol.replace('/', '%2F')
         response = requests.get(
             f'{session.base_url}/instruments/cryptocurrencies/{symbol}',
@@ -79,11 +98,23 @@ class TickSizes:
 
 
 @dataclass
+class Pagination:
+    per_page: int
+    page_offset: int
+    item_offset: int
+    total_items: int
+    total_pages: int
+    current_item_count: int
+    previous_link: Optional[str]
+    next_link: Optional[str]
+    paging_link_template: Optional[str]
+
+
+@dataclass
 class Equity:
     id: int
     symbol: str
     instrument_type: str
-    short_description: str
     is_index: bool
     listed_market: str
     description: str
@@ -95,11 +126,22 @@ class Equity:
     is_illiquid: bool
     is_etf: bool
     streamer_symbol: str
-    tick_sizes: list[TickSizes]
-    option_tick_sizes: Optional[list[TickSizes]]
-    borrow_rate: Optional[str] = None
+    borrow_rate: Optional[float] = None
     cusip: Optional[str] = None
+    short_description: Optional[str] = None
+    halted_at: Optional[datetime] = None
+    stops_trading_at: Optional[datetime] = None
     is_fractional_quantity_eligible: Optional[bool] = None
+    tick_sizes: Optional[list[TickSizes]] = None
+    option_tick_sizes: Optional[list[TickSizes]] = None
+
+    @classmethod
+    def from_dict(cls, json: dict[str, Any]) -> 'Equity':
+        """
+        Creates a :class:`Equity` object from the Tastytrade 'Equity' object in JSON format.
+        """
+        snake_json = snakeify(json)
+        return cls(**snake_json)
 
     @classmethod
     def get_active_equities(
@@ -138,18 +180,64 @@ class Equity:
             context=response_data["context"], equities=equities, pagination=pagination
         )
 
+    @classmethod
+    def get_equities(
+        cls,
+        session: Session,
+        symbols: Optional[list[str]] = None,
+        lendability: Optional[str] = None,
+        is_index: Optional[bool] = None,
+        is_etf: Optional[bool] = None,
+    ) -> list['Equity']:
+        """
+        Returns a list of :class:`Equity` objects from the given symbols.
 
-@dataclass
-class Pagination:
-    per_page: int
-    page_offset: int
-    item_offset: int
-    total_items: int
-    total_pages: int
-    current_item_count: int
-    previous_link: Optional[str]
-    next_link: Optional[str]
-    paging_link_template: Optional[str]
+        :param session: the session to use for the request.
+        :param symbols: the symbols to get the equities for.
+        :param lendability:
+            the lendability of the equities; 'Easy To Borrow', 'Locate Required', 'Preborrow'
+        :param is_index: whether the equities are indexes.
+        :param is_etf: whether the equities are ETFs.
+
+        :return: a list of :class:`Equity` objects.
+        """
+        params = {
+            'symbol[]': symbols,
+            'lendability': lendability,
+            'is-index': is_index,
+            'is-etf': is_etf,
+        }
+        response = requests.get(
+            f'{session.base_url}/instruments/equities',
+            headers=session.headers,
+            params={k: v for k, v in params.items() if v is not None},  # type: ignore
+        )
+        validate_response(response)
+
+        data = response.json()['data']['items']
+        equities = [cls.from_dict(entry) for entry in data]
+
+        return equities
+
+    @classmethod
+    def get_equity(cls, session: Session, symbol: str) -> 'Equity':
+        """
+        Returns a :class:`Equity` object from the given symbol.
+
+        :param session: the session to use for the request.
+        :param symbol: the symbol to get the equity for.
+
+        :return: a :class:`Equity` object.
+        """
+        symbol = symbol.replace('/', '%2F')
+        response = requests.get(
+            f'{session.base_url}/instruments/equities/{symbol}', headers=session.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']
+
+        return cls.from_dict(data)
 
 
 @dataclass
@@ -183,19 +271,6 @@ class EquityOption:
     is_closing_only: bool
     old_security_number: str
     streamer_symbol: str
-
-
-@dataclass
-class Pagination:
-    per_page: int
-    page_offset: int
-    item_offset: int
-    total_items: int
-    total_pages: int
-    current_item_count: int
-    previous_link: Optional[str]
-    next_link: Optional[str]
-    paging_link_template: Optional[str]
 
 
 @dataclass
