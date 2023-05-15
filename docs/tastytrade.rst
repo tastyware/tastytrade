@@ -8,6 +8,33 @@ Account
 .. autoclass:: Account
    :members:
 
+Instruments
+-----------
+.. module:: tastytrade.instruments
+
+.. autoclass:: Cryptocurrency
+   :members:
+
+.. autoclass:: Equity
+   :members:
+
+.. autoclass:: EquityOption
+   :members:
+
+.. autoclass:: Future
+   :members:
+
+.. autoclass:: FutureProduct
+   :members:
+
+.. autoclass:: FutureOption
+   :members:
+
+.. autoclass:: FutureOptionProduct
+   :members:
+
+.. autoclass:: Warrant
+   :members:
 
 Metrics
 -------
