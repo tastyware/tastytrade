@@ -259,21 +259,9 @@ class DataStreamer:
 
     async def _handshake(self) -> None:
         """
-        Sends a handshake message to the specified WebSocket connection.
-
-        The handshake message is a JSON-encoded dictionary with the following keys:
-        - id: a unique identifier for the message
-        - version: the version of the Bayeux protocol used
-        - minimumVersion: the minimum version of the Bayeux protocol supported
-        - channel: the channel to which the message is being sent
-        - supportedConnectionTypes: a list of supported connection types
-        - ext: an extension dictionary containing additional data
-        - advice: an advice dictionary with the following keys:
-            - timeout: the maximum time to wait for a response
-            - interval: the minimum time between retries
-
-        The handshake message is sent as a JSON-encoded array with a single element,
-        containing the handshake message as its only element.
+        Sends a handshake message to the specified WebSocket connection. The handshake
+        message is sent as a JSON-encoded array with a single element, containing the
+        handshake message as its only element.
         """
         id = await self._next_id()
         message = {
@@ -292,8 +280,8 @@ class DataStreamer:
 
     async def listen(self) -> AsyncIterator[Event]:
         """
-        Using the existing subscriptions, pulls :class:`~tastytrade.dxfeed.event.Event`s
-        and yield returns them. Never exits unless there's an error or the channel is closed.
+        Using the existing subscriptions, pulls :class:`~tastytrade.dxfeed.event.Event`s and yield returns
+        them. Never exits unless there's an error or the channel is closed.
         """
         while True:
             raw_data = await self._queue.get()
@@ -301,7 +289,7 @@ class DataStreamer:
             for message in messages:
                 yield message
 
-    async def listen_candle(self) -> AsyncIterator[list[Candle]]:
+    async def listen_candle(self) -> AsyncIterator[Candle]:
         """
         Using the existing subscriptions, pulls candles and yield returns them.
         Never exits unless there's an error or the channel is closed.
@@ -309,7 +297,8 @@ class DataStreamer:
         while True:
             raw_data = await self._queue_candle.get()
             messages = _map_message(raw_data)
-            yield messages  # type: ignore
+            for message in messages:
+                yield message  # type: ignore
 
     async def close(self) -> None:
         """
@@ -358,32 +347,6 @@ class DataStreamer:
         logger.debug('sending subscription: %s', message)
         await self._websocket.send(json.dumps([message]))
 
-    async def subscribe_candle(self, ticker: str, start_time: datetime, interval: str = '1d') -> None:
-        """
-        Subscribes to candle-style 'OHLC' date the for given symbol. Used for recurring
-        data feeds; if you just want to get data once, use :meth:`oneshot_candle`.
-
-        :param ticker: symbol to get date for
-        :param start_time: starting time for the data range
-        :param interval: the width of each candle in time
-        """
-        id = await self._next_id()
-        message = {
-            'id': id,
-            'channel': Channel.SUBSCRIPTION,
-            'data': {
-                'addTimeSeries': {
-                    'Candle': [{
-                        'eventSymbol': f'{ticker}{{={interval}}}',
-                        'fromTime': int(start_time.timestamp())
-                    }]
-                }
-            },
-            'clientId': self.client_id
-        }
-        logger.debug('sending subscription: %s', message)
-        await self._websocket.send(json.dumps([message]))
-
     async def unsubscribe(self, key: EventType, dxfeeds: list[str]) -> None:
         """
         Removes existing subscription for given list of symbols.
@@ -398,25 +361,6 @@ class DataStreamer:
             'data': {
                 'reset': False,
                 'remove': {key: dxfeeds}
-            },
-            'clientId': self.client_id
-        }
-        logger.debug('sending unsubscription: %s', message)
-        await self._websocket.send(json.dumps([message]))
-
-    async def unsubscribe_candle(self, ticker: str, interval: str = '1d') -> None:
-        """
-        Removes existing :class:`~tastytrade.dxfeed.event.Candle` subscription for given list of symbols.
-
-        :param ticker: symbol to unsubscribe from
-        :param interval: candle width to unsubscribe from
-        """
-        id = await self._next_id()
-        message = {
-            'id': id,
-            'channel': Channel.SUBSCRIPTION,
-            'data': {
-                'removeTimeSeries': {'Candle': [f'{ticker}{{={interval}}}']}
             },
             'clientId': self.client_id
         }
@@ -448,29 +392,70 @@ class DataStreamer:
         await self.unsubscribe(key, dxfeeds)
         return data
 
+    async def subscribe_candle(self, ticker: str, start_time: datetime, interval: str) -> None:
+        """
+        Subscribes to candle-style 'OHLC' data for the given symbol.
+
+        :param ticker: symbol to get date for
+        :param start_time: starting time for the data range
+        :param interval: the width of each candle in time, e.g. '5m', '1h', '3d', '1w', '1mo'
+        """
+        id = await self._next_id()
+        message = {
+            'id': id,
+            'channel': Channel.SUBSCRIPTION,
+            'data': {
+                'addTimeSeries': {
+                    'Candle': [{
+                        'eventSymbol': f'{ticker}{{={interval}}}',
+                        'fromTime': int(start_time.timestamp() * 1000)
+                    }]
+                }
+            },
+            'clientId': self.client_id
+        }
+        logger.debug('sending subscription: %s', message)
+        await self._websocket.send(json.dumps([message]))
+
+    async def unsubscribe_candle(self, ticker: str, interval: str) -> None:
+        """
+        Removes existing :class:`~tastytrade.dxfeed.event.Candle` subscription for given list of symbols.
+
+        :param ticker: symbol to unsubscribe from
+        :param interval: candle width to unsubscribe from
+        """
+        id = await self._next_id()
+        message = {
+            'id': id,
+            'channel': Channel.SUBSCRIPTION,
+            'data': {
+                'removeTimeSeries': {'Candle': [f'{ticker}{{={interval}}}']}
+            },
+            'clientId': self.client_id
+        }
+        logger.debug('sending unsubscription: %s', message)
+        await self._websocket.send(json.dumps([message]))
+
     async def oneshot_candle(self, ticker: str, start_time: datetime, interval: str) -> list[Candle]:
         """
-        Using the given information, subscribes to the list of symbols passed, streams
-        the requested information once, then unsubscribes. If you want to maintain the
-        subscription open, add a subscription with :meth:`subscribe_candle` and listen
-        with :meth:`listen_candle`.
+        Subscribes to candle-style 'OHLC' data for the given symbol, waits for
+        the complete range to be received, then unsubscribes.
 
-        If you use this alongside :meth:`listen_candle`, you will get some unexpected
-        behavior. Most apps should use either this or :meth:`listen_candle` but not both.
-
-        :param ticker: the symbol to chart for
-        :param start_time: the time to start the chart at
-        :param interval: the time interval for each candle
-
-        :return: list of :class:`~tastytrade.dxfeed.candle.Candle`s pulled.
+        :param ticker: symbol to get date for
+        :param start_time: starting time for the data range
+        :param interval: the width of each candle in time, e.g. '5m', '1h', '3d', '1w', '1mo'
         """
         await self.subscribe_candle(ticker, start_time, interval)
-        async for item in self.listen_candle():
-            data = item
-            break
+        candles = []
+        async for candle in self.listen_candle():
+            candles.append(candle)
+            # until we hit the start date, keep going
+            if datetime.fromtimestamp(candle.time / 1000) <= start_time:
+                break
         await self.unsubscribe_candle(ticker, interval)
 
-        return data
+        candles.reverse()
+        return candles
 
 
 def _map_message(message) -> list[Event]:
