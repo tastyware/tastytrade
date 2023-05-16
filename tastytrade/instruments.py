@@ -1,21 +1,24 @@
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Any, Optional
+from typing import Any, Optional, TypedDict
 
 import requests
 
 from tastytrade.session import Session
 from tastytrade.utils import snakeify, validate_response
 
-
-@dataclass
-class DestinationVenueSymbol:
-    id: int
-    symbol: str
-    destination_venue: str
-    routable: bool
-    max_quantity_precision: Optional[int] = None
-    max_price_precision: Optional[int] = None
+DestinationVenueSymbol = TypedDict(
+    'DestinationVenueSymbol',
+    {
+        'id': int,
+        'symbol': str,
+        'destination_venue': str,
+        'routable': bool,
+        'max_quantity_precision': int,
+        'max_price_precision': int,
+    },
+    total=False,
+)
 
 
 @dataclass
@@ -38,15 +41,14 @@ class Cryptocurrency:
         """
         snake_json = snakeify(json)
         snake_json['destination_venue_symbols'] = [
-            DestinationVenueSymbol(**snakeify(dvs)) for dvs in snake_json.pop('destination_venue_symbols')
+            DestinationVenueSymbol(**snakeify(dvs))
+            for dvs in snake_json.pop('destination_venue_symbols')
         ]
         return cls(**snake_json)
 
     @classmethod
     def get_cryptocurrencies(
-        cls,
-        session: Session,
-        symbols: list[str] = []
+        cls, session: Session, symbols: list[str] = []
     ) -> list['Cryptocurrency']:
         """
         Returns a list of :class:`Cryptocurrency` objects from the given symbols.
@@ -60,7 +62,7 @@ class Cryptocurrency:
         response = requests.get(
             f'{session.base_url}/instruments/cryptocurrencies',
             headers=session.headers,
-            params=params
+            params=params,
         )
         validate_response(response)
 
@@ -82,13 +84,20 @@ class Cryptocurrency:
         symbol = symbol.replace('/', '%2F')
         response = requests.get(
             f'{session.base_url}/instruments/cryptocurrencies/{symbol}',
-            headers=session.headers
+            headers=session.headers,
         )
         validate_response(response)
 
         data = response.json()['data']
 
         return cls.from_dict(data)
+
+
+TickSizes = TypedDict(
+    'TickSizes',
+    {'value': str, 'threshold': str, 'symbol': str},
+    total=False,
+)
 
 
 @dataclass
@@ -107,14 +116,14 @@ class Equity:
     is_illiquid: bool
     is_etf: bool
     streamer_symbol: str
+    borrow_rate: Optional[float] = None
     cusip: Optional[str] = None
     short_description: Optional[str] = None
     halted_at: Optional[datetime] = None
     stops_trading_at: Optional[datetime] = None
-    borrow_rate: Optional[float] = None
     is_fractional_quantity_eligible: Optional[bool] = None
-    tick_sizes: Optional[dict[str, Any]] = None
-    option_tick_sizes: Optional[dict[str, Any]] = None
+    tick_sizes: Optional[list[TickSizes]] = None
+    option_tick_sizes: Optional[list[TickSizes]] = None
 
     @classmethod
     def from_dict(cls, json: dict[str, Any]) -> 'Equity':
@@ -125,13 +134,55 @@ class Equity:
         return cls(**snake_json)
 
     @classmethod
+    def get_active_equities(
+        self,
+        session: Session,
+        per_page: int = 1000,
+        page_offset: int = 0,
+        lendability: Optional[str] = None,
+    ) -> list['Equity']:
+        url = f'{session.base_url}/instruments/equities/active'
+        equities = []
+        while True:
+            params = {
+                'per-page': per_page,
+                'page-offset': page_offset,
+                'lendability': lendability,
+            }
+            response = requests.get(url, headers=session.headers, params=params)
+            validate_response(response)
+            response_data = response.json()
+            equities.extend(
+                [
+                    Equity(
+                        tick_sizes=[
+                            TickSizes(**ts) for ts in equity.pop('tick-sizes', [])
+                        ],
+                        option_tick_sizes=[
+                            TickSizes(**ots)
+                            for ots in equity.pop('option-tick-sizes', [])
+                        ],
+                        **{k.replace('-', '_'): v for k, v in equity.items()},
+                    )
+                    for equity in response_data['data']['items']
+                ]
+            )
+            total_items = response_data['pagination']['total-items']
+            if page_offset * per_page >= total_items:
+                break
+            else:
+                page_offset += 1
+
+        return equities
+
+    @classmethod
     def get_equities(
         cls,
         session: Session,
         symbols: Optional[list[str]] = None,
         lendability: Optional[str] = None,
         is_index: Optional[bool] = None,
-        is_etf: Optional[bool] = None
+        is_etf: Optional[bool] = None,
     ) -> list['Equity']:
         """
         Returns a list of :class:`Equity` objects from the given symbols.
@@ -149,12 +200,12 @@ class Equity:
             'symbol[]': symbols,
             'lendability': lendability,
             'is-index': is_index,
-            'is-etf': is_etf
+            'is-etf': is_etf,
         }
         response = requests.get(
             f'{session.base_url}/instruments/equities',
             headers=session.headers,
-            params={k: v for k, v in params.items() if v is not None}  # type: ignore
+            params={k: v for k, v in params.items() if v is not None},  # type: ignore
         )
         validate_response(response)
 
@@ -175,8 +226,7 @@ class Equity:
         """
         symbol = symbol.replace('/', '%2F')
         response = requests.get(
-            f'{session.base_url}/instruments/equities/{symbol}',
-            headers=session.headers
+            f'{session.base_url}/instruments/equities/{symbol}', headers=session.headers
         )
         validate_response(response)
 
