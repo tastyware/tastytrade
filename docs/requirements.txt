@@ -54,5 +54,7 @@ sphinxcontrib-qthelp==1.0.3
     # via sphinx
 sphinxcontrib-serializinghtml==1.1.5
     # via sphinx
+sphinx-toolbox==3.4.0
+    # manually added
 urllib3==1.26.12
     # via requests

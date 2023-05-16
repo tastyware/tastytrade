@@ -389,7 +389,7 @@ class Account:
 
         :return: a list of two Tastytrade 'AccountBalanceSnapshot' objects in JSON format.
         """
-        params = {
+        params: dict[str, Any] = {
             'snapshot-date': snapshot_date,
             'time-of-day': time_of_day
         }
@@ -397,7 +397,7 @@ class Account:
         response = requests.get(
             f'{session.base_url}/accounts/{self.account_number}/balance-snapshots',
             headers=session.headers,
-            params={k: v for k, v in params.items() if v is not None}  # type: ignore
+            params={k: v for k, v in params.items() if v is not None}
         )
         validate_response(response)  # throws exception if not 200
 
@@ -432,7 +432,7 @@ class Account:
 
         :return: a list of Tastytrade 'CurrentPosition' objects in JSON format.
         """
-        params = {
+        params: dict[str, Any] = {
             'underlying-symbol[]': underlying_symbols,
             'symbol': symbol,
             'instrument-type': instrument_type,
@@ -445,7 +445,7 @@ class Account:
         response = requests.get(
             f'{session.base_url}/accounts/{self.account_number}/positions',
             headers=session.headers,
-            params={k: v for k, v in params.items() if v is not None}  # type: ignore
+            params={k: v for k, v in params.items() if v is not None}
         )
         validate_response(response)  # throws exception if not 200
 
@@ -454,8 +454,6 @@ class Account:
     def get_history(
         self,
         session: Session,
-        per_page: int = 250,
-        page_offset: Optional[int] = None,
         sort: str = 'Desc',
         type: Optional[str] = None,
         types: Optional[list[str]] = None,
@@ -475,8 +473,6 @@ class Account:
         Get transaction history of the account.
 
         :param session: the session to use for the request.
-        :param per_page: the number of transactions to return per page.
-        :param page_offset: the page to fetch. Use this if you only want a specific page.
         :param sort: the order to sort results in, either 'Desc' or 'Asc'.
         :param type: the type of transaction.
         :param types: a list of transaction types to filter by.
@@ -498,9 +494,10 @@ class Account:
 
         :return: a list of Tastytrade 'Transaction' objects in JSON format.
         """
-        params = {
-            'per-page': per_page,
-            'page-offset': page_offset,
+        PER_PAGE = 250
+        params: dict[str, Any] = {
+            'per-page': PER_PAGE,
+            'page-offset': 0,
             'sort': sort,
             'type': type,
             'types[]': types,
@@ -516,13 +513,6 @@ class Account:
             'start-at': start_at,
             'end-at': end_at
         }
-        # if page offset is specified, only get that page
-        if params['page-offset']:
-            is_paged = False
-        # if page offset is not specified, get all pages
-        else:
-            is_paged = True
-            params['page-offset'] = 0
 
         # loop through pages and get all transactions
         results = []
@@ -530,15 +520,12 @@ class Account:
             response = requests.get(
                 f'{session.base_url}/accounts/{self.account_number}/transactions',
                 headers=session.headers,
-                params={k: v for k, v in params.items() if v is not None}  # type: ignore
+                params={k: v for k, v in params.items() if v is not None}
             )
             validate_response(response)
 
             data = response.json()
             results.extend(data['data']['items'])
-
-            if not is_paged:
-                break
 
             pagination = data['pagination']
             if pagination['page-offset'] >= pagination['total-pages'] - 1:
@@ -573,11 +560,11 @@ class Account:
 
         :return: a dict containing the total fees and the price effect.
         """
-        params = {'date': date}
+        params: dict[str, Any] = {'date': date}
         response = requests.get(
             f'{session.base_url}/accounts/{self.account_number}/transactions/total-fees',
             headers=session.headers,
-            params=params  # type: ignore
+            params=params
         )
         validate_response(response)
 

@@ -76,10 +76,11 @@ def get_earnings(session: Session, symbol: str, start_date: date) -> list[Earnin
     :return: a list of Tastytrade 'EarningsInfo' objects in JSON format.
     """
     symbol = symbol.replace('/', '%2F')
+    params: dict[str, Any] = {'start-date': start_date}
     response = requests.get(
         f'{session.base_url}/market-metrics/historic-corporate-events/earnings-reports/{symbol}',
         headers=session.headers,
-        params={'start-date': start_date}  # type: ignore
+        params=params
     )
     validate_response(response)
 
