@@ -7,7 +7,6 @@ import requests
 from tastytrade.session import Session
 from tastytrade.utils import snakeify, validate_response
 
-
 DestinationVenueSymbol = TypedDict(
     'DestinationVenueSymbol',
     {
