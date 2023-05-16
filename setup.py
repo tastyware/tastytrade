@@ -3,14 +3,14 @@ from setuptools import find_packages, setup
 from tastytrade import VERSION
 
 
-f = open('README.md', 'r')
+f = open('README.rst', 'r')
 LONG_DESCRIPTION = f.read()
 f.close()
 
 setup(
     name='tastytrade',
     version=VERSION,
-    description='An unofficial API for Tastytrade!',
+    description='An unofficial SDK for Tastytrade!',
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
     author='Graeme Holliday',
