@@ -9,6 +9,7 @@ class TastytradeError(Exception):
     """
     An internal error raised by the Tastytrade API.
     """
+
     pass
 
 
@@ -51,7 +52,12 @@ def snakeify(json: dict[str, Any]) -> dict[str, Any]:
 
     :return: dictionary with snake case keys
     """
-    return {key.replace('-', '_'): value for key, value in json.items()}
+    result = {}
+    for key, value in json.items():
+        if isinstance(value, dict):
+            value = snakeify(value)
+        result[key.replace('-', '_')] = value
+    return result
 
 
 def desnakeify(json: dict[str, Any]) -> dict[str, Any]:
@@ -62,4 +68,9 @@ def desnakeify(json: dict[str, Any]) -> dict[str, Any]:
 
     :return: dictionary with dashed keys
     """
-    return {key.replace('_', '-'): value for key, value in json.items()}
+    result = {}
+    for key, value in json.items():
+        if isinstance(value, dict):
+            value = desnakeify(value)
+        result[key.replace('_', '-')] = value
+    return result
