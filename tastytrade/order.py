@@ -4,7 +4,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
 
-import aiohttp
+import requests
 
 
 class OrderType(Enum):
@@ -128,13 +128,13 @@ class Order:
         )
 
         res = []
-        async with aiohttp.request('GET', url, headers=session.headers) as resp:
-            if resp.status != 200:
-                raise Exception('Could not get current open orders')
-            data = (await resp.json())['data']['items']
-            for order_data in data:
-                order = cls.from_dict(order_data)
-                if not order.details.status.is_active():
-                    continue
-                res.append(order)
+        resp = requests.get(url, headers=session.headers)
+        if resp.status_code != 200:
+            raise Exception('Could not get current open orders')
+        data = (await resp.json())['data']['items']
+        for order_data in data:
+            order = cls.from_dict(order_data)
+            if not order.details.status.is_active():
+                continue
+            res.append(order)
         return res

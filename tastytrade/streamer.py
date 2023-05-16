@@ -48,7 +48,9 @@ class AlertStreamer:
 
         session = Session('user', 'pass')
         streamer = await AlertStreamer.create(session)
+        accounts = Account.get_accounts(session)
 
+        await streamer.account_subscribe(accounts)
         await streamer.public_watchlists_subscribe()
         await streamer.quote_alerts_subscribe()
         await streamer.user_message_subscribe(session)

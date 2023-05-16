@@ -264,7 +264,6 @@ class Account:
     nickname: str
     account_type_name: str
     is_closed: bool
-    external_id: str
     day_trader_status: str
     is_firm_error: bool
     is_firm_proprietary: bool
@@ -273,6 +272,7 @@ class Account:
     margin_or_cash: str
     is_foreign: bool
     created_at: datetime
+    external_id: Optional[str] = None
     closed_at: Optional[str] = None
     funding_date: Optional[date] = None
     investment_objective: Optional[str] = None

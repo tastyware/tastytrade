@@ -5,12 +5,12 @@ tastytrade: An unofficial Python SDK for Tastytrade!
    :maxdepth: 2
    :caption: Documentation:
 
-   install
-   getting-started
+.. include:: ../README.rst
+   :start-after: inclusion-marker
 
 .. toctree::
    :maxdepth: 2
-   :caption: API Reference:
+   :caption: SDK Reference:
 
    tastytrade
    dxfeed
