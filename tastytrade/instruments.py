@@ -32,7 +32,7 @@ class Cryptocurrency:
     is_closing_only: bool
     active: bool
     tick_size: float
-    destination_venue_symbols: list[dict[str, Any]]
+    destination_venue_symbols: list[DestinationVenueSymbol]
     streamer_symbol: Optional[str] = None
 
     @classmethod
@@ -59,7 +59,7 @@ class Cryptocurrency:
         response = requests.get(
             f'{session.base_url}/instruments/cryptocurrencies',
             headers=session.headers,
-            params=params,
+            params=params
         )
         validate_response(response)
 
@@ -129,25 +129,41 @@ class Equity:
         session: Session,
         per_page: int = 1000,
         page_offset: int = 0,
-        lendability: Optional[str] = None,
+        lendability: Optional[str] = None
     ) -> list['Equity']:
-        url = f'{session.base_url}/instruments/equities/active'
+        """
+        Returns a list of actively traded :class:`Equity` objects.
+
+        :param session: the session to use for the request.
+        :param per_page: the number of equities to get per page.
+        :param page_offset: the page offset to start at
+        :param lendability: the lendability of the equities; 'Easy To Borrow', 'Locate Required', 'Preborrow'
+
+        :return: a list of :class:`Equity` objects.
+        """
+        params: dict[str, Any] = {
+            'per-page': per_page,
+            'page-offset': page_offset,
+            'lendability': lendability
+        }
+
+        # loop through pages and get all active equities
         equities = []
         while True:
-            params = {
-                'per-page': per_page,
-                'page-offset': page_offset,
-                'lendability': lendability,
-            }
-            response = requests.get(url, headers=session.headers, params=params)
+            response = requests.get(
+                f'{session.base_url}/instruments/equities/active',
+                headers=session.headers,
+                params=params
+            )
             validate_response(response)
-            response_data = response.json()
-            equities.extend([cls.from_dict(entry) for entry in response_data['data']['items']])
-            total_items = response_data['pagination']['total-items']
-            if page_offset * per_page >= total_items:
+
+            json = response.json()
+            equities.extend([cls.from_dict(entry) for entry in json['data']['items']])
+
+            pagination = json['pagination']
+            if pagination['page-offset'] >= pagination['total-pages'] - 1:
                 break
-            else:
-                page_offset += 1
+            params['page-offset'] += 1  # type: ignore
 
         return equities
 
@@ -158,7 +174,7 @@ class Equity:
         symbols: Optional[list[str]] = None,
         lendability: Optional[str] = None,
         is_index: Optional[bool] = None,
-        is_etf: Optional[bool] = None,
+        is_etf: Optional[bool] = None
     ) -> list['Equity']:
         """
         Returns a list of :class:`Equity` objects from the given symbols.
@@ -176,7 +192,7 @@ class Equity:
             'symbol[]': symbols,
             'lendability': lendability,
             'is-index': is_index,
-            'is-etf': is_etf,
+            'is-etf': is_etf
         }
         response = requests.get(
             f'{session.base_url}/instruments/equities',
@@ -202,7 +218,8 @@ class Equity:
         """
         symbol = symbol.replace('/', '%2F')
         response = requests.get(
-            f'{session.base_url}/instruments/equities/{symbol}', headers=session.headers
+            f'{session.base_url}/instruments/equities/{symbol}',
+            headers=session.headers
         )
         validate_response(response)
 
@@ -216,7 +233,6 @@ class EquityOption:
     symbol: str
     instrument_type: str
     active: bool
-    listed_market: str
     strike_price: float
     root_symbol: str
     underlying_symbol: str
@@ -227,14 +243,58 @@ class EquityOption:
     option_chain_type: str
     expiration_type: str
     settlement_type: str
-    halted_at: str
-    stops_trading_at: str
+    stops_trading_at: datetime
     market_time_instrument_collection: str
     days_to_expiration: int
-    expires_at: str
+    expires_at: datetime
     is_closing_only: bool
-    old_security_number: str
-    streamer_symbol: str
+    listed_market: Optional[str] = None
+    halted_at: Optional[datetime] = None
+    old_security_number: Optional[str] = None
+    streamer_symbol: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, json: dict[str, Any]) -> 'EquityOption':
+        """
+        Creates a :class:`EquityOption` object from the Tastytrade 'EquityOption' object in JSON format.
+        """
+        snake_json = snakeify(json)
+        return cls(**snake_json)
+
+    @classmethod
+    def get_options(
+        cls,
+        session: Session,
+        symbols: Optional[list[str]] = None,
+        active: Optional[bool] = None,
+        with_expired: Optional[bool] = None
+    ) -> list['EquityOption']:
+        """
+        Returns a list of :class:`EquityOption` objects from the given symbols.
+
+        :param session: the session to use for the request.
+        :param symbols: the OCC symbols to get the options for.
+        :param active: whether the options are active.
+        :param with_expired: whether to include expired options.
+
+        :return: a list of :class:`EquityOption` objects.
+        """
+        params: dict[str, Any] = {
+            'symbol[]': symbols,
+            'active': active,
+            'with-expired': with_expired
+        }
+        response = requests.get(
+            f'{session.base_url}/instruments/equity-options',
+            headers=session.headers,
+            params={k: v for k, v in params.items() if v is not None}
+        )
+        validate_response(response)
+
+        data = response.json()['data']['items']
+        equities = [cls.from_dict(entry) for entry in data]
+
+        return equities
 
 
 @dataclass

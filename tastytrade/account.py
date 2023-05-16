@@ -454,6 +454,8 @@ class Account:
     def get_history(
         self,
         session: Session,
+        per_page: int = 250,
+        page_offset: int = 0,
         sort: str = 'Desc',
         type: Optional[str] = None,
         types: Optional[list[str]] = None,
@@ -473,6 +475,8 @@ class Account:
         Get transaction history of the account.
 
         :param session: the session to use for the request.
+        :param per_page: the number of results to return per page.
+        :param page_offset: the page offset to use.
         :param sort: the order to sort results in, either 'Desc' or 'Asc'.
         :param type: the type of transaction.
         :param types: a list of transaction types to filter by.
@@ -494,10 +498,9 @@ class Account:
 
         :return: a list of Tastytrade 'Transaction' objects in JSON format.
         """
-        PER_PAGE = 250
         params: dict[str, Any] = {
-            'per-page': PER_PAGE,
-            'page-offset': 0,
+            'per-page': per_page,
+            'page-offset': page_offset,
             'sort': sort,
             'type': type,
             'types[]': types,
@@ -524,10 +527,10 @@ class Account:
             )
             validate_response(response)
 
-            data = response.json()
-            results.extend(data['data']['items'])
+            json = response.json()
+            results.extend(json['data']['items'])
 
-            pagination = data['pagination']
+            pagination = json['pagination']
             if pagination['page-offset'] >= pagination['total-pages'] - 1:
                 break
             params['page-offset'] += 1  # type: ignore
