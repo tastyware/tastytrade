@@ -150,7 +150,7 @@ class Equity:
         per_page: int = 1000,
         page_offset: int = 0,
         lendability: Optional[str] = None,
-    ) -> "ActiveEquitiesResponse":
+    ) -> list['Equity']:
         url = f'{session.base_url}/instruments/equities/active'
         equities = []
         while True:
@@ -183,9 +183,7 @@ class Equity:
             else:
                 page_offset += 1
 
-        return ActiveEquitiesResponse(
-            context=response_data["context"], equities=equities
-        )
+        return equities
 
     @classmethod
     def get_equities(
@@ -245,12 +243,6 @@ class Equity:
         data = response.json()['data']
 
         return cls.from_dict(data)
-
-
-@dataclass
-class ActiveEquitiesResponse:
-    context: str
-    equities: list[Equity]
 
 
 @dataclass
