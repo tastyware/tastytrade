@@ -14,8 +14,8 @@ DestinationVenueSymbol = TypedDict(
         'symbol': str,
         'destination_venue': str,
         'routable': bool,
-        'max_quantity_precision': Optional[int],
-        'max_price_precision': Optional[int],
+        'max_quantity_precision': int,
+        'max_price_precision': int,
     },
     total=False,
 )
@@ -95,7 +95,7 @@ class Cryptocurrency:
 
 TickSizes = TypedDict(
     'TickSizes',
-    {'value': str, 'threshold': Optional[str], 'symbol': Optional[str]},
+    {'value': str, 'threshold': str, 'symbol': str},
     total=False,
 )
 
