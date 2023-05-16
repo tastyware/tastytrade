@@ -1,11 +1,260 @@
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Any, Optional
+from typing import Any, NotRequired, Optional, TypedDict
 
 import requests
 
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeError, snakeify, validate_response
+
+AccountBalance = TypedDict('AccountBalance', {
+    'account-number': str,
+    'cash-balance': float,
+    'long-equity-value': float,
+    'short-equity-value': float,
+    'long-derivative-value': float,
+    'short-derivative-value': float,
+    'long-futures-value': float,
+    'short-futures-value': float,
+    'long-futures-derivative-value': float,
+    'short-futures-derivative-value': float,
+    'long-margineable-value': float,
+    'short-margineable-value': float,
+    'margin-equity': float,
+    'equity-buying-power': float,
+    'derivative-buying-power': float,
+    'day-trading-buying-power': float,
+    'futures-margin-requirement': float,
+    'available-trading-funds': float,
+    'maintenance-requirement': float,
+    'maintenance-call-value': float,
+    'reg-t-call-value': float,
+    'day-trading-call-value': float,
+    'day-equity-call-value': float,
+    'net-liquidating-value': float,
+    'cash-available-to-withdraw': float,
+    'day-trade-excess': float,
+    'pending-cash': float,
+    'pending-cash-effect': str,
+    'long-cryptocurrency-value': float,
+    'short-cryptocurrency-value': float,
+    'cryptocurrency-margin-requirement': float,
+    'unsettled-cryptocurrency-fiat-amount': float,
+    'unsettled-cryptocurrency-fiat-effect': str,
+    'closed-loop-available-balance': float,
+    'equity-offering-margin-requirement': float,
+    'long-bond-value': float,
+    'bond-margin-requirement': float,
+    'snapshot-date': date,
+    'time-of-day': str,
+    'reg-t-margin-requirement': float,
+    'futures-overnight-margin-requirement': float,
+    'futures-intraday-margin-requirement': float,
+    'maintenance-excess': float,
+    'pending-margin-interest': float,
+    'apex-starting-day-margin-equity': float,
+    'buying-power-adjustment': float,
+    'buying-power-adjustment-effect': str,
+    'effective-cryptocurrency-buying-power': float,
+    'updated-at': datetime
+}, total=False)
+AccountBalanceSnapshot = TypedDict('AccountBalanceSnapshot', {
+    'account-number': str,
+    'cash-balance': float,
+    'long-equity-value': float,
+    'short-equity-value': float,
+    'long-derivative-value': float,
+    'short-derivative-value': float,
+    'long-futures-value': float,
+    'short-futures-value': float,
+    'long-futures-derivative-value': float,
+    'short-futures-derivative-value': float,
+    'long-margineable-value': float,
+    'short-margineable-value': float,
+    'margin-equity': float,
+    'equity-buying-power': float,
+    'derivative-buying-power': float,
+    'day-trading-buying-power': float,
+    'futures-margin-requirement': float,
+    'available-trading-funds': float,
+    'maintenance-requirement': float,
+    'maintenance-call-value': float,
+    'reg-t-call-value': float,
+    'day-trading-call-value': float,
+    'day-equity-call-value': float,
+    'net-liquidating-value': float,
+    'cash-available-to-withdraw': float,
+    'day-trade-excess': float,
+    'pending-cash': float,
+    'pending-cash-effect': str,
+    'long-cryptocurrency-value': float,
+    'short-cryptocurrency-value': float,
+    'cryptocurrency-margin-requirement': float,
+    'unsettled-cryptocurrency-fiat-amount': float,
+    'unsettled-cryptocurrency-fiat-effect': str,
+    'closed-loop-available-balance': float,
+    'equity-offering-margin-requirement': float,
+    'long-bond-value': float,
+    'bond-margin-requirement': float,
+    'snapshot-date': date,
+    'time-of-day': str
+}, total=False)
+CurrentPosition = TypedDict('CurrentPosition', {
+    'account-number': str,
+    'symbol': str,
+    'instrument-type': str,
+    'underlying-symbol': str,
+    'quantity': dict,
+    'quantity-direction': str,
+    'close-price': float,
+    'average-open-price': float,
+    'average-yearly-market-close-price': float,
+    'average-daily-market-close-price': float,
+    'mark': float,
+    'mark-price': float,
+    'multiplier': int,
+    'cost-effect': str,
+    'is-suppressed': bool,
+    'is-frozen': bool,
+    'restricted-quantity': dict,
+    'expires-at': datetime,
+    'fixing-price': float,
+    'deliverable-type': str,
+    'realized-day-gain': float,
+    'realized-day-gain-effect': str,
+    'realized-day-gain-date': date,
+    'realized-today': float,
+    'realized-today-effect': str,
+    'realized-today-date': date,
+    'created-at': datetime,
+    'updated-at': datetime
+}, total=False)
+MarginRequirement = TypedDict('MarginRequirement', {
+    'underlying-symbol': str,
+    'long-equity-initial': float,
+    'short-equity-initial': float,
+    'long-equity-maintenance': float,
+    'short-equity-maintenance': float,
+    'naked-option-standard': float,
+    'naked-option-minimum': float,
+    'naked-option-floor': float,
+    'clearing-identifier': str,
+    'is-deleted': bool
+}, total=False)
+NetLiqOhlc = TypedDict('NetLiqOhlc', {
+    'open': float,
+    'high': float,
+    'low': float,
+    'close': float,
+    'pending-cash-open': float,
+    'pending-cash-high': float,
+    'pending-cash-low': float,
+    'pending-cash-close': float,
+    'total-open': float,
+    'total-high': float,
+    'total-low': float,
+    'total-close': float,
+    'time': datetime
+}, total=False)
+PositionLimit = TypedDict('PositionLimit', {
+    'id': int,
+    'account-number': str,
+    'equity-order-size': int,
+    'equity-option-order-size': int,
+    'future-order-size': int,
+    'future-option-order-size': int,
+    'underlying-opening-order-limit': int,
+    'equity-position-size': int,
+    'equity-option-position-size': int,
+    'future-position-size': int,
+    'future-option-position-size': int
+}, total=False)
+Transaction = TypedDict('Transaction', {
+    'id': int,
+    'account-number': str,
+    'symbol': str,
+    'instrument-type': str,
+    'underlying-symbol': str,
+    'transaction-type': str,
+    'transaction-sub-type': str,
+    'description': str,
+    'action': str,
+    'quantity': float,
+    'price': float,
+    'executed-at': datetime,
+    'transaction-date': date,
+    'value': float,
+    'value-effect': str,
+    'regulatory-fees': float,
+    'regulatory-fees-effect': str,
+    'clearing-fees': float,
+    'clearing-fees-effect': str,
+    'other-charge': float,
+    'other-charge-effect': str,
+    'other-charge-description': str,
+    'net-value': float,
+    'net-value-effect': str,
+    'commission': float,
+    'commission-effect': str,
+    'proprietary-index-option-fees': float,
+    'proprietary-index-option-fees-effect': str,
+    'is-estimated-fee': bool,
+    'ext-exchange-order-number': str,
+    'ext-global-order-number': int,
+    'ext-group-id': str,
+    'ext-group-fill-id': str,
+    'ext-exec-id': str,
+    'exec-id': str,
+    'exchange': str,
+    'order-id': int,
+    'reverses-id': int,
+    'exchange-affiliation-identifier': str,
+    'cost-basis-reconciliation-date': date,
+    'lots': list[dict[str, Any]],
+    'leg-count': int,
+    'destination-venue': str,
+    'agency-price': float,
+    'principal-price': float
+}, total=False)
+TradingStatus = TypedDict('TradingStatus', {
+    'account-number': str,
+    'autotrade-account-type': str,
+    'clearing-account-number': str,
+    'clearing-aggregation-identifier': str,
+    'day-trade-count': int,
+    'equities-margin-calculation-type': str,
+    'fee-schedule-name': str,
+    'futures-margin-rate-multiplier': float,
+    'has-intraday-equities-margin': bool,
+    'id': int,
+    'is-aggregated-at-clearing': bool,
+    'is-closed': bool,
+    'is-closing-only': bool,
+    'is-cryptocurrency-closing-only': bool,
+    'is-cryptocurrency-enabled': bool,
+    'is-frozen': bool,
+    'is-full-equity-margin-required': bool,
+    'is-futures-closing-only': bool,
+    'is-futures-intra-day-enabled': bool,
+    'is-futures-enabled': bool,
+    'is-in-day-trade-equity-maintenance-call': bool,
+    'is-in-margin-call': bool,
+    'is-pattern-day-trader': bool,
+    'is-portfolio-margin-enabled': bool,
+    'is-risk-reducing-only': bool,
+    'is-small-notional-futures-intra-day-enabled': bool,
+    'is-roll-the-day-forward-enabled': bool,
+    'are-far-otm-net-options-restricted': bool,
+    'options-level': str,
+    'pdt-reset-on': date,
+    'short-calls-enabled': bool,
+    'small-notional-futures-margin-rate-multiplier': float,
+    'cmta-override': int,
+    'is-equity-offering-enabled': bool,
+    'is-equity-offering-closing-only': bool,
+    'enhanced-fraud-safeguards-enabled-at': datetime,
+    'updated-at': datetime
+}, total=False)
 
 
 @dataclass
@@ -89,7 +338,7 @@ class Account:
         account = response.json()['data']
         return cls.from_dict(account)
 
-    def get_trading_status(self, session: Session) -> dict[str, Any]:
+    def get_trading_status(self, session: Session) -> TradingStatus:
         """
         Get the trading status of the account.
 
@@ -105,7 +354,7 @@ class Account:
 
         return response.json()['data']
 
-    def get_balances(self, session: Session) -> dict[str, Any]:
+    def get_balances(self, session: Session) -> AccountBalance:
         """
         Get the current balances of the account.
 
@@ -126,7 +375,7 @@ class Account:
         session: Session,
         snapshot_date: Optional[date] = None,
         time_of_day: Optional[str] = None
-    ) -> list[dict[str, Any]]:
+    ) -> list[AccountBalanceSnapshot]:
         """
         Returns a list of two balance snapshots. The first one is the specified date,
         or, if not provided, the oldest snapshot available. The second one is the most
@@ -165,7 +414,7 @@ class Account:
         partition_keys: Optional[list[str]] = None,
         net_positions: bool = False,
         include_marks: bool = False
-    ) -> list[dict[str, Any]]:
+    ) -> list[CurrentPosition]:
         """
         Get the current positions of the account.
 
@@ -221,7 +470,7 @@ class Account:
         futures_symbol: Optional[str] = None,
         start_at: Optional[datetime] = None,
         end_at: Optional[datetime] = None
-    ) -> list[dict[str, Any]]:
+    ) -> list[Transaction]:
         """
         Get transaction history of the account.
 
@@ -298,7 +547,7 @@ class Account:
 
         return results
 
-    def get_transaction(self, session: Session, id: int) -> dict[str, Any]:
+    def get_transaction(self, session: Session, id: int) -> Transaction:
         """
         Get a single transaction by ID.
 
@@ -339,7 +588,7 @@ class Account:
         session: Session,
         time_back: Optional[str] = None,
         start_time: Optional[datetime] = None
-    ) -> list[dict[str, Any]]:
+    ) -> list[NetLiqOhlc]:
         """
         Returns a list of account net liquidating value snapshots over the specified time period.
 
@@ -353,7 +602,7 @@ class Account:
 
         :return: a list of Tastytrade 'NetLiqOhlc' objects in JSON format.
         """
-        params: dict[str, Any] = {}
+        params = {}
         if start_time:
             # format to Tastytrade DateTime format
             start_time = str(start_time).replace(' ', 'T').split('.')[0] + 'Z'  # type: ignore
@@ -372,7 +621,7 @@ class Account:
 
         return response.json()['data']['items']
 
-    def get_position_limit(self, session: Session) -> dict[str, Any]:
+    def get_position_limit(self, session: Session) -> PositionLimit:
         """
         Get the maximum order size information for the account.
 
@@ -388,7 +637,7 @@ class Account:
 
         return response.json()['data']
 
-    def get_effective_margin_requirements(self, session: Session, symbol: str) -> dict[str, Any]:
+    def get_effective_margin_requirements(self, session: Session, symbol: str) -> MarginRequirement:
         """
         Get the effective margin requirements for a given symbol.
 
@@ -413,7 +662,7 @@ class Account:
 
         :param session: the session to use for the request.
 
-        :return: a Tastytrade 'MarginRequirement' object in JSON format.
+        :return: Tastytrade margin requirements summary JSON.
         """
         response = requests.get(
             f'{session.base_url}/margin/accounts/{self.account_number}/requirements',
