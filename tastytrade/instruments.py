@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Any, Optional
+from typing import Any, Optional, TypedDict
 
 import requests
 
@@ -8,14 +8,18 @@ from tastytrade.session import Session
 from tastytrade.utils import snakeify, validate_response
 
 
-@dataclass
-class DestinationVenueSymbol:
-    id: int
-    symbol: str
-    destination_venue: str
-    routable: bool
-    max_quantity_precision: Optional[int] = None
-    max_price_precision: Optional[int] = None
+DestinationVenueSymbol = TypedDict(
+    'DestinationVenueSymbol',
+    {
+        'id': int,
+        'symbol': str,
+        'destination_venue': str,
+        'routable': bool,
+        'max_quantity_precision': Optional[int],
+        'max_price_precision': Optional[int],
+    },
+    total=False,
+)
 
 
 @dataclass
@@ -90,24 +94,11 @@ class Cryptocurrency:
         return cls.from_dict(data)
 
 
-@dataclass
-class TickSizes:
-    value: str
-    threshold: Optional[str] = None
-    symbol: Optional[str] = None
-
-
-@dataclass
-class Pagination:
-    per_page: int
-    page_offset: int
-    item_offset: int
-    total_items: int
-    total_pages: int
-    current_item_count: int
-    previous_link: Optional[str]
-    next_link: Optional[str]
-    paging_link_template: Optional[str]
+TickSizes = TypedDict(
+    'TickSizes',
+    {'value': str, 'threshold': Optional[str], 'symbol': Optional[str]},
+    total=False,
+)
 
 
 @dataclass
