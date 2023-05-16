@@ -13,12 +13,12 @@ DestinationVenueSymbol = TypedDict('DestinationVenueSymbol', {
     'destination-venue': str,
     'routable': bool,
     'max-quantity-precision': int,
-    'max-price-precision': int,
+    'max-price-precision': int
 }, total=False)
 TickSizes = TypedDict('TickSizes', {
-  'value': str,
-  'threshold': str,
-  'symbol': str
+    'value': str,
+    'threshold': str,
+    'symbol': str
 }, total=False)
 
 
