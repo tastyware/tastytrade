@@ -1,4 +1,5 @@
 from typing import TypedDict
+
 import requests
 
 from tastytrade.session import Session

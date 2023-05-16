@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Any, NotRequired, Optional, TypedDict
+from typing import Any, Optional, TypedDict
 
 import requests
 
@@ -602,7 +602,7 @@ class Account:
 
         :return: a list of Tastytrade 'NetLiqOhlc' objects in JSON format.
         """
-        params = {}
+        params: dict[str, Any] = {}
         if start_time:
             # format to Tastytrade DateTime format
             start_time = str(start_time).replace(' ', 'T').split('.')[0] + 'Z'  # type: ignore
