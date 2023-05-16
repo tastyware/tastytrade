@@ -7,18 +7,19 @@ import requests
 from tastytrade.session import Session
 from tastytrade.utils import snakeify, validate_response
 
-DestinationVenueSymbol = TypedDict(
-    'DestinationVenueSymbol',
-    {
-        'id': int,
-        'symbol': str,
-        'destination_venue': str,
-        'routable': bool,
-        'max_quantity_precision': int,
-        'max_price_precision': int,
-    },
-    total=False,
-)
+DestinationVenueSymbol = TypedDict('DestinationVenueSymbol', {
+    'id': int,
+    'symbol': str,
+    'destination-venue': str,
+    'routable': bool,
+    'max-quantity-precision': int,
+    'max-price-precision': int
+}, total=False)
+TickSizes = TypedDict('TickSizes', {
+    'value': str,
+    'threshold': str,
+    'symbol': str
+}, total=False)
 
 
 @dataclass
@@ -31,7 +32,7 @@ class Cryptocurrency:
     is_closing_only: bool
     active: bool
     tick_size: float
-    destination_venue_symbols: list[DestinationVenueSymbol]
+    destination_venue_symbols: list[dict[str, Any]]
     streamer_symbol: Optional[str] = None
 
     @classmethod
@@ -40,10 +41,6 @@ class Cryptocurrency:
         Creates a :class:`Cryptocurrency` object from the Tastytrade 'Cryptocurrency' object in JSON format.
         """
         snake_json = snakeify(json)
-        snake_json['destination_venue_symbols'] = [
-            DestinationVenueSymbol(**snakeify(dvs))
-            for dvs in snake_json.pop('destination_venue_symbols')
-        ]
         return cls(**snake_json)
 
     @classmethod
@@ -93,13 +90,6 @@ class Cryptocurrency:
         return cls.from_dict(data)
 
 
-TickSizes = TypedDict(
-    'TickSizes',
-    {'value': str, 'threshold': str, 'symbol': str},
-    total=False,
-)
-
-
 @dataclass
 class Equity:
     id: int
@@ -135,7 +125,7 @@ class Equity:
 
     @classmethod
     def get_active_equities(
-        self,
+        cls,
         session: Session,
         per_page: int = 1000,
         page_offset: int = 0,
@@ -152,21 +142,7 @@ class Equity:
             response = requests.get(url, headers=session.headers, params=params)
             validate_response(response)
             response_data = response.json()
-            equities.extend(
-                [
-                    Equity(
-                        tick_sizes=[
-                            TickSizes(**ts) for ts in equity.pop('tick-sizes', [])
-                        ],
-                        option_tick_sizes=[
-                            TickSizes(**ots)
-                            for ots in equity.pop('option-tick-sizes', [])
-                        ],
-                        **{k.replace('-', '_'): v for k, v in equity.items()},
-                    )
-                    for equity in response_data['data']['items']
-                ]
-            )
+            equities.extend([cls.from_dict(entry) for entry in response_data['data']['items']])
             total_items = response_data['pagination']['total-items']
             if page_offset * per_page >= total_items:
                 break
@@ -196,7 +172,7 @@ class Equity:
 
         :return: a list of :class:`Equity` objects.
         """
-        params = {
+        params: dict[str, Any] = {
             'symbol[]': symbols,
             'lendability': lendability,
             'is-index': is_index,
@@ -205,7 +181,7 @@ class Equity:
         response = requests.get(
             f'{session.base_url}/instruments/equities',
             headers=session.headers,
-            params={k: v for k, v in params.items() if v is not None},  # type: ignore
+            params={k: v for k, v in params.items() if v is not None}
         )
         validate_response(response)
 

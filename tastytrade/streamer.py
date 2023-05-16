@@ -48,7 +48,9 @@ class AlertStreamer:
 
         session = Session('user', 'pass')
         streamer = await AlertStreamer.create(session)
+        accounts = Account.get_accounts(session)
 
+        await streamer.account_subscribe(accounts)
         await streamer.public_watchlists_subscribe()
         await streamer.quote_alerts_subscribe()
         await streamer.user_message_subscribe(session)
@@ -155,12 +157,12 @@ class AlertStreamer:
         Subscribes to one of the :class:`SubscriptionType`s. Depending on the kind of
         subscription, the value parameter may be required.
         """
-        message = {
+        message: dict[str, Any] = {
             'auth-token': self.token,
             'action': subscription
         }
         if value:
-            message['value'] = value  # type: ignore
+            message['value'] = value
         logger.debug('sending alert subscription: %s', message)
         await self._websocket.send(json.dumps(message))  # type: ignore
 

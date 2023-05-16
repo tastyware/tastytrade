@@ -18,10 +18,10 @@ setup(
     url='https://github.com/tastyware/tastytrade',
     license='Apache',
     install_requires=[
-        'aiohttp<4',
         'requests<3',
         'tastyworks-aiocometd>=1.0',
-        'dataclasses'
+        'dataclasses',
+        'websockets>=11.0.3'
     ],
     packages=find_packages(exclude=['ez_setup', 'tests*']),
     include_package_data=True,

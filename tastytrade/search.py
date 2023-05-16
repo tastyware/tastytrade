@@ -1,9 +1,16 @@
+from typing import TypedDict
+
 import requests
 
 from tastytrade.session import Session
 
+SymbolData = TypedDict('SymbolData', {
+    'symbol': str,
+    'description': str
+}, total=False)
 
-def symbol_search(session: Session, symbol: str) -> list[dict[str, str]]:
+
+def symbol_search(session: Session, symbol: str) -> list[SymbolData]:
     """
     Performs a symbol search using the Tastytrade API and returns a list of symbols that
     are similar to the given search phrase.

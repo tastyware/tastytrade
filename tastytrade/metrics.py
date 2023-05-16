@@ -1,13 +1,33 @@
 from datetime import date
-from typing import Any
+from typing import Any, TypedDict
 
 import requests
 
 from tastytrade.session import Session
 from tastytrade.utils import validate_response
 
+DividendInfo = TypedDict('DividendInfo', {
+    'occurred-date': date,
+    'amount': float
+}, total=False)
+EarningsInfo = TypedDict('EarningsInfo', {
+    'occurred-date': date,
+    'eps': float
+}, total=False)
+MarketMetricInfo = TypedDict('MarketMetricInfo', {
+    'symbol': str,
+    'implied-volatility-index': float,
+    'implied-volatility-index-5-day-change': float,
+    'implied-volatility-rank': float,
+    'implied-volatility-percentile': float,
+    'liquidity': float,
+    'liquidity-rank': float,
+    'liquidity-rating': int,
+    'option-expiration-implied-volatilities': list[dict[str, Any]]
+}, total=False)
 
-def get_market_metrics(session: Session, symbols: list[str]) -> dict[str, Any]:
+
+def get_market_metrics(session: Session, symbols: list[str]) -> list[MarketMetricInfo]:
     """
     Retrieves market metrics for the given symbols.
 
@@ -26,7 +46,7 @@ def get_market_metrics(session: Session, symbols: list[str]) -> dict[str, Any]:
     return response.json()['data']['items']
 
 
-def get_dividends(session: Session, symbol: str) -> dict[str, Any]:
+def get_dividends(session: Session, symbol: str) -> list[DividendInfo]:
     """
     Retrieves dividend information for the given symbol.
 
@@ -45,7 +65,7 @@ def get_dividends(session: Session, symbol: str) -> dict[str, Any]:
     return response.json()['data']['items']
 
 
-def get_earnings(session: Session, symbol: str, start_date: date) -> dict[str, Any]:
+def get_earnings(session: Session, symbol: str, start_date: date) -> list[EarningsInfo]:
     """
     Retrieves earnings information for the given symbol.
 
@@ -56,10 +76,11 @@ def get_earnings(session: Session, symbol: str, start_date: date) -> dict[str, A
     :return: a list of Tastytrade 'EarningsInfo' objects in JSON format.
     """
     symbol = symbol.replace('/', '%2F')
+    params: dict[str, Any] = {'start-date': start_date}
     response = requests.get(
         f'{session.base_url}/market-metrics/historic-corporate-events/earnings-reports/{symbol}',
         headers=session.headers,
-        params={'start-date': start_date}  # type: ignore
+        params=params
     )
     validate_response(response)
 

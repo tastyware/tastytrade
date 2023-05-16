@@ -8,6 +8,22 @@ Account
 .. autoclass:: Account
    :members:
 
+.. autotypeddict:: AccountBalance
+
+.. autotypeddict:: AccountBalanceSnapshot
+
+.. autotypeddict:: CurrentPosition
+
+.. autotypeddict:: MarginRequirement
+
+.. autotypeddict:: NetLiqOhlc
+
+.. autotypeddict:: PositionLimit
+
+.. autotypeddict:: Transaction
+
+.. autotypeddict:: TradingStatus
+
 Instruments
 -----------
 .. module:: tastytrade.instruments
@@ -46,11 +62,19 @@ Metrics
 
 .. autofunction:: get_earnings
 
+.. autotypeddict:: MarketMetricInfo
+
+.. autotypeddict:: DividendInfo
+
+.. autotypeddict:: EarningsInfo
+
 Search
 ------
 .. module:: tastytrade.search
 
 .. autofunction:: symbol_search
+
+.. autotypeddict:: SymbolData
 
 Session
 -------
@@ -84,6 +108,10 @@ Utils
 .. autofunction:: validate_response
 
 .. autofunction:: get_third_friday
+
+.. autofunction:: snakeify
+
+.. autofunction:: desnakeify
 
 Watchlists
 ----------
