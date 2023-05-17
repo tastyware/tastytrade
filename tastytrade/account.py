@@ -1,101 +1,102 @@
 from dataclasses import dataclass
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Any, Optional, TypedDict
 
 import requests
 
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeError, snakeify, validate_response
+from tastytrade.utils import TastytradeError, datetime_from_tastydatetime, snakeify, validate_response
 
 AccountBalance = TypedDict('AccountBalance', {
     'account-number': str,
-    'cash-balance': float,
-    'long-equity-value': float,
-    'short-equity-value': float,
-    'long-derivative-value': float,
-    'short-derivative-value': float,
-    'long-futures-value': float,
-    'short-futures-value': float,
-    'long-futures-derivative-value': float,
-    'short-futures-derivative-value': float,
-    'long-margineable-value': float,
-    'short-margineable-value': float,
-    'margin-equity': float,
-    'equity-buying-power': float,
-    'derivative-buying-power': float,
-    'day-trading-buying-power': float,
-    'futures-margin-requirement': float,
-    'available-trading-funds': float,
-    'maintenance-requirement': float,
-    'maintenance-call-value': float,
-    'reg-t-call-value': float,
-    'day-trading-call-value': float,
-    'day-equity-call-value': float,
-    'net-liquidating-value': float,
-    'cash-available-to-withdraw': float,
-    'day-trade-excess': float,
-    'pending-cash': float,
+    'cash-balance': Decimal,
+    'long-equity-value': Decimal,
+    'short-equity-value': Decimal,
+    'long-derivative-value': Decimal,
+    'short-derivative-value': Decimal,
+    'long-futures-value': Decimal,
+    'short-futures-value': Decimal,
+    'long-futures-derivative-value': Decimal,
+    'short-futures-derivative-value': Decimal,
+    'long-margineable-value': Decimal,
+    'short-margineable-value': Decimal,
+    'margin-equity': Decimal,
+    'equity-buying-power': Decimal,
+    'derivative-buying-power': Decimal,
+    'day-trading-buying-power': Decimal,
+    'futures-margin-requirement': Decimal,
+    'available-trading-funds': Decimal,
+    'maintenance-requirement': Decimal,
+    'maintenance-call-value': Decimal,
+    'reg-t-call-value': Decimal,
+    'day-trading-call-value': Decimal,
+    'day-equity-call-value': Decimal,
+    'net-liquidating-value': Decimal,
+    'cash-available-to-withdraw': Decimal,
+    'day-trade-excess': Decimal,
+    'pending-cash': Decimal,
     'pending-cash-effect': str,
-    'long-cryptocurrency-value': float,
-    'short-cryptocurrency-value': float,
-    'cryptocurrency-margin-requirement': float,
-    'unsettled-cryptocurrency-fiat-amount': float,
+    'long-cryptocurrency-value': Decimal,
+    'short-cryptocurrency-value': Decimal,
+    'cryptocurrency-margin-requirement': Decimal,
+    'unsettled-cryptocurrency-fiat-amount': Decimal,
     'unsettled-cryptocurrency-fiat-effect': str,
-    'closed-loop-available-balance': float,
-    'equity-offering-margin-requirement': float,
-    'long-bond-value': float,
-    'bond-margin-requirement': float,
+    'closed-loop-available-balance': Decimal,
+    'equity-offering-margin-requirement': Decimal,
+    'long-bond-value': Decimal,
+    'bond-margin-requirement': Decimal,
     'snapshot-date': date,
     'time-of-day': str,
-    'reg-t-margin-requirement': float,
-    'futures-overnight-margin-requirement': float,
-    'futures-intraday-margin-requirement': float,
-    'maintenance-excess': float,
-    'pending-margin-interest': float,
-    'apex-starting-day-margin-equity': float,
-    'buying-power-adjustment': float,
+    'reg-t-margin-requirement': Decimal,
+    'futures-overnight-margin-requirement': Decimal,
+    'futures-intraday-margin-requirement': Decimal,
+    'maintenance-excess': Decimal,
+    'pending-margin-interest': Decimal,
+    'apex-starting-day-margin-equity': Decimal,
+    'buying-power-adjustment': Decimal,
     'buying-power-adjustment-effect': str,
-    'effective-cryptocurrency-buying-power': float,
+    'effective-cryptocurrency-buying-power': Decimal,
     'updated-at': datetime
 }, total=False)
 AccountBalanceSnapshot = TypedDict('AccountBalanceSnapshot', {
     'account-number': str,
-    'cash-balance': float,
-    'long-equity-value': float,
-    'short-equity-value': float,
-    'long-derivative-value': float,
-    'short-derivative-value': float,
-    'long-futures-value': float,
-    'short-futures-value': float,
-    'long-futures-derivative-value': float,
-    'short-futures-derivative-value': float,
-    'long-margineable-value': float,
-    'short-margineable-value': float,
-    'margin-equity': float,
-    'equity-buying-power': float,
-    'derivative-buying-power': float,
-    'day-trading-buying-power': float,
-    'futures-margin-requirement': float,
-    'available-trading-funds': float,
-    'maintenance-requirement': float,
-    'maintenance-call-value': float,
-    'reg-t-call-value': float,
-    'day-trading-call-value': float,
-    'day-equity-call-value': float,
-    'net-liquidating-value': float,
-    'cash-available-to-withdraw': float,
-    'day-trade-excess': float,
-    'pending-cash': float,
+    'cash-balance': Decimal,
+    'long-equity-value': Decimal,
+    'short-equity-value': Decimal,
+    'long-derivative-value': Decimal,
+    'short-derivative-value': Decimal,
+    'long-futures-value': Decimal,
+    'short-futures-value': Decimal,
+    'long-futures-derivative-value': Decimal,
+    'short-futures-derivative-value': Decimal,
+    'long-margineable-value': Decimal,
+    'short-margineable-value': Decimal,
+    'margin-equity': Decimal,
+    'equity-buying-power': Decimal,
+    'derivative-buying-power': Decimal,
+    'day-trading-buying-power': Decimal,
+    'futures-margin-requirement': Decimal,
+    'available-trading-funds': Decimal,
+    'maintenance-requirement': Decimal,
+    'maintenance-call-value': Decimal,
+    'reg-t-call-value': Decimal,
+    'day-trading-call-value': Decimal,
+    'day-equity-call-value': Decimal,
+    'net-liquidating-value': Decimal,
+    'cash-available-to-withdraw': Decimal,
+    'day-trade-excess': Decimal,
+    'pending-cash': Decimal,
     'pending-cash-effect': str,
-    'long-cryptocurrency-value': float,
-    'short-cryptocurrency-value': float,
-    'cryptocurrency-margin-requirement': float,
-    'unsettled-cryptocurrency-fiat-amount': float,
+    'long-cryptocurrency-value': Decimal,
+    'short-cryptocurrency-value': Decimal,
+    'cryptocurrency-margin-requirement': Decimal,
+    'unsettled-cryptocurrency-fiat-amount': Decimal,
     'unsettled-cryptocurrency-fiat-effect': str,
-    'closed-loop-available-balance': float,
-    'equity-offering-margin-requirement': float,
-    'long-bond-value': float,
-    'bond-margin-requirement': float,
+    'closed-loop-available-balance': Decimal,
+    'equity-offering-margin-requirement': Decimal,
+    'long-bond-value': Decimal,
+    'bond-margin-requirement': Decimal,
     'snapshot-date': date,
     'time-of-day': str
 }, total=False)
@@ -106,24 +107,24 @@ CurrentPosition = TypedDict('CurrentPosition', {
     'underlying-symbol': str,
     'quantity': dict,
     'quantity-direction': str,
-    'close-price': float,
-    'average-open-price': float,
-    'average-yearly-market-close-price': float,
-    'average-daily-market-close-price': float,
-    'mark': float,
-    'mark-price': float,
+    'close-price': Decimal,
+    'average-open-price': Decimal,
+    'average-yearly-market-close-price': Decimal,
+    'average-daily-market-close-price': Decimal,
+    'mark': Decimal,
+    'mark-price': Decimal,
     'multiplier': int,
     'cost-effect': str,
     'is-suppressed': bool,
     'is-frozen': bool,
     'restricted-quantity': dict,
     'expires-at': datetime,
-    'fixing-price': float,
+    'fixing-price': Decimal,
     'deliverable-type': str,
-    'realized-day-gain': float,
+    'realized-day-gain': Decimal,
     'realized-day-gain-effect': str,
     'realized-day-gain-date': date,
-    'realized-today': float,
+    'realized-today': Decimal,
     'realized-today-effect': str,
     'realized-today-date': date,
     'created-at': datetime,
@@ -131,29 +132,29 @@ CurrentPosition = TypedDict('CurrentPosition', {
 }, total=False)
 MarginRequirement = TypedDict('MarginRequirement', {
     'underlying-symbol': str,
-    'long-equity-initial': float,
-    'short-equity-initial': float,
-    'long-equity-maintenance': float,
-    'short-equity-maintenance': float,
-    'naked-option-standard': float,
-    'naked-option-minimum': float,
-    'naked-option-floor': float,
+    'long-equity-initial': Decimal,
+    'short-equity-initial': Decimal,
+    'long-equity-maintenance': Decimal,
+    'short-equity-maintenance': Decimal,
+    'naked-option-standard': Decimal,
+    'naked-option-minimum': Decimal,
+    'naked-option-floor': Decimal,
     'clearing-identifier': str,
     'is-deleted': bool
 }, total=False)
 NetLiqOhlc = TypedDict('NetLiqOhlc', {
-    'open': float,
-    'high': float,
-    'low': float,
-    'close': float,
-    'pending-cash-open': float,
-    'pending-cash-high': float,
-    'pending-cash-low': float,
-    'pending-cash-close': float,
-    'total-open': float,
-    'total-high': float,
-    'total-low': float,
-    'total-close': float,
+    'open': Decimal,
+    'high': Decimal,
+    'low': Decimal,
+    'close': Decimal,
+    'pending-cash-open': Decimal,
+    'pending-cash-high': Decimal,
+    'pending-cash-low': Decimal,
+    'pending-cash-close': Decimal,
+    'total-open': Decimal,
+    'total-high': Decimal,
+    'total-low': Decimal,
+    'total-close': Decimal,
     'time': datetime
 }, total=False)
 PositionLimit = TypedDict('PositionLimit', {
@@ -179,24 +180,24 @@ Transaction = TypedDict('Transaction', {
     'transaction-sub-type': str,
     'description': str,
     'action': str,
-    'quantity': float,
-    'price': float,
+    'quantity': Decimal,
+    'price': Decimal,
     'executed-at': datetime,
     'transaction-date': date,
-    'value': float,
+    'value': Decimal,
     'value-effect': str,
-    'regulatory-fees': float,
+    'regulatory-fees': Decimal,
     'regulatory-fees-effect': str,
-    'clearing-fees': float,
+    'clearing-fees': Decimal,
     'clearing-fees-effect': str,
-    'other-charge': float,
+    'other-charge': Decimal,
     'other-charge-effect': str,
     'other-charge-description': str,
-    'net-value': float,
+    'net-value': Decimal,
     'net-value-effect': str,
-    'commission': float,
+    'commission': Decimal,
     'commission-effect': str,
-    'proprietary-index-option-fees': float,
+    'proprietary-index-option-fees': Decimal,
     'proprietary-index-option-fees-effect': str,
     'is-estimated-fee': bool,
     'ext-exchange-order-number': str,
@@ -213,8 +214,8 @@ Transaction = TypedDict('Transaction', {
     'lots': list[dict[str, Any]],
     'leg-count': int,
     'destination-venue': str,
-    'agency-price': float,
-    'principal-price': float
+    'agency-price': Decimal,
+    'principal-price': Decimal
 }, total=False)
 TradingStatus = TypedDict('TradingStatus', {
     'account-number': str,
@@ -224,7 +225,7 @@ TradingStatus = TypedDict('TradingStatus', {
     'day-trade-count': int,
     'equities-margin-calculation-type': str,
     'fee-schedule-name': str,
-    'futures-margin-rate-multiplier': float,
+    'futures-margin-rate-multiplier': Decimal,
     'has-intraday-equities-margin': bool,
     'id': int,
     'is-aggregated-at-clearing': bool,
@@ -248,7 +249,7 @@ TradingStatus = TypedDict('TradingStatus', {
     'options-level': str,
     'pdt-reset-on': date,
     'short-calls-enabled': bool,
-    'small-notional-futures-margin-rate-multiplier': float,
+    'small-notional-futures-margin-rate-multiplier': Decimal,
     'cmta-override': int,
     'is-equity-offering-enabled': bool,
     'is-equity-offering-closing-only': bool,
@@ -284,13 +285,13 @@ class Account:
     suitable_options_level: Optional[str] = None
     submitting_user_id: Optional[str] = None
 
-    @classmethod
-    def from_dict(cls, json: dict[str, Any]):
-        """
-        Creates a :class:`Account` object from the Tastytrade 'Account' object in JSON format.
-        """
-        snake_json = snakeify(json)
-        return cls(**snake_json)
+    def __post_init__(self):
+        if isinstance(self.opened_at, str):
+            self.opened_at = datetime_from_tastydatetime(self.opened_at)
+        if isinstance(self.created_at, str):
+            self.created_at = datetime_from_tastydatetime(self.created_at)
+        if isinstance(self.funding_date, str):
+            self.funding_date = date.fromisoformat(self.funding_date)
 
     @classmethod
     def get_accounts(cls, session: Session, include_closed=False) -> list['Account']:
@@ -315,7 +316,7 @@ class Account:
             account = entry['account']
             if not include_closed and account['is-closed']:
                 continue
-            accounts.append(cls.from_dict(account))
+            accounts.append(cls(**snakeify(account)))
 
         return accounts
 
@@ -336,7 +337,7 @@ class Account:
         validate_response(response)  # throws exception if not 200
 
         account = response.json()['data']
-        return cls.from_dict(account)
+        return cls(**snakeify(account))
 
     def get_trading_status(self, session: Session) -> TradingStatus:
         """

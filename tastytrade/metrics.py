@@ -8,20 +8,20 @@ from tastytrade.utils import validate_response
 
 DividendInfo = TypedDict('DividendInfo', {
     'occurred-date': date,
-    'amount': float
+    'amount': Decimal
 }, total=False)
 EarningsInfo = TypedDict('EarningsInfo', {
     'occurred-date': date,
-    'eps': float
+    'eps': Decimal
 }, total=False)
 MarketMetricInfo = TypedDict('MarketMetricInfo', {
     'symbol': str,
-    'implied-volatility-index': float,
-    'implied-volatility-index-5-day-change': float,
-    'implied-volatility-rank': float,
-    'implied-volatility-percentile': float,
-    'liquidity': float,
-    'liquidity-rank': float,
+    'implied-volatility-index': Decimal,
+    'implied-volatility-index-5-day-change': Decimal,
+    'implied-volatility-rank': Decimal,
+    'implied-volatility-percentile': Decimal,
+    'liquidity': Decimal,
+    'liquidity-rank': Decimal,
     'liquidity-rating': int,
     'option-expiration-implied-volatilities': list[dict[str, Any]]
 }, total=False)
