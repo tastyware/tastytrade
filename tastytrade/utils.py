@@ -52,12 +52,7 @@ def snakeify(json: dict[str, Any]) -> dict[str, Any]:
 
     :return: dictionary with snake case keys
     """
-    result = {}
-    for key, value in json.items():
-        if isinstance(value, dict):
-            value = snakeify(value)
-        result[key.replace('-', '_')] = value
-    return result
+    return {key.replace('-', '_'): value for key, value in json.items()}
 
 
 def desnakeify(json: dict[str, Any]) -> dict[str, Any]:
@@ -68,9 +63,4 @@ def desnakeify(json: dict[str, Any]) -> dict[str, Any]:
 
     :return: dictionary with dashed keys
     """
-    result = {}
-    for key, value in json.items():
-        if isinstance(value, dict):
-            value = desnakeify(value)
-        result[key.replace('_', '-')] = value
-    return result
+    return {key.replace('_', '-'): value for key, value in json.items()}
