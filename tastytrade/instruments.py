@@ -15,7 +15,13 @@ DestinationVenueSymbol = TypedDict('DestinationVenueSymbol', {
     'max-quantity-precision': int,
     'max-price-precision': int
 }, total=False)
-TickSizes = TypedDict('TickSizes', {
+QuantityDecimalPrecision = TypedDict('QuantityDecimalPrecision', {
+    'instrument-type': str,
+    'symbol': str,
+    'value': int,
+    'minimum-increment-precision': int
+}, total=False)
+TickSize = TypedDict('TickSize', {
     'value': str,
     'threshold': str,
     'symbol': str
@@ -38,7 +44,7 @@ class Cryptocurrency:
     @classmethod
     def from_dict(cls, json: dict[str, Any]) -> 'Cryptocurrency':
         """
-        Creates a :class:`Cryptocurrency` object from the Tastytrade 'Cryptocurrency' object in JSON format.
+        Creates a :class:`Cryptocurrency` object from the Tastytrade object in JSON format.
         """
         snake_json = snakeify(json)
         return cls(**snake_json)
@@ -112,13 +118,13 @@ class Equity:
     halted_at: Optional[datetime] = None
     stops_trading_at: Optional[datetime] = None
     is_fractional_quantity_eligible: Optional[bool] = None
-    tick_sizes: Optional[list[TickSizes]] = None
-    option_tick_sizes: Optional[list[TickSizes]] = None
+    tick_sizes: Optional[list[TickSize]] = None
+    option_tick_sizes: Optional[list[TickSize]] = None
 
     @classmethod
     def from_dict(cls, json: dict[str, Any]) -> 'Equity':
         """
-        Creates a :class:`Equity` object from the Tastytrade 'Equity' object in JSON format.
+        Creates a :class:`Equity` object from the Tastytrade object in JSON format.
         """
         snake_json = snakeify(json)
         return cls(**snake_json)
@@ -256,7 +262,7 @@ class EquityOption:
     @classmethod
     def from_dict(cls, json: dict[str, Any]) -> 'EquityOption':
         """
-        Creates a :class:`EquityOption` object from the Tastytrade 'EquityOption' object in JSON format.
+        Creates a :class:`EquityOption` object from the Tastytrade object in JSON format.
         """
         snake_json = snakeify(json)
         return cls(**snake_json)
@@ -296,16 +302,41 @@ class EquityOption:
 
         return equities
 
+    @classmethod
+    def get_option(
+        cls,
+        session: Session,
+        symbol: str,
+        active: Optional[bool] = None
+    ) -> 'EquityOption':
+        """
+        Returns a :class:`EquityOption` object from the given symbol.
+
+        :param session: the session to use for the request.
+        :param symbol: the symbol to get the option for, OCC format
+
+        :return: a :class:`EquityOption` object.
+        """
+        symbol = symbol.replace('/', '%2F')
+        params = {'active': active} if active is not None else None
+        response = requests.get(
+            f'{session.base_url}/instruments/equity-options/{symbol}',
+            headers=session.headers,
+            params=params
+        )
+        validate_response(response)
+
+        data = response.json()['data']
+
+        return cls.from_dict(data)
+
 
 @dataclass
 class Future:
     symbol: str
     product_code: str
-    contract_size: float
     tick_size: float
     notional_multiplier: float
-    main_fraction: float
-    sub_fraction: float
     display_factor: float
     last_trade_date: date
     expiration_date: date
@@ -314,22 +345,88 @@ class Future:
     active_month: bool
     next_active_month: bool
     is_closing_only: bool
-    first_notice_date: date
     stops_trading_at: datetime
     expires_at: datetime
     product_group: str
     exchange: str
-    roll_target_symbol: str
     streamer_exchange_code: str
     streamer_symbol: str
     back_month_first_calendar_symbol: bool
     is_tradeable: bool
-    true_underlying_symbol: str
-    future_etf_equivalent: dict[str, Any]
     future_product: 'FutureProduct'
-    tick_sizes: dict[str, Any]
-    option_tick_sizes: dict[str, Any]
-    spread_tick_sizes: dict[str, Any]
+    contract_size: Optional[float] = None
+    main_fraction: Optional[float] = None
+    sub_fraction: Optional[float] = None
+    first_notice_date: Optional[date] = None
+    roll_target_symbol: Optional[str] = None
+    true_underlying_symbol: Optional[str] = None
+    future_etf_equivalent: Optional[dict[str, Any]] = None
+    tick_sizes: Optional[list[TickSize]] = None
+    option_tick_sizes: Optional[list[TickSize]] = None
+    spread_tick_sizes: Optional[list[TickSize]] = None
+
+    @classmethod
+    def from_dict(cls, json: dict[str, Any]) -> 'Future':
+        """
+        Creates a :class:`Equity` object from the Tastytrade object in JSON format.
+        """
+        snake_json = snakeify(json)
+        return cls(**snake_json)
+
+    @classmethod
+    def get_futures(
+        cls,
+        session: Session,
+        symbols: Optional[list[str]] = None,
+        product_codes: Optional[list[str]] = None
+    ) -> list['Future']:
+        """
+        Returns a list of :class:`Future` objects from the given symbols or product codes.
+
+        :param session: the session to use for the request.
+        :param symbols:
+            symbols of the futures, e.g. 'ESZ9'. Leading forward slash is not required.
+        :param product_codes:
+            the product codes of the futures, e.g. 'ES', '6A'. Ignored if symbols are provided.
+
+        :return: a list of :class:`Future` objects.
+        """
+        params: dict[str, Any] = {
+            'symbol[]': symbols,
+            'product-code[]': product_codes
+        }
+        response = requests.get(
+            f'{session.base_url}/instruments/futures',
+            headers=session.headers,
+            params={k: v for k, v in params.items() if v is not None}
+        )
+        validate_response(response)
+
+        data = response.json()['data']['items']
+        futures = [cls.from_dict(entry) for entry in data]
+
+        return futures
+
+    @classmethod
+    def get_future(cls, session: Session, symbol: str) -> 'Future':
+        """
+        Returns a :class:`Future` object from the given symbol.
+
+        :param session: the session to use for the request.
+        :param symbol: the symbol to get the future for.
+
+        :return: a :class:`Future` object.
+        """
+        symbol = symbol.replace('/', '')
+        response = requests.get(
+            f'{session.base_url}/instruments/futures/{symbol}',
+            headers=session.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']
+
+        return cls.from_dict(data)
 
 
 @dataclass
@@ -344,18 +441,83 @@ class FutureProduct:
     notional_multiplier: float
     tick_size: float
     display_factor: float
-    base_tick: int
-    sub_tick: int
     streamer_exchange_code: str
     small_notional: bool
     back_month_first_calendar_symbol: bool
     first_notice: bool
     cash_settled: bool
-    contract_limit: int
-    security_group: str
-    product_subtype: str
-    true_underlying_code: str
     market_sector: str
+    clearing_code: str
+    clearing_exchange_code: str
+    roll: dict[str, Any]
+    base_tick: Optional[int] = None
+    sub_tick: Optional[int] = None
+    contract_limit: Optional[int] = None
+    product_subtype: Optional[str] = None
+    security_group: Optional[str] = None
+    true_underlying_code: Optional[str] = None
+    clearport_code: Optional[str] = None
+    legacy_code: Optional[str] = None
+    legacy_exchange_code: Optional[str] = None
+    option_products: Optional[dict[str, Any]] = None
+
+    @classmethod
+    def from_dict(cls, json: dict[str, Any]) -> 'FutureProduct':
+        """
+        Creates a :class:`FutureProduct` object from the Tastytrade object in JSON format.
+        """
+        snake_json = snakeify(json)
+        return cls(**snake_json)
+
+    @classmethod
+    def get_future_products(
+        cls,
+        session: Session
+    ) -> list['FutureProduct']:
+        """
+        Returns a list of :class:`FutureProduct` objects available.
+
+        :param session: the session to use for the request.
+
+        :return: a list of :class:`FutureProduct` objects.
+        """
+        response = requests.get(
+            f'{session.base_url}/instruments/future-products',
+            headers=session.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']['items']
+        future_products = [cls.from_dict(entry) for entry in data]
+
+        return future_products
+
+    @classmethod
+    def get_future_product(
+        cls,
+        session: Session,
+        code: str,
+        exchange: str = 'CME'
+    ) -> 'FutureProduct':
+        """
+        Returns a :class:`FutureProduct` object from the given symbol.
+
+        :param session: the session to use for the request.
+        :param code: the product code, e.g. 'ES'
+        :param exchange: the exchange to get the product from: 'CME', 'SMALLS', 'CFE', 'CBOED'
+
+        :return: a :class:`FutureProduct` object.
+        """
+        code = code.replace('/', '')
+        response = requests.get(
+            f'{session.base_url}/instruments/future-products/{exchange}/{code}',
+            headers=session.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']
+
+        return cls.from_dict(data)
 
 
 @dataclass
@@ -389,7 +551,86 @@ class FutureOption:
     active: bool
     stops_trading_at: datetime
     expires_at: datetime
+    exchange_symbol: str
+    security_exchange: str
+    sx_id: str
     future_option_product: 'FutureOptionProduct'
+
+    @classmethod
+    def from_dict(cls, json: dict[str, Any]) -> 'FutureOption':
+        """
+        Creates a :class:`FutureOption` object from the Tastytrade object in JSON format.
+        """
+        snake_json = snakeify(json)
+        return cls(**snake_json)
+
+    @classmethod
+    def get_future_options(
+        cls,
+        session: Session,
+        symbols: Optional[list[str]] = None,
+        root_symbol: Optional[str] = None,
+        expiration_date: Optional[date] = None,
+        option_type: Optional[str] = None,
+        strike_price: Optional[float] = None
+    ) -> list['FutureOption']:
+        """
+        Returns a list of :class:`FutureOption` objects from the given symbols.
+
+        NOTE: As far as I can tell, all of the parameters are bugged except for `symbols`.
+
+        :param session: the session to use for the request.
+        :param symbols: the Tastytrade symbols to filter by.
+        :param root_symbol: the root symbol to get the future options for, e.g. 'EW3', 'SO'
+        :param expiration_date: the expiration date for the future options.
+        :param option_type: the option type to filter by, 'C' or 'P'
+        :param strike_price: the strike price to filter by.
+
+        :return: a list of :class:`FutureOption` objects.
+        """
+        params: dict[str, Any] = {
+            'symbol[]': symbols,
+            'option-root-symbol': root_symbol,
+            'expiration-date': expiration_date,
+            'option-type': option_type,
+            'strike-price': strike_price
+        }
+        response = requests.get(
+            f'{session.base_url}/instruments/future-options',
+            headers=session.headers,
+            params={k: v for k, v in params.items() if v is not None}
+        )
+        validate_response(response)
+
+        data = response.json()['data']['items']
+        future_options = [cls.from_dict(entry) for entry in data]
+
+        return future_options
+
+    @classmethod
+    def get_future_option(
+        cls,
+        session: Session,
+        symbol: str
+    ) -> 'FutureOption':
+        """
+        Returns a :class:`FutureOption` object from the given symbol.
+
+        :param session: the session to use for the request.
+        :param symbol: the symbol to get the option for, Tastytrade format
+
+        :return: a :class:`FutureOption` object.
+        """
+        symbol = symbol.replace('/', '%2F').replace(' ', '%20')
+        response = requests.get(
+            f'{session.base_url}/instruments/future-options/{symbol}',
+            headers=session.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']
+
+        return cls.from_dict(data)
 
 
 @dataclass
@@ -402,16 +643,146 @@ class FutureOptionProduct:
     product_type: str
     expiration_type: str
     settlement_delay_days: int
-    product_subtype: str
     market_sector: str
+    clearing_code: str
+    clearing_exchange_code: str
+    clearing_price_multiplier: float
+    is_rollover: bool
+    future_product: 'FutureProduct'
+    product_subtype: Optional[str] = None
+    legacy_code: Optional[str] = None
+    clearport_code: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, json: dict[str, Any]) -> 'FutureOptionProduct':
+        """
+        Creates a :class:`FutureOptionProduct` object from the Tastytrade object in JSON format.
+        """
+        snake_json = snakeify(json)
+        return cls(**snake_json)
+
+    @classmethod
+    def get_future_option_products(
+        cls,
+        session: Session
+    ) -> list['FutureOptionProduct']:
+        """
+        Returns a list of :class:`FutureOptionProduct` objects available.
+
+        :param session: the session to use for the request.
+
+        :return: a list of :class:`FutureOptionProduct` objects.
+        """
+        response = requests.get(
+            f'{session.base_url}/instruments/future-option-products',
+            headers=session.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']['items']
+        future_option_products = [cls.from_dict(entry) for entry in data]
+
+        return future_option_products
+
+    @classmethod
+    def get_future_option_product(
+        cls,
+        session: Session,
+        root_symbol: str,
+        exchange: str = 'CME'
+    ) -> 'FutureOptionProduct':
+        """
+        Returns a :class:`FutureOptionProduct` object from the given symbol.
+
+        :param session: the session to use for the request.
+        :param code: the root symbol of the future option
+        :param exchange: the exchange to get the product from
+
+        :return: a :class:`FutureOptionProduct` object.
+        """
+        root_symbol = root_symbol.replace('/', '')
+        response = requests.get(
+            f'{session.base_url}/instruments/future-option-products/{exchange}/{root_symbol}',
+            headers=session.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']
+
+        return cls.from_dict(data)
 
 
 @dataclass
 class Warrant:
     symbol: str
     instrument_type: str
-    cusip: str
     listed_market: str
     description: str
     is_closing_only: bool
     active: bool
+    cusip: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, json: dict[str, Any]) -> 'Warrant':
+        """
+        Creates a :class:`Warrant` object from the Tastytrade object in JSON format.
+        """
+        snake_json = snakeify(json)
+        return cls(**snake_json)
+
+    @classmethod
+    def get_warrants(
+        cls,
+        session: Session,
+        symbols: Optional[list[str]] = None
+    ) -> list['Warrant']:
+        """
+        Returns a list of :class:`Warrant` objects from the given symbols.
+
+        :param session: the session to use for the request.
+        :param symbols: symbols of the warrants, e.g. 'NKLAW'
+
+        :return: a list of :class:`Warrant` objects.
+        """
+        params = {'symbol[]': symbols} if symbols is not None else {}
+        response = requests.get(
+            f'{session.base_url}/instruments/warrants',
+            headers=session.headers,
+            params=params
+        )
+        validate_response(response)
+
+        data = response.json()['data']['items']
+        futures = [cls.from_dict(entry) for entry in data]
+
+        return futures
+
+    @classmethod
+    def get_warrant(cls, session: Session, symbol: str) -> 'Warrant':
+        """
+        Returns a :class:`Warrant` object from the given symbol.
+
+        :param session: the session to use for the request.
+        :param symbol: the symbol to get the warrant for.
+
+        :return: a :class:`Warrant` object.
+        """
+        response = requests.get(
+            f'{session.base_url}/instruments/warrants/{symbol}',
+            headers=session.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']
+
+        return cls.from_dict(data)
+
+
+def get_quantity_decimal_precisions(session: Session) -> list[QuantityDecimalPrecision]:
+    response = requests.get(
+        f'{session.base_url}/instruments/quantity-decimal-precisions',
+        headers=session.headers
+    )
+    validate_response(response)
+
+    return response.json()['data']['items']

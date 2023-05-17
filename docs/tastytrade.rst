@@ -52,6 +52,14 @@ Instruments
 .. autoclass:: Warrant
    :members:
 
+.. autofunction:: get_quantity_decimal_precisions
+
+.. autotypeddict:: DestinationVenueSymbol
+   
+.. autotypeddict:: QuantityDecimalPrecision
+   
+.. autotypeddict:: TickSize
+
 Metrics
 -------
 .. module:: tastytrade.metrics
