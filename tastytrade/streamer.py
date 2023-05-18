@@ -326,13 +326,13 @@ class DataStreamer:
             # send the heartbeat every 10 seconds
             await asyncio.sleep(10)
 
-    async def subscribe(self, key: EventType, dxfeeds: list[str], reset: bool = False) -> None:
+    async def subscribe(self, event_type: EventType, symbols: list[str], reset: bool = False) -> None:
         """
         Subscribes to quotes for given list of symbols. Used for recurring data feeds;
         if you just want to get a one-time quote, use :meth:`oneshot`.
 
-        :param key: type of subscription to add
-        :param dxfeeds: list of symbols to subscribe for
+        :param event_type: type of subscription to add
+        :param symbols: list of symbols to subscribe for
         :param reset:
             whether to reset the subscription list (remove all other subscriptions of all types)
         """
@@ -342,19 +342,19 @@ class DataStreamer:
             'channel': Channel.SUBSCRIPTION,
             'data': {
                 'reset': reset,
-                'add': {key: dxfeeds}
+                'add': {event_type: symbols}
             },
             'clientId': self.client_id
         }
         logger.debug('sending subscription: %s', message)
         await self._websocket.send(json.dumps([message]))
 
-    async def unsubscribe(self, key: EventType, dxfeeds: list[str]) -> None:
+    async def unsubscribe(self, event_type: EventType, symbols: list[str]) -> None:
         """
         Removes existing subscription for given list of symbols.
 
-        :param key: type of subscription to remove
-        :param dxfeeds: list of symbols to unsubscribe from
+        :param event_type: type of subscription to remove
+        :param symbols: list of symbols to unsubscribe from
         """
         id = await self._next_id()
         message = {
@@ -362,14 +362,14 @@ class DataStreamer:
             'channel': Channel.SUBSCRIPTION,
             'data': {
                 'reset': False,
-                'remove': {key: dxfeeds}
+                'remove': {event_type: symbols}
             },
             'clientId': self.client_id
         }
         logger.debug('sending unsubscription: %s', message)
         await self._websocket.send(json.dumps([message]))
 
-    async def oneshot(self, key: EventType, dxfeeds: list[str]) -> list[Event]:
+    async def oneshot(self, event_type: EventType, symbols: list[str]) -> list[Event]:
         """
         Using the given information, subscribes to the list of symbols passed, streams
         the requested information once, then unsubscribes. If you want to maintain the
@@ -380,18 +380,18 @@ class DataStreamer:
         some unexpected behavior. Most apps should use either this or :meth:`listen`
         but not both.
 
-        :param key: the type of subscription to stream, either greeks or quotes
-        :param dxfeeds: list of symbols to subscribe to
+        :param event_type: the type of subscription to stream, either greeks or quotes
+        :param symbols: list of symbols to subscribe to
 
         :return: list of :class:`~tastytrade.dxfeed.event.Event`s pulled.
         """
-        await self.subscribe(key, dxfeeds)
+        await self.subscribe(event_type, symbols)
         data = []
         async for item in self.listen():
             data.append(item)
-            if len(data) >= len(dxfeeds):
+            if len(data) >= len(symbols):
                 break
-        await self.unsubscribe(key, dxfeeds)
+        await self.unsubscribe(event_type, symbols)
         return data
 
     async def subscribe_candle(self, ticker: str, start_time: datetime, interval: str) -> None:

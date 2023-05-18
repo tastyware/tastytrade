@@ -1,5 +1,5 @@
 import calendar
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from requests import Response
@@ -64,3 +64,14 @@ def desnakeify(json: dict[str, Any]) -> dict[str, Any]:
     :return: dictionary with dashed keys
     """
     return {key.replace('_', '-'): value for key, value in json.items()}
+
+
+def datetime_from_tastydatetime(tastydatetime: str) -> datetime:
+    """
+    Converts a Tastytrade datetime string to a datetime object.
+
+    :param tastydatetime: datetime string to convert
+
+    :return: datetime object
+    """
+    return datetime.strptime(tastydatetime.split('.')[0], '%Y-%m-%dT%H:%M:%S')

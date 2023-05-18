@@ -14,14 +14,6 @@ class PairsWatchlist:
     order_index: int
 
     @classmethod
-    def from_dict(cls, json: dict[str, Any]):
-        """
-        Creates a PairsWatchlist object from the Tastytrade 'PairsWatchlist' object in JSON format.
-        """
-        snake_json = snakeify(json)
-        return cls(**snake_json)
-
-    @classmethod
     def get_pairs_watchlists(cls, session: Session) -> list['PairsWatchlist']:
         """
         Fetches a list of all Tastytrade public pairs watchlists.
@@ -33,7 +25,7 @@ class PairsWatchlist:
         response = requests.get(f'{session.base_url}/pairs-watchlists', headers=session.headers)
         validate_response(response)
         watchlists = response.json()['data']['items']
-        watchlists = [cls.from_dict(w) for w in watchlists]
+        watchlists = [cls(**snakeify(w)) for w in watchlists]
 
         return watchlists
 
@@ -50,7 +42,9 @@ class PairsWatchlist:
         response = requests.get(f'{session.base_url}/pairs-watchlists/{name}', headers=session.headers)
         validate_response(response)
 
-        return cls.from_dict(response.json()['data'])
+        data = response.json()['data']
+
+        return cls(**snakeify(data))
 
 
 @dataclass
@@ -59,14 +53,6 @@ class Watchlist:
     watchlist_entries: list[dict[str, Any]]
     order_index: int
     group_name: str = 'default'
-
-    @classmethod
-    def from_dict(cls, json: dict[str, Any]):
-        """
-        Creates a Watchlist object from the Tastytrade 'Watchlist' object in JSON format.
-        """
-        snake_json = snakeify(json)
-        return cls(**snake_json)
 
     @classmethod
     def create_empty(cls, name: str):
@@ -93,7 +79,7 @@ class Watchlist:
         validate_response(response)
         watchlists = response.json()['data']['items']
         print(watchlists)
-        watchlists = [cls.from_dict(w) for w in watchlists]
+        watchlists = [cls(**snakeify(w)) for w in watchlists]
 
         return watchlists
 
@@ -110,7 +96,9 @@ class Watchlist:
         response = requests.get(f'{session.base_url}/public-watchlists/{name}', headers=session.headers)
         validate_response(response)
 
-        return cls.from_dict(response.json()['data'])
+        data = response.json()['data']
+
+        return cls(**snakeify(data))
 
     @classmethod
     def get_private_watchlists(cls, session: Session) -> list['Watchlist']:
@@ -124,7 +112,7 @@ class Watchlist:
         response = requests.get(f'{session.base_url}/watchlists', headers=session.headers)
         validate_response(response)
         watchlists = response.json()['data']['items']
-        watchlists = [cls.from_dict(w) for w in watchlists]
+        watchlists = [cls(**snakeify(w)) for w in watchlists]
 
         return watchlists
 
@@ -141,7 +129,9 @@ class Watchlist:
         response = requests.get(f'{session.base_url}/watchlists/{name}', headers=session.headers)
         validate_response(response)
 
-        return cls.from_dict(response.json()['data'])
+        data = response.json()['data']
+
+        return cls(**snakeify(data))
 
     @classmethod
     def remove_private_watchlist(cls, session: Session, name: str) -> None:
@@ -174,11 +164,10 @@ class Watchlist:
 
         :param session: the session to use for the request.
         """
-        json = {key.replace('_', '-'): value for key, value in self.__dict__.items()}
         response = requests.put(
             f'{session.base_url}/watchlists/{self.name}',
             headers=session.headers,
-            json=json
+            json=desnakeify(self.__dict__)
         )
         validate_response(response)
 
