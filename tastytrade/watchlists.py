@@ -44,7 +44,7 @@ class PairsWatchlist:
 
         data = response.json()['data']
 
-        return cls.from_dict(**snakeify(data))
+        return cls(**snakeify(data))
 
 
 @dataclass

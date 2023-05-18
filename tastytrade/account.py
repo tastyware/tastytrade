@@ -6,7 +6,8 @@ from typing import Any, Optional, TypedDict
 import requests
 
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeError, datetime_from_tastydatetime, snakeify, validate_response
+from tastytrade.utils import (TastytradeError, datetime_from_tastydatetime,
+                              snakeify, validate_response)
 
 AccountBalance = TypedDict('AccountBalance', {
     'account-number': str,

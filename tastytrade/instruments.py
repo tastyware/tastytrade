@@ -1,14 +1,25 @@
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Optional, TypedDict
 
 import requests
 
 from tastytrade.session import Session
-from tastytrade.utils import datetime_from_tastydatetime, snakeify, validate_response
+from tastytrade.utils import (datetime_from_tastydatetime, snakeify,
+                              validate_response)
 
+Deliverable = TypedDict('Deliverable', {
+    'id': int,
+    'root-symbol': str,
+    'deliverable-type': str,
+    'description': str,
+    'amount': Decimal,
+    'symbol': str,
+    'instrument-type': str,
+    'percent': str
+}, total=False)
 DestinationVenueSymbol = TypedDict('DestinationVenueSymbol', {
     'id': int,
     'symbol': str,
@@ -35,9 +46,10 @@ TickSize = TypedDict('TickSize', {
 }, total=False)
 
 
-class OptionType(str, Enum):
+class OptionType(StrEnum):
     """
-    This is an :class:`~enum.Enum` that contains the valid types of options and their abbreviations in the API.
+    This is an :class:`~enum.Enum` that contains the valid types of options and
+    their abbreviations in the API.
     """
     #: a call option
     CALL = 'C'
@@ -284,6 +296,8 @@ class Option:
             self.expires_at = datetime_from_tastydatetime(self.expires_at)
         if isinstance(self.halted_at, str):
             self.halted_at = datetime_from_tastydatetime(self.halted_at)
+        if not self.streamer_symbol:
+            self._set_streamer_symbol()
 
     @classmethod
     def get_options(
@@ -347,41 +361,54 @@ class Option:
         data = response.json()['data']
 
         return cls(**snakeify(data))
-    
-    def get_streamer_symbol(self) -> str:
-        if not self.streamer_symbol:
-            if self.strike_price % 1 == 0:
-                strike_str = '{0:.0f}'.format(self.strike_price)
-            else:
-                strike_str = '{0:.2f}'.format(self.strike_price)
-                if strike_str[-1] == '0':
-                    strike_str = strike_str[:-1]
-            
-            self.streamer_symbol = f".{self.underlying_symbol}\
-                {self.expiration_date.strftime('%y%m%d')}{self.option_type}{strike_str}"
-        
-        return self.streamer_symbol
+
+    def _set_streamer_symbol(self) -> None:
+        if self.strike_price % 1 == 0:
+            strike = '{0:.0f}'.format(self.strike_price)
+        else:
+            strike = '{0:.2f}'.format(self.strike_price)
+            if strike[-1] == '0':
+                strike = strike[:-1]
+
+        self.streamer_symbol = \
+            f".{self.underlying_symbol}{self.expiration_date.strftime('%y%m%d')}{self.option_type}{strike}"
 
 
 @dataclass
-class OptionChain:
+class NestedOptionChainExpiration:
+    expiration_type: str
+    expiration_date: date
+    days_to_expiration: int
+    settlement_type: str
+    strikes: list[Strike]
+
+    def __post_init__(self):
+        if isinstance(self.expiration_date, str):
+            self.expiration_date = date.fromisoformat(self.expiration_date)
+
+
+@dataclass
+class NestedOptionChain:
     underlying_symbol: str
     root_symbol: str
     option_chain_type: str
     shares_per_contract: int
     tick_sizes: list[TickSize]
-    deliverables: list[dict[str, Any]]
-    expirations: list[dict[str, Any]]
-    
+    deliverables: list[Deliverable]
+    expirations: list[NestedOptionChainExpiration]
+
+    def __post_init__(self):
+        self.expirations = [NestedOptionChainExpiration(**snakeify(expiration)) for expiration in self.expirations]
+
     @classmethod
-    def get_option_chain(cls, session: Session, symbol: str) -> 'OptionChain':
+    def get_nested_option_chain(cls, session: Session, symbol: str) -> 'NestedOptionChain':
         """
-        Returns a :class:`OptionChain` object from the given symbol.
+        Gets the option chain for the given symbol in nested format.
 
         :param session: the session to use for the request.
         :param symbol: the symbol to get the option chain for.
 
-        :return: a :class:`OptionChain` object.
+        :return: a :class:`NestedOptionChain` object.
         """
         symbol = symbol.replace('/', '%2F')
         response = requests.get(
@@ -751,7 +778,7 @@ class FutureOptionProduct:
     clearing_exchange_code: str
     clearing_price_multiplier: Decimal
     is_rollover: bool
-    future_product: 'FutureProduct'
+    future_product: Optional['FutureProduct'] = None
     product_subtype: Optional[str] = None
     legacy_code: Optional[str] = None
     clearport_code: Optional[str] = None
@@ -761,7 +788,7 @@ class FutureOptionProduct:
             self.display_factor = Decimal(self.display_factor)
         if isinstance(self.clearing_price_multiplier, str):
             self.clearing_price_multiplier = Decimal(self.clearing_price_multiplier)
-        if not isinstance(self.future_product, FutureProduct):
+        if self.future_product is not None and not isinstance(self.future_product, FutureProduct):
             self.future_product = FutureProduct(**snakeify(self.future_product))
 
     @classmethod
@@ -881,3 +908,61 @@ def get_quantity_decimal_precisions(session: Session) -> list[QuantityDecimalPre
     validate_response(response)
 
     return response.json()['data']['items']
+
+
+def get_option_chain(session: Session, symbol: str) -> dict[date, list[Option]]:
+    """
+    Returns a mapping of expiration date to a list of :class:`Option` objects
+    representing the options chain for the given symbol.
+
+    :param session: the session to use for the request.
+    :param symbol: the symbol to get the option chain for.
+
+    :return: a dict mapping expiration date to a list of :class:`Option` objects.
+    """
+    symbol = symbol.replace('/', '%2F')
+    response = requests.get(
+        f'{session.base_url}/option-chains/{symbol}',
+        headers=session.headers
+    )
+    validate_response(response)
+
+    data = response.json()['data']['items']
+    chain = {}
+    for entry in data:
+        option = Option(**snakeify(entry))
+        if option.expiration_date not in chain:
+            chain[option.expiration_date] = [option]
+        else:
+            chain[option.expiration_date].append(option)
+
+    return chain
+
+
+def get_future_option_chain(session: Session, symbol: str) -> dict[date, list[FutureOption]]:
+    """
+    Returns a mapping of expiration date to a list of :class:`FutureOption` objects
+    representing the options chain for the given symbol.
+
+    :param session: the session to use for the request.
+    :param symbol: the symbol to get the option chain for.
+
+    :return: a dict mapping expiration date to a list of :class:`FutureOption` objects.
+    """
+    symbol = symbol.replace('/', '%2F')
+    response = requests.get(
+        f'{session.base_url}/futures-option-chains/{symbol}',
+        headers=session.headers
+    )
+    validate_response(response)
+
+    data = response.json()['data']['items']
+    chain = {}
+    for entry in data:
+        option = FutureOption(**snakeify(entry))
+        if option.expiration_date not in chain:
+            chain[option.expiration_date] = [option]
+        else:
+            chain[option.expiration_date].append(option)
+
+    return chain

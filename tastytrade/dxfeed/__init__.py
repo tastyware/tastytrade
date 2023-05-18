@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class Channel(str, Enum):
+class Channel(StrEnum):
     """
     This is an :class:`~enum.Enum` that contains the channels for the quote streamer.
     """
