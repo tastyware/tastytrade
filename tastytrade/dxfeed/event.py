@@ -1,8 +1,8 @@
 from abc import ABC
-from enum import StrEnum
+from enum import Enum
 
 
-class EventType(StrEnum):
+class EventType(str, Enum):
     """
     This is an :class:`~enum.Enum` that contains the valid subscription types for the quote streamer.
 

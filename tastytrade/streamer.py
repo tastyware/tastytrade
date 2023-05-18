@@ -2,7 +2,7 @@ import asyncio
 import json
 from asyncio import Lock, Queue
 from datetime import datetime
-from enum import StrEnum
+from enum import Enum
 from typing import Any, AsyncIterator, Optional
 
 import requests
@@ -26,7 +26,7 @@ CERT_STREAMER_URL = 'wss://streamer.cert.tastyworks.com'
 STREAMER_URL = 'wss://streamer.tastyworks.com'
 
 
-class SubscriptionType(StrEnum):
+class SubscriptionType(str, Enum):
     """
     This is an :class:`~enum.Enum` that contains the subscription types for the alert streamer.
     """

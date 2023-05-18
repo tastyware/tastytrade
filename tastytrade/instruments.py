@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
-from enum import StrEnum
+from enum import Enum
 from typing import Any, Optional, TypedDict
 
 import requests
@@ -46,7 +46,7 @@ TickSize = TypedDict('TickSize', {
 }, total=False)
 
 
-class OptionType(StrEnum):
+class OptionType(str, Enum):
     """
     This is an :class:`~enum.Enum` that contains the valid types of options and
     their abbreviations in the API.
@@ -370,8 +370,9 @@ class Option:
             if strike[-1] == '0':
                 strike = strike[:-1]
 
+        exp = self.expiration_date.strftime('%y%m%d')
         self.streamer_symbol = \
-            f".{self.underlying_symbol}{self.expiration_date.strftime('%y%m%d')}{self.option_type}{strike}"
+            f".{self.underlying_symbol}{exp}{self.option_type.value}{strike}"
 
 
 @dataclass
