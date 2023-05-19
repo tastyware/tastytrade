@@ -27,9 +27,9 @@ class Session:
             'remember-me': remember_me
         }
         #: The base url to use for API requests
-        self.base_url = CERT_URL if is_certification else API_URL
+        self.base_url: str = CERT_URL if is_certification else API_URL
         #: Whether or not this session is using the certification API
-        self.is_certification = is_certification
+        self.is_certification: bool = is_certification
 
         if two_factor_authentication:
             headers = {'X-Tastyworks-OTP': two_factor_authentication}

@@ -21,7 +21,8 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx_toolbox.more_autodoc.autotypeddict",
-    "enum_tools.autoenum"
+    "enum_tools.autoenum",
+    "sphinxcontrib.autodoc_pydantic"
 ]
 
 intersphinx_mapping = {
@@ -41,3 +42,9 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
+
+# -- Options for pydantic -------------------------------------------------
+autodoc_pydantic_model_show_json = True
+autodoc_pydantic_settings_show_json = False
+autodoc_pydantic_show_field_summary = True
+autodoc_pydantic_model_undoc_members = False
