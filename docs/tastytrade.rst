@@ -8,21 +8,38 @@ Account
 .. autoclass:: Account
    :members:
 
-.. autotypeddict:: AccountBalance
+.. autoclass:: AccountBalance
+   :members:
 
-.. autotypeddict:: AccountBalanceSnapshot
+.. autoclass:: AccountBalanceSnapshot
+   :members:
 
-.. autotypeddict:: CurrentPosition
+.. autoclass:: CurrentPosition
+   :members:
 
-.. autotypeddict:: MarginRequirement
+.. autoclass:: Lot
+   :members:
 
-.. autotypeddict:: NetLiqOhlc
+.. autoclass:: MarginReport
+   :members:
 
-.. autotypeddict:: PositionLimit
+.. autoclass:: MarginReportEntry
+   :members:
 
-.. autotypeddict:: Transaction
+.. autoclass:: MarginRequirement
+   :members:
 
-.. autotypeddict:: TradingStatus
+.. autoclass:: NetLiqOhlc
+   :members:
+
+.. autoclass:: PositionLimit
+   :members:
+
+.. autoclass:: TradingStatus
+   :members:
+
+.. autoclass:: Transaction
+   :members:
 
 Instruments
 -----------
@@ -31,14 +48,36 @@ Instruments
 .. autoclass:: Cryptocurrency
    :members:
 
+.. autoclass:: DestinationVenueSymbol
+   :members:
+
+.. autoclass:: TickSize
+   :members:
+
 .. autoclass:: Equity
    :members:
 
-.. autoclass:: EquityOption
+.. autoclass:: Option
+   :members:
+
+.. autoenum:: OptionType
+
+.. autoclass:: Deliverable
+   :members:
+
+.. autoclass:: Strike
+   :members:
+
+.. autoclass:: NestedOptionChain
+   :members:
+
+.. autoclass:: NestedOptionChainExpiration
    :members:
 
 .. autoclass:: Future
    :members:
+
+.. autoenum:: FutureMonthCode
 
 .. autoclass:: FutureProduct
    :members:
@@ -49,16 +88,23 @@ Instruments
 .. autoclass:: FutureOptionProduct
    :members:
 
+.. autoclass:: FutureEtfEquivalent
+   :members:
+
+.. autoclass:: Roll
+   :members:
+
 .. autoclass:: Warrant
    :members:
 
 .. autofunction:: get_quantity_decimal_precisions
 
-.. autotypeddict:: DestinationVenueSymbol
-   
-.. autotypeddict:: QuantityDecimalPrecision
-   
-.. autotypeddict:: TickSize
+.. autoclass:: QuantityDecimalPrecision
+   :members:
+
+.. autofunction:: get_option_chain
+
+.. autofunction:: get_future_option_chain
 
 Metrics
 -------
@@ -70,11 +116,31 @@ Metrics
 
 .. autofunction:: get_earnings
 
-.. autotypeddict:: MarketMetricInfo
+.. autoclass:: MarketMetricInfo
+   :members:
 
-.. autotypeddict:: DividendInfo
+.. autoclass:: Liquidity
+   :members:
 
-.. autotypeddict:: EarningsInfo
+.. autoclass:: OptionExpirationImpliedVolatility
+   :members:
+
+.. autoclass:: DividendInfo
+   :members:
+
+.. autoclass:: EarningsInfo
+   :members:
+
+Order
+-----
+
+.. autoenum:: PriceEffect
+
+.. autoenum:: OrderType
+
+.. autoenum:: OrderStatus
+
+.. autoenum:: TimeInForce
 
 Search
 ------
@@ -82,7 +148,8 @@ Search
 
 .. autofunction:: symbol_search
 
-.. autotypeddict:: SymbolData
+.. autoclass:: SymbolData
+   :members:
 
 Session
 -------
@@ -95,8 +162,7 @@ Streamer
 --------
 .. module:: tastytrade.streamer
 
-.. autoclass:: SubscriptionType
-   :members:
+.. autoenum:: SubscriptionType
 
 .. autoclass:: AlertStreamer
    :members:
@@ -113,13 +179,10 @@ Utils
 .. autoclass:: TastytradeError
    :members:
 
+.. autoclass:: TastytradeJsonDataclass
+   :members:
+
 .. autofunction:: validate_response
-
-.. autofunction:: get_third_friday
-
-.. autofunction:: snakeify
-
-.. autofunction:: desnakeify
 
 Watchlists
 ----------
@@ -127,6 +190,9 @@ Watchlists
 .. module:: tastytrade.watchlists
 
 .. autoclass:: PairsWatchlist
+   :members:
+
+.. autoclass:: Pair
    :members:
 
 .. autoclass:: Watchlist
