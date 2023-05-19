@@ -12,6 +12,8 @@ Event
 
 .. module:: tastytrade.dxfeed.event
 
+.. autoenum:: EventType
+
 .. autoclass:: Event
    :members:
 

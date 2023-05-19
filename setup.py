@@ -19,9 +19,9 @@ setup(
     license='Apache',
     install_requires=[
         'requests<3',
-        'tastyworks-aiocometd>=1.0',
         'dataclasses',
-        'websockets>=11.0.3'
+        'websockets>=11.0.3',
+        'pydantic>=1.10.7'
     ],
     packages=find_packages(exclude=['ez_setup', 'tests*']),
     include_package_data=True,

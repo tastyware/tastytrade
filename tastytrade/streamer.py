@@ -113,7 +113,7 @@ class AlertStreamer:
         """
         Subscribes to account-level updates (balances, orders, positions).
 
-        :param accounts: list of :class:`Account`s to subscribe to updates for
+        :param accounts: list of :class:`tastytrade.account.Account`s to subscribe to updates for
         """
         await self._subscribe(SubscriptionType.ACCOUNT, [acc.account_number for acc in accounts])
 
@@ -179,7 +179,7 @@ class DataStreamer:
         streamer = await DataStreamer.create(session)
 
         subs = ['SPY', 'GLD']  # list of quotes to fetch
-        quote = await streamer.stream(EventType.QUOTE, subs)
+        quote = await streamer.oneshot(EventType.QUOTE, subs)
 
     """
     def __init__(self, session: Session):

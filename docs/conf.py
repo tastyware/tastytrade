@@ -20,7 +20,8 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
-    "sphinx_toolbox.more_autodoc.autotypeddict"
+    "sphinx_toolbox.more_autodoc.autotypeddict",
+    "enum_tools.autoenum"
 ]
 
 intersphinx_mapping = {

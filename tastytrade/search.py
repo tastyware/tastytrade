@@ -1,13 +1,12 @@
-from typing import TypedDict
-
 import requests
 
 from tastytrade.session import Session
+from tastytrade.utils import TastytradeJsonDataclass
 
-SymbolData = TypedDict('SymbolData', {
-    'symbol': str,
-    'description': str
-}, total=False)
+
+class SymbolData(TastytradeJsonDataclass):
+    symbol: str
+    description: str
 
 
 def symbol_search(session: Session, symbol: str) -> list[SymbolData]:
@@ -29,5 +28,5 @@ def symbol_search(session: Session, symbol: str) -> list[SymbolData]:
         # here it doesn't really make sense to throw an exception; we'll just return nothing
         return []
     else:
-        data = response.json()
-        return data['data']['items']
+        data = response.json()['data']['items']
+        return [SymbolData(**entry) for entry in data]

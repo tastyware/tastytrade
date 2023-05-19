@@ -1,23 +1,20 @@
-from dataclasses import dataclass, field
-from datetime import datetime
+from dataclasses import dataclass
+from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import List, Optional
-
-import requests
 
 
-class OrderType(Enum):
+class OrderType(str, Enum):
     LIMIT = 'Limit'
     MARKET = 'Market'
 
 
-class OrderPriceEffect(Enum):
+class PriceEffect(str, Enum):
     CREDIT = 'Credit'
     DEBIT = 'Debit'
 
 
-class OrderStatus(Enum):
+class OrderStatus(str, Enum):
     RECEIVED = 'Received'
     CANCELLED = 'Cancelled'
     FILLED = 'Filled'
@@ -29,112 +26,48 @@ class OrderStatus(Enum):
         return self in (OrderStatus.LIVE, OrderStatus.RECEIVED)
 
 
-class TimeInForce(Enum):
+class TimeInForce(str, Enum):
     DAY = 'Day'
     GTC = 'GTC'
     GTD = 'GTD'
 
 
 @dataclass
-class OrderDetails(object):
-    type: OrderType
-    time_in_force: TimeInForce = TimeInForce.DAY
-    gtc_date: datetime = datetime.now()
-    price: Optional[Decimal] = None
-    price_effect: OrderPriceEffect = OrderPriceEffect.CREDIT
-    status: Optional[OrderStatus] = None
-    legs: List[str] = field(default_factory=list)
-    source: str = 'WBT'
-
-    def is_executable(self) -> bool:
-        required_data = all([
-            self.time_in_force,
-            self.price_effect,
-            self.price is not None,
-            self.type,
-            self.source
-        ])
-
-        if not required_data:
-            return False
-
-        if not self.legs:
-            return False
-
-        if self.time_in_force == TimeInForce.GTD:
-            try:
-                datetime.strptime(str(self.gtc_date), '%Y-%m-%d')
-            except ValueError:
-                return False
-
-        return True
-
-
 class Order:
-    def __init__(self, order_details: OrderDetails):
-        """
-        Initiates a new order object.
-
-        Args:
-            order_details (OrderDetails): An object specifying order-level details.
-        """
-        self.details = order_details
-
-    def check_is_order_executable(self):
-        return self.details.is_executable()
-
-    def add_leg(self, security: str):
-        self.details.legs.append(security)
-
-    @classmethod
-    def from_dict(cls, input_dict: dict):
-        """
-        Parses an Order object from a dict.
-        """
-        details = OrderDetails(input_dict['underlying-symbol'])
-        details.price = Decimal(input_dict['price']) if 'price' in input_dict else None
-        details.price_effect = OrderPriceEffect(input_dict['price-effect'])
-        details.type = OrderType(input_dict['order-type'])
-        details.status = OrderStatus(input_dict['status'])
-        details.time_in_force = input_dict['time-in-force']
-        details.gtc_date = input_dict.get('gtc-date', None)
-        return cls(order_details=details)
-
-    @classmethod
-    async def get_remote_orders(cls, session, account, **kwargs) -> List:
-        """
-        Gets all orders on Tastyworks.
-
-        Args:
-            session (TastyAPISession): The session to use.
-            account (TradingAccount): The account_id to get orders on.
-            Keyword arguments specifying filtering conditions, these include:
-            `status`, `time-in-force`, etc.
-
-        Returns:
-            list(Order): A list of Orders
-        """
-        if not session.logged_in:
-            raise Exception('Tastyworks session not logged in.')
-
-        filters = kwargs
-        url = '{}/accounts/{}/orders'.format(
-            session.API_url,
-            account.account_number
-        )
-        url = '{}?{}'.format(
-            url,
-            '&'.join([f'{k}={v}' for k, v in filters.items()])
-        )
-
-        res = []
-        resp = requests.get(url, headers=session.headers)
-        if resp.status_code != 200:
-            raise Exception('Could not get current open orders')
-        data = (await resp.json())['data']['items']
-        for order_data in data:
-            order = cls.from_dict(order_data)
-            if not order.details.status.is_active():
-                continue
-            res.append(order)
-        return res
+    id: str
+    account_number: str
+    time_in_force: TimeInForce
+    gtc_date: date
+    order_type: OrderType
+    size: str
+    underlying_symbol: str
+    underlying_instrument_type: str
+    price: Decimal
+    price_effect: PriceEffect
+    value: Decimal
+    value_effect: PriceEffect
+    stop_trigger: str
+    status: OrderStatus
+    contingent_status: str
+    confirmation_status: str
+    cancellable: bool
+    cancelled_at: datetime
+    cancel_user_id: str
+    cancel_username: str
+    editable: bool
+    edited: bool
+    replacing_order_id: str
+    replaces_order_id: str
+    received_at: datetime
+    updated_at: datetime
+    in_flight_at: datetime
+    live_at: datetime
+    reject_reason: str
+    user_id: str
+    username: str
+    terminal_at: datetime
+    complex_order_id: str
+    complex_order_tag: str
+    preflight_id: str
+    legs: list
+    order_rule: dict

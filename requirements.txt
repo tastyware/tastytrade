@@ -1,8 +1,7 @@
-aiohttp==3.8.4
-tastyworks-aiocometd==1.0
 requests==2.26.0
 mypy==0.931
 flake8==3.9.2
 isort==5.8.0
 types-requests==2.28.10
 websockets==11.0.3
+pydantic==1.10.7

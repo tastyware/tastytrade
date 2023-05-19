@@ -77,7 +77,7 @@ Symbol search
 
 >>> [{'symbol': 'AAP', 'description': 'Advance Auto Parts Inc.'}, {'symbol': 'AAPL', 'description': 'Apple Inc. - Common Stock'}]
 
-For more documentation and examples, check out: <https://tastyworks-api.readthedocs.io/en/latest/>.
+For more examples, check out the `documentation <https://tastyworks-api.readthedocs.io/en/latest/>`_.
 
 Disclaimer
 ----------
