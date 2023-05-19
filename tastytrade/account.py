@@ -1,11 +1,12 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Optional, TypedDict
+from typing import Any, Optional
 
 import requests
 
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeError, TastytradeJsonDataclass, validate_response
+from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
+                              validate_response)
 
 
 class AccountBalance(TastytradeJsonDataclass):

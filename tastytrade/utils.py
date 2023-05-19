@@ -9,13 +9,24 @@ class TastytradeError(Exception):
     pass
 
 
+def _dasherize(s: str) -> str:
+    """
+    Converts a string from snake case to dasherized.
+
+    :param s: string to convert
+
+    :return: dasherized string
+    """
+    return s.replace('_', '-')
+
+
 class TastytradeJsonDataclass(BaseModel):
     """
     A pydantic dataclass that converts keys from snake case to dasherized
     and performs type validation and coercion.
     """
     class Config:
-        alias_generator = lambda s: s.replace('_', '-')
+        alias_generator = _dasherize
 
 
 def validate_response(response: Response) -> None:

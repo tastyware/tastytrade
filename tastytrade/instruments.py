@@ -69,7 +69,7 @@ class Roll(TastytradeJsonDataclass):
     first_notice: bool
 
 
-class OptionType(str,Enum):
+class OptionType(str, Enum):
     """
     This is an :class:`~enum.Enum` that contains the valid types of options and
     their abbreviations in the API.

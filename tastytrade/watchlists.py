@@ -179,4 +179,5 @@ class Watchlist(TastytradeJsonDataclass):
         """
         Removes a symbol from the watchlist.
         """
-        self.watchlist_entries.remove({'symbol': symbol, 'instrument-type': instrument_type})
+        if self.watchlist_entries is not None:
+            self.watchlist_entries.remove({'symbol': symbol, 'instrument-type': instrument_type})
