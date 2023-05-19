@@ -4,9 +4,11 @@ from enum import Enum
 
 class EventType(str, Enum):
     """
-    This is an :class:`~enum.Enum` that contains the valid subscription types for the quote streamer.
+    This is an :class:`~enum.Enum` that contains the valid subscription types for
+    the quote streamer.
 
-    Information on different types of events, their uses and their properties can be found at the `dxfeed Knowledge Base <https://kb.dxfeed.com/en/data-model/dxfeed-api-market-events.html>`_.
+    Information on different types of events, their uses and their properties can be
+    found at the `dxfeed Knowledge Base <https://kb.dxfeed.com/en/data-model/dxfeed-api-market-events.html>`_.
     """
     CANDLE = 'Candle'
     GREEKS = 'Greeks'

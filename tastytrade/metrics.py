@@ -1,31 +1,75 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, TypedDict
+from typing import Any, Optional
 
 import requests
 
 from tastytrade.session import Session
-from tastytrade.utils import validate_response
+from tastytrade.utils import TastytradeJsonDataclass, validate_response
 
-DividendInfo = TypedDict('DividendInfo', {
-    'occurred-date': date,
-    'amount': Decimal
-}, total=False)
-EarningsInfo = TypedDict('EarningsInfo', {
-    'occurred-date': date,
-    'eps': Decimal
-}, total=False)
-MarketMetricInfo = TypedDict('MarketMetricInfo', {
-    'symbol': str,
-    'implied-volatility-index': Decimal,
-    'implied-volatility-index-5-day-change': Decimal,
-    'implied-volatility-rank': Decimal,
-    'implied-volatility-percentile': Decimal,
-    'liquidity': Decimal,
-    'liquidity-rank': Decimal,
-    'liquidity-rating': int,
-    'option-expiration-implied-volatilities': list[dict[str, Any]]
-}, total=False)
+
+class DividendInfo(TastytradeJsonDataclass):
+    occurred_date: date
+    amount: Decimal
+
+
+class EarningsInfo(TastytradeJsonDataclass):
+    occurred_date: date
+    eps: Decimal
+
+
+class Liquidity(TastytradeJsonDataclass):
+    sum: Decimal
+    count: int
+    started_at: datetime
+    updated_at: datetime
+
+
+class OptionExpirationImpliedVolatility(TastytradeJsonDataclass):
+    expiration_date: date
+    settlement_type: str
+    option_chain_type: str
+    implied_volatility: Optional[Decimal] = None
+
+
+class MarketMetricInfo(TastytradeJsonDataclass):
+    symbol: str
+    implied_volatility_index: Decimal
+    implied_volatility_index_5_day_change: Decimal
+    implied_volatility_index_rank: Decimal
+    tos_implied_volatility_index_rank: Decimal
+    tw_implied_volatility_index_rank: Decimal
+    tos_implied_volatility_index_rank_updated_at: datetime
+    implied_volatility_index_rank_source: str
+    implied_volatility_percentile: Decimal
+    implied_volatility_updated_at: datetime
+    liquidity_value: Decimal
+    liquidity_rank: Decimal
+    liquidity_rating: int
+    created_at: datetime
+    updated_at: datetime
+    option_expiration_implied_volatilities: list[OptionExpirationImpliedVolatility]
+    liquidity_running_state: Liquidity
+    beta: Decimal
+    beta_updated_at: datetime
+    corr_spy_3month: Decimal
+    dividend_rate_per_share: Decimal
+    dividend_yield: Decimal
+    listed_market: str
+    lendability: str
+    borrow_rate: Decimal
+    market_cap: Decimal
+    implied_volatility_30_day: Decimal
+    historical_volatility_30_day: Decimal
+    historical_volatility_60_day: Decimal
+    historical_volatility_90_day: Decimal
+    iv_hv_30_day_difference: Decimal
+    price_earnings_ratio: Decimal
+    earnings_per_share: Decimal
+    dividend_ex_date: Optional[date] = None
+    dividend_next_date: Optional[date] = None
+    dividend_pay_date: Optional[date] = None
+    dividend_updated_at: Optional[datetime] = None
 
 
 def get_market_metrics(session: Session, symbols: list[str]) -> list[MarketMetricInfo]:
@@ -44,7 +88,9 @@ def get_market_metrics(session: Session, symbols: list[str]) -> list[MarketMetri
     )
     validate_response(response)
 
-    return response.json()['data']['items']
+    data = response.json()['data']['items']
+
+    return [MarketMetricInfo(**entry) for entry in data]
 
 
 def get_dividends(session: Session, symbol: str) -> list[DividendInfo]:
@@ -63,7 +109,9 @@ def get_dividends(session: Session, symbol: str) -> list[DividendInfo]:
     )
     validate_response(response)
 
-    return response.json()['data']['items']
+    data = response.json()['data']['items']
+
+    return [DividendInfo(**entry) for entry in data]
 
 
 def get_earnings(session: Session, symbol: str, start_date: date) -> list[EarningsInfo]:
@@ -85,4 +133,6 @@ def get_earnings(session: Session, symbol: str, start_date: date) -> list[Earnin
     )
     validate_response(response)
 
-    return response.json()['data']['items']
+    data = response.json()['data']['items']
+
+    return [EarningsInfo(**entry) for entry in data]

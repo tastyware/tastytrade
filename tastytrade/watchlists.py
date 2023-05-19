@@ -1,17 +1,24 @@
-from dataclasses import dataclass
-from typing import Any
+from typing import Optional
 
 import requests
 
 from tastytrade.session import Session
-from tastytrade.utils import desnakeify, snakeify, validate_response
+from tastytrade.utils import TastytradeJsonDataclass, validate_response
 
 
-@dataclass
-class PairsWatchlist:
+class Pair(TastytradeJsonDataclass):
+    left_action: str
+    left_symbol: str
+    left_quantity: int
+    right_action: str
+    right_symbol: str
+    right_quantity: int
+
+
+class PairsWatchlist(TastytradeJsonDataclass):
     name: str
-    pairs_equations: list[dict[str, Any]]
     order_index: int
+    pairs_equations: list[Pair]
 
     @classmethod
     def get_pairs_watchlists(cls, session: Session) -> list['PairsWatchlist']:
@@ -24,10 +31,9 @@ class PairsWatchlist:
         """
         response = requests.get(f'{session.base_url}/pairs-watchlists', headers=session.headers)
         validate_response(response)
-        watchlists = response.json()['data']['items']
-        watchlists = [cls(**snakeify(w)) for w in watchlists]
+        data = response.json()['data']['items']
 
-        return watchlists
+        return [cls(**entry) for entry in data]
 
     @classmethod
     def get_pairs_watchlist(cls, session: Session, name: str) -> 'PairsWatchlist':
@@ -44,22 +50,14 @@ class PairsWatchlist:
 
         data = response.json()['data']
 
-        return cls(**snakeify(data))
+        return cls(**data)
 
 
-@dataclass
-class Watchlist:
+class Watchlist(TastytradeJsonDataclass):
     name: str
-    watchlist_entries: list[dict[str, Any]]
-    order_index: int
+    watchlist_entries: Optional[list[dict[str, str]]] = None
     group_name: str = 'default'
-
-    @classmethod
-    def create_empty(cls, name: str):
-        """
-        Creates an empty watchlist with the given name.
-        """
-        return cls(name=name, watchlist_entries=[], order_index=9999)
+    order_index: int = 9999
 
     @classmethod
     def get_public_watchlists(cls, session: Session, counts_only: bool = False) -> list['Watchlist']:
@@ -77,11 +75,10 @@ class Watchlist:
             params={'counts-only': counts_only}
         )
         validate_response(response)
-        watchlists = response.json()['data']['items']
-        print(watchlists)
-        watchlists = [cls(**snakeify(w)) for w in watchlists]
 
-        return watchlists
+        data = response.json()['data']['items']
+
+        return [cls(**entry) for entry in data]
 
     @classmethod
     def get_public_watchlist(cls, session: Session, name: str) -> 'Watchlist':
@@ -98,7 +95,7 @@ class Watchlist:
 
         data = response.json()['data']
 
-        return cls(**snakeify(data))
+        return cls(**data)
 
     @classmethod
     def get_private_watchlists(cls, session: Session) -> list['Watchlist']:
@@ -111,10 +108,10 @@ class Watchlist:
         """
         response = requests.get(f'{session.base_url}/watchlists', headers=session.headers)
         validate_response(response)
-        watchlists = response.json()['data']['items']
-        watchlists = [cls(**snakeify(w)) for w in watchlists]
 
-        return watchlists
+        data = response.json()['data']['items']
+
+        return [cls(**entry) for entry in data]
 
     @classmethod
     def get_private_watchlist(cls, session: Session, name: str) -> 'Watchlist':
@@ -131,7 +128,7 @@ class Watchlist:
 
         data = response.json()['data']
 
-        return cls(**snakeify(data))
+        return cls(**data)
 
     @classmethod
     def remove_private_watchlist(cls, session: Session, name: str) -> None:
@@ -150,11 +147,10 @@ class Watchlist:
 
         :param session: the session to use for the request.
         """
-        json = desnakeify(self.__dict__)
         response = requests.post(
             f'{session.base_url}/watchlists',
             headers=session.headers,
-            json=json
+            json=self.dict(by_alias=True)
         )
         validate_response(response)
 
@@ -167,7 +163,7 @@ class Watchlist:
         response = requests.put(
             f'{session.base_url}/watchlists/{self.name}',
             headers=session.headers,
-            json=desnakeify(self.__dict__)
+            json=self.dict(by_alias=True)
         )
         validate_response(response)
 
@@ -175,6 +171,8 @@ class Watchlist:
         """
         Adds a symbol to the watchlist.
         """
+        if self.watchlist_entries is None:
+            self.watchlist_entries = []
         self.watchlist_entries.append({'symbol': symbol, 'instrument-type': instrument_type})
 
     def remove_symbol(self, symbol: str, instrument_type: str) -> None:

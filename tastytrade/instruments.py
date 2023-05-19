@@ -1,64 +1,102 @@
-from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Optional, TypedDict
+from typing import Any, Optional
 
 import requests
 
 from tastytrade.session import Session
-from tastytrade.utils import (datetime_from_tastydatetime, snakeify,
-                              validate_response)
-
-Deliverable = TypedDict('Deliverable', {
-    'id': int,
-    'root-symbol': str,
-    'deliverable-type': str,
-    'description': str,
-    'amount': Decimal,
-    'symbol': str,
-    'instrument-type': str,
-    'percent': str
-}, total=False)
-DestinationVenueSymbol = TypedDict('DestinationVenueSymbol', {
-    'id': int,
-    'symbol': str,
-    'destination-venue': str,
-    'routable': bool,
-    'max-quantity-precision': int,
-    'max-price-precision': int
-}, total=False)
-QuantityDecimalPrecision = TypedDict('QuantityDecimalPrecision', {
-    'instrument-type': str,
-    'symbol': str,
-    'value': int,
-    'minimum-increment-precision': int
-}, total=False)
-Strike = TypedDict('Strike', {
-    'strike-price': Decimal,
-    'call': str,
-    'put': str
-})
-TickSize = TypedDict('TickSize', {
-    'value': str,
-    'threshold': str,
-    'symbol': str
-}, total=False)
+from tastytrade.utils import TastytradeJsonDataclass, validate_response
 
 
-class OptionType(str, Enum):
+class Deliverable(TastytradeJsonDataclass):
+    id: int
+    root_symbol: str
+    deliverable_type: str
+    description: str
+    amount: Decimal
+    symbol: str
+    instrument_type: str
+    percent: str
+
+
+class DestinationVenueSymbol(TastytradeJsonDataclass):
+    id: int
+    symbol: str
+    destination_venue: str
+    routable: bool
+    max_quantity_precision: Optional[int] = None
+    max_price_precision: Optional[int] = None
+
+
+class QuantityDecimalPrecision(TastytradeJsonDataclass):
+    instrument_type: str
+    value: int
+    minimum_increment_precision: int
+    symbol: Optional[str] = None
+
+
+class Strike(TastytradeJsonDataclass):
+    strike_price: Decimal
+    call: str
+    put: str
+
+
+class TickSize(TastytradeJsonDataclass):
+    value: Decimal
+    threshold: Optional[Decimal] = None
+    symbol: Optional[str] = None
+
+
+class NestedOptionChainExpiration(TastytradeJsonDataclass):
+    expiration_type: str
+    expiration_date: date
+    days_to_expiration: int
+    settlement_type: str
+    strikes: list[Strike]
+
+
+class FutureEtfEquivalent(TastytradeJsonDataclass):
+    symbol: str
+    share_quantity: int
+
+
+class Roll(TastytradeJsonDataclass):
+    name: str
+    active_count: int
+    cash_settled: bool
+    business_days_offset: int
+    first_notice: bool
+
+
+class OptionType(str,Enum):
     """
     This is an :class:`~enum.Enum` that contains the valid types of options and
     their abbreviations in the API.
     """
-    #: a call option
     CALL = 'C'
-    #: a put option
     PUT = 'P'
 
 
-@dataclass
-class Cryptocurrency:
+class FutureMonthCode(str, Enum):
+    """
+    This is an :class:`~enum.Enum` that contains the valid month codes for futures.
+    """
+    JAN = 'F'
+    FEB = 'G'
+    MAR = 'H'
+    APR = 'J'
+    MAY = 'K'
+    JUN = 'M'
+    JUL = 'N'
+    AUG = 'Q'
+    SEP = 'U'
+    OCT = 'V'
+    NOV = 'X'
+    DEC = 'Z'
+
+
+class Cryptocurrency(TastytradeJsonDataclass):
     id: int
     symbol: str
     instrument_type: str
@@ -69,10 +107,6 @@ class Cryptocurrency:
     tick_size: Decimal
     destination_venue_symbols: list[DestinationVenueSymbol]
     streamer_symbol: Optional[str] = None
-
-    def __post_init__(self):
-        if isinstance(self.tick_size, str):
-            self.tick_size = Decimal(self.tick_size)
 
     @classmethod
     def get_cryptocurrencies(
@@ -95,9 +129,8 @@ class Cryptocurrency:
         validate_response(response)
 
         data = response.json()['data']['items']
-        cryptocurrencies = [cls(**snakeify(entry)) for entry in data]
 
-        return cryptocurrencies
+        return [cls(**entry) for entry in data]
 
     @classmethod
     def get_cryptocurrency(cls, session: Session, symbol: str) -> 'Cryptocurrency':
@@ -118,11 +151,10 @@ class Cryptocurrency:
 
         data = response.json()['data']
 
-        return cls(**snakeify(data))
+        return cls(**data)
 
 
-@dataclass
-class Equity:
+class Equity(TastytradeJsonDataclass):
     id: int
     symbol: str
     instrument_type: str
@@ -145,14 +177,6 @@ class Equity:
     is_fractional_quantity_eligible: Optional[bool] = None
     tick_sizes: Optional[list[TickSize]] = None
     option_tick_sizes: Optional[list[TickSize]] = None
-
-    def __post_init__(self):
-        if isinstance(self.borrow_rate, str):
-            self.borrow_rate = Decimal(self.borrow_rate)
-        if isinstance(self.halted_at, str):
-            self.halted_at = datetime_from_tastydatetime(self.halted_at)
-        if isinstance(self.stops_trading_at, str):
-            self.stops_trading_at = datetime_from_tastydatetime(self.stops_trading_at)
 
     @classmethod
     def get_active_equities(
@@ -189,7 +213,8 @@ class Equity:
             validate_response(response)
 
             json = response.json()
-            equities.extend([cls(**snakeify(entry)) for entry in json['data']['items']])
+            data = json['data']['items']
+            equities.extend([cls(**entry) for entry in data])
 
             pagination = json['pagination']
             if pagination['page-offset'] >= pagination['total-pages'] - 1:
@@ -233,9 +258,8 @@ class Equity:
         validate_response(response)
 
         data = response.json()['data']['items']
-        equities = [cls(**snakeify(entry)) for entry in data]
 
-        return equities
+        return [cls(**entry) for entry in data]
 
     @classmethod
     def get_equity(cls, session: Session, symbol: str) -> 'Equity':
@@ -256,11 +280,10 @@ class Equity:
 
         data = response.json()['data']
 
-        return cls(**snakeify(data))
+        return cls(**data)
 
 
-@dataclass
-class Option:
+class Option(TastytradeJsonDataclass):
     symbol: str
     instrument_type: str
     active: bool
@@ -284,18 +307,8 @@ class Option:
     old_security_number: Optional[str] = None
     streamer_symbol: Optional[str] = None
 
-    def __post_init__(self):
-        if isinstance(self.strike_price, str):
-            self.strike_price = Decimal(self.strike_price)
-        if isinstance(self.expiration_date, str):
-            self.expiration_date = date.fromisoformat(self.expiration_date)
-        self.option_type = OptionType(self.option_type)
-        if isinstance(self.stops_trading_at, str):
-            self.stops_trading_at = datetime_from_tastydatetime(self.stops_trading_at)
-        if isinstance(self.expires_at, str):
-            self.expires_at = datetime_from_tastydatetime(self.expires_at)
-        if isinstance(self.halted_at, str):
-            self.halted_at = datetime_from_tastydatetime(self.halted_at)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         if not self.streamer_symbol:
             self._set_streamer_symbol()
 
@@ -330,9 +343,8 @@ class Option:
         validate_response(response)
 
         data = response.json()['data']['items']
-        equities = [cls(**snakeify(entry)) for entry in data]
 
-        return equities
+        return [cls(**entry) for entry in data]
 
     @classmethod
     def get_option(
@@ -360,7 +372,7 @@ class Option:
 
         data = response.json()['data']
 
-        return cls(**snakeify(data))
+        return cls(**data)
 
     def _set_streamer_symbol(self) -> None:
         if self.strike_price % 1 == 0:
@@ -375,21 +387,7 @@ class Option:
             f".{self.underlying_symbol}{exp}{self.option_type.value}{strike}"
 
 
-@dataclass
-class NestedOptionChainExpiration:
-    expiration_type: str
-    expiration_date: date
-    days_to_expiration: int
-    settlement_type: str
-    strikes: list[Strike]
-
-    def __post_init__(self):
-        if isinstance(self.expiration_date, str):
-            self.expiration_date = date.fromisoformat(self.expiration_date)
-
-
-@dataclass
-class NestedOptionChain:
+class NestedOptionChain(TastytradeJsonDataclass):
     underlying_symbol: str
     root_symbol: str
     option_chain_type: str
@@ -397,9 +395,6 @@ class NestedOptionChain:
     tick_sizes: list[TickSize]
     deliverables: list[Deliverable]
     expirations: list[NestedOptionChainExpiration]
-
-    def __post_init__(self):
-        self.expirations = [NestedOptionChainExpiration(**snakeify(expiration)) for expiration in self.expirations]
 
     @classmethod
     def get_nested_option_chain(cls, session: Session, symbol: str) -> 'NestedOptionChain':
@@ -420,11 +415,91 @@ class NestedOptionChain:
 
         data = response.json()['data']['items'][0]
 
-        return cls(**snakeify(data))
+        return cls(**data)
 
 
-@dataclass
-class Future:
+class FutureProduct(TastytradeJsonDataclass):
+    root_symbol: str
+    code: str
+    description: str
+    exchange: str
+    product_type: str
+    listed_months: list[FutureMonthCode]
+    active_months: list[FutureMonthCode]
+    notional_multiplier: Decimal
+    tick_size: Decimal
+    display_factor: Decimal
+    streamer_exchange_code: str
+    small_notional: bool
+    back_month_first_calendar_symbol: bool
+    first_notice: bool
+    cash_settled: bool
+    market_sector: str
+    clearing_code: str
+    clearing_exchange_code: str
+    roll: Roll
+    base_tick: Optional[int] = None
+    sub_tick: Optional[int] = None
+    contract_limit: Optional[int] = None
+    product_subtype: Optional[str] = None
+    security_group: Optional[str] = None
+    true_underlying_code: Optional[str] = None
+    clearport_code: Optional[str] = None
+    legacy_code: Optional[str] = None
+    legacy_exchange_code: Optional[str] = None
+    option_products: Optional[list['FutureOptionProduct']] = None
+
+    @classmethod
+    def get_future_products(
+        cls,
+        session: Session
+    ) -> list['FutureProduct']:
+        """
+        Returns a list of :class:`FutureProduct` objects available.
+
+        :param session: the session to use for the request.
+
+        :return: a list of :class:`FutureProduct` objects.
+        """
+        response = requests.get(
+            f'{session.base_url}/instruments/future-products',
+            headers=session.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']['items']
+
+        return [cls(**entry) for entry in data]
+
+    @classmethod
+    def get_future_product(
+        cls,
+        session: Session,
+        code: str,
+        exchange: str = 'CME'
+    ) -> 'FutureProduct':
+        """
+        Returns a :class:`FutureProduct` object from the given symbol.
+
+        :param session: the session to use for the request.
+        :param code: the product code, e.g. 'ES'
+        :param exchange: the exchange to get the product from: 'CME', 'SMALLS', 'CFE', 'CBOED'
+
+        :return: a :class:`FutureProduct` object.
+        """
+        code = code.replace('/', '')
+        response = requests.get(
+            f'{session.base_url}/instruments/future-products/{exchange}/{code}',
+            headers=session.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']
+
+        return cls(**data)
+
+
+class Future(TastytradeJsonDataclass):
     symbol: str
     product_code: str
     tick_size: Decimal
@@ -452,38 +527,10 @@ class Future:
     first_notice_date: Optional[date] = None
     roll_target_symbol: Optional[str] = None
     true_underlying_symbol: Optional[str] = None
-    future_etf_equivalent: Optional[dict[str, Any]] = None
+    future_etf_equivalent: Optional[FutureEtfEquivalent] = None
     tick_sizes: Optional[list[TickSize]] = None
     option_tick_sizes: Optional[list[TickSize]] = None
     spread_tick_sizes: Optional[list[TickSize]] = None
-
-    def __post_init__(self):
-        if isinstance(self.tick_size, str):
-            self.tick_size = Decimal(self.tick_size)
-        if isinstance(self.notional_multiplier, str):
-            self.notional_multiplier = Decimal(self.notional_multiplier)
-        if isinstance(self.display_factor, str):
-            self.display_factor = Decimal(self.display_factor)
-        if isinstance(self.last_trade_date, str):
-            self.last_trade_date = date.fromisoformat(self.last_trade_date)
-        if isinstance(self.expiration_date, str):
-            self.expiration_date = date.fromisoformat(self.expiration_date)
-        if isinstance(self.closing_only_date, str):
-            self.closing_only_date = date.fromisoformat(self.closing_only_date)
-        if isinstance(self.stops_trading_at, str):
-            self.stops_trading_at = datetime_from_tastydatetime(self.stops_trading_at)
-        if isinstance(self.expires_at, str):
-            self.expires_at = datetime_from_tastydatetime(self.expires_at)
-        if not isinstance(self.future_product, FutureProduct):
-            self.future_product = FutureProduct(**snakeify(self.future_product))
-        if isinstance(self.contract_size, str):
-            self.contract_size = Decimal(self.contract_size)
-        if isinstance(self.main_fraction, str):
-            self.main_fraction = Decimal(self.main_fraction)
-        if isinstance(self.sub_fraction, str):
-            self.sub_fraction = Decimal(self.sub_fraction)
-        if isinstance(self.first_notice_date, str):
-            self.first_notice_date = date.fromisoformat(self.first_notice_date)
 
     @classmethod
     def get_futures(
@@ -515,9 +562,8 @@ class Future:
         validate_response(response)
 
         data = response.json()['data']['items']
-        futures = [cls(**snakeify(entry)) for entry in data]
 
-        return futures
+        return [cls(**entry) for entry in data]
 
     @classmethod
     def get_future(cls, session: Session, symbol: str) -> 'Future':
@@ -538,102 +584,79 @@ class Future:
 
         data = response.json()['data']
 
-        return cls(**snakeify(data))
+        return cls(**data)
 
 
-@dataclass
-class FutureProduct:
+class FutureOptionProduct(TastytradeJsonDataclass):
     root_symbol: str
+    cash_settled: bool
     code: str
-    description: str
+    display_factor: Decimal
     exchange: str
     product_type: str
-    listed_months: str
-    active_months: str
-    notional_multiplier: Decimal
-    tick_size: Decimal
-    display_factor: Decimal
-    streamer_exchange_code: str
-    small_notional: bool
-    back_month_first_calendar_symbol: bool
-    first_notice: bool
-    cash_settled: bool
+    expiration_type: str
+    settlement_delay_days: int
     market_sector: str
     clearing_code: str
     clearing_exchange_code: str
-    roll: dict[str, Any]
-    base_tick: Optional[int] = None
-    sub_tick: Optional[int] = None
-    contract_limit: Optional[int] = None
+    clearing_price_multiplier: Decimal
+    is_rollover: bool
+    future_product: Optional['FutureProduct'] = None
     product_subtype: Optional[str] = None
-    security_group: Optional[str] = None
-    true_underlying_code: Optional[str] = None
-    clearport_code: Optional[str] = None
     legacy_code: Optional[str] = None
-    legacy_exchange_code: Optional[str] = None
-    option_products: Optional[dict[str, Any]] = None
-
-    def __post_init__(self):
-        if isinstance(self.notional_multiplier, str):
-            self.notional_multiplier = Decimal(self.notional_multiplier)
-        if isinstance(self.tick_size, str):
-            self.tick_size = Decimal(self.tick_size)
-        if isinstance(self.display_factor, str):
-            self.display_factor = Decimal(self.display_factor)
+    clearport_code: Optional[str] = None
 
     @classmethod
-    def get_future_products(
+    def get_future_option_products(
         cls,
         session: Session
-    ) -> list['FutureProduct']:
+    ) -> list['FutureOptionProduct']:
         """
-        Returns a list of :class:`FutureProduct` objects available.
+        Returns a list of :class:`FutureOptionProduct` objects available.
 
         :param session: the session to use for the request.
 
-        :return: a list of :class:`FutureProduct` objects.
+        :return: a list of :class:`FutureOptionProduct` objects.
         """
         response = requests.get(
-            f'{session.base_url}/instruments/future-products',
+            f'{session.base_url}/instruments/future-option-products',
             headers=session.headers
         )
         validate_response(response)
 
         data = response.json()['data']['items']
-        future_products = [cls(**snakeify(entry)) for entry in data]
 
-        return future_products
+        return [cls(**entry) for entry in data]
 
     @classmethod
-    def get_future_product(
+    def get_future_option_product(
         cls,
         session: Session,
-        code: str,
+        root_symbol: str,
         exchange: str = 'CME'
-    ) -> 'FutureProduct':
+    ) -> 'FutureOptionProduct':
         """
-        Returns a :class:`FutureProduct` object from the given symbol.
+        Returns a :class:`FutureOptionProduct` object from the given symbol.
 
         :param session: the session to use for the request.
-        :param code: the product code, e.g. 'ES'
-        :param exchange: the exchange to get the product from: 'CME', 'SMALLS', 'CFE', 'CBOED'
+        :param code: the root symbol of the future option
+        :param exchange: the exchange to get the product from
 
-        :return: a :class:`FutureProduct` object.
+        :return: a :class:`FutureOptionProduct` object.
         """
-        code = code.replace('/', '')
+        root_symbol = root_symbol.replace('/', '')
         response = requests.get(
-            f'{session.base_url}/instruments/future-products/{exchange}/{code}',
+            f'{session.base_url}/instruments/future-option-products/{exchange}/{root_symbol}',
             headers=session.headers
         )
         validate_response(response)
 
         data = response.json()['data']
 
-        return cls(**snakeify(data))
+        return cls(**data)
 
 
-@dataclass
-class FutureOption:
+class FutureOption(TastytradeJsonDataclass):
     symbol: str
     underlying_symbol: str
     product_code: str
@@ -666,34 +689,7 @@ class FutureOption:
     exchange_symbol: str
     security_exchange: str
     sx_id: str
-    future_option_product: 'FutureOptionProduct'
-
-    def __post_init__(self):
-        if isinstance(self.expiration_date, str):
-            self.expiration_date = date.fromisoformat(self.expiration_date)
-        if isinstance(self.strike_price, str):
-            self.strike_price = Decimal(self.strike_price)
-        self.option_type = OptionType(self.option_type)
-        if isinstance(self.future_price_ratio, str):
-            self.future_price_ratio = Decimal(self.future_price_ratio)
-        if isinstance(self.multiplier, str):
-            self.multiplier = Decimal(self.multiplier)
-        if isinstance(self.underlying_count, str):
-            self.underlying_count = Decimal(self.underlying_count)
-        if isinstance(self.notional_value, str):
-            self.notional_value = Decimal(self.notional_value)
-        if isinstance(self.display_factor, str):
-            self.display_factor = Decimal(self.display_factor)
-        if isinstance(self.strike_factor, str):
-            self.strike_factor = Decimal(self.strike_factor)
-        if isinstance(self.maturity_date, str):
-            self.maturity_date = date.fromisoformat(self.maturity_date)
-        if isinstance(self.stops_trading_at, str):
-            self.stops_trading_at = datetime_from_tastydatetime(self.stops_trading_at)
-        if isinstance(self.expires_at, str):
-            self.expires_at = datetime_from_tastydatetime(self.expires_at)
-        if not isinstance(self.future_option_product, FutureOptionProduct):
-            self.future_option_product = FutureOptionProduct(**snakeify(self.future_option_product))
+    future_option_product: Optional['FutureOptionProduct'] = None
 
     @classmethod
     def get_future_options(
@@ -734,9 +730,8 @@ class FutureOption:
         validate_response(response)
 
         data = response.json()['data']['items']
-        future_options = [cls(**snakeify(entry)) for entry in data]
 
-        return future_options
+        return [cls(**entry) for entry in data]
 
     @classmethod
     def get_future_option(
@@ -761,90 +756,10 @@ class FutureOption:
 
         data = response.json()['data']
 
-        return cls(**snakeify(data))
+        return cls(**data)
 
 
-@dataclass
-class FutureOptionProduct:
-    root_symbol: str
-    cash_settled: bool
-    code: str
-    display_factor: Decimal
-    exchange: str
-    product_type: str
-    expiration_type: str
-    settlement_delay_days: int
-    market_sector: str
-    clearing_code: str
-    clearing_exchange_code: str
-    clearing_price_multiplier: Decimal
-    is_rollover: bool
-    future_product: Optional['FutureProduct'] = None
-    product_subtype: Optional[str] = None
-    legacy_code: Optional[str] = None
-    clearport_code: Optional[str] = None
-
-    def __post_init__(self):
-        if isinstance(self.display_factor, str):
-            self.display_factor = Decimal(self.display_factor)
-        if isinstance(self.clearing_price_multiplier, str):
-            self.clearing_price_multiplier = Decimal(self.clearing_price_multiplier)
-        if self.future_product is not None and not isinstance(self.future_product, FutureProduct):
-            self.future_product = FutureProduct(**snakeify(self.future_product))
-
-    @classmethod
-    def get_future_option_products(
-        cls,
-        session: Session
-    ) -> list['FutureOptionProduct']:
-        """
-        Returns a list of :class:`FutureOptionProduct` objects available.
-
-        :param session: the session to use for the request.
-
-        :return: a list of :class:`FutureOptionProduct` objects.
-        """
-        response = requests.get(
-            f'{session.base_url}/instruments/future-option-products',
-            headers=session.headers
-        )
-        validate_response(response)
-
-        data = response.json()['data']['items']
-        future_option_products = [cls(**snakeify(entry)) for entry in data]
-
-        return future_option_products
-
-    @classmethod
-    def get_future_option_product(
-        cls,
-        session: Session,
-        root_symbol: str,
-        exchange: str = 'CME'
-    ) -> 'FutureOptionProduct':
-        """
-        Returns a :class:`FutureOptionProduct` object from the given symbol.
-
-        :param session: the session to use for the request.
-        :param code: the root symbol of the future option
-        :param exchange: the exchange to get the product from
-
-        :return: a :class:`FutureOptionProduct` object.
-        """
-        root_symbol = root_symbol.replace('/', '')
-        response = requests.get(
-            f'{session.base_url}/instruments/future-option-products/{exchange}/{root_symbol}',
-            headers=session.headers
-        )
-        validate_response(response)
-
-        data = response.json()['data']
-
-        return cls(**snakeify(data))
-
-
-@dataclass
-class Warrant:
+class Warrant(TastytradeJsonDataclass):
     symbol: str
     instrument_type: str
     listed_market: str
@@ -876,9 +791,8 @@ class Warrant:
         validate_response(response)
 
         data = response.json()['data']['items']
-        futures = [cls(**snakeify(entry)) for entry in data]
 
-        return futures
+        return [cls(**entry) for entry in data]
 
     @classmethod
     def get_warrant(cls, session: Session, symbol: str) -> 'Warrant':
@@ -898,7 +812,7 @@ class Warrant:
 
         data = response.json()['data']
 
-        return cls(**snakeify(data))
+        return cls(**data)
 
 
 def get_quantity_decimal_precisions(session: Session) -> list[QuantityDecimalPrecision]:
@@ -908,7 +822,9 @@ def get_quantity_decimal_precisions(session: Session) -> list[QuantityDecimalPre
     )
     validate_response(response)
 
-    return response.json()['data']['items']
+    data = response.json()['data']['items']
+
+    return [QuantityDecimalPrecision(**entry) for entry in data]
 
 
 def get_option_chain(session: Session, symbol: str) -> dict[date, list[Option]]:
@@ -931,7 +847,7 @@ def get_option_chain(session: Session, symbol: str) -> dict[date, list[Option]]:
     data = response.json()['data']['items']
     chain = {}
     for entry in data:
-        option = Option(**snakeify(entry))
+        option = Option(**entry)
         if option.expiration_date not in chain:
             chain[option.expiration_date] = [option]
         else:
@@ -960,7 +876,7 @@ def get_future_option_chain(session: Session, symbol: str) -> dict[date, list[Fu
     data = response.json()['data']['items']
     chain = {}
     for entry in data:
-        option = FutureOption(**snakeify(entry))
+        option = FutureOption(**entry)
         if option.expiration_date not in chain:
             chain[option.expiration_date] = [option]
         else:
