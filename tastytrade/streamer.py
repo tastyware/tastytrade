@@ -3,7 +3,7 @@ import json
 from asyncio import Lock, Queue
 from datetime import datetime
 from enum import Enum
-from typing import Any, AsyncIterator, Optional
+from typing import Any, AsyncIterator, Optional, Union
 
 import requests
 import websockets
@@ -153,7 +153,7 @@ class AlertStreamer:
             # send the heartbeat every 10 seconds
             await asyncio.sleep(10)
 
-    async def _subscribe(self, subscription: SubscriptionType, value: Optional[str] | list[str] = '') -> None:
+    async def _subscribe(self, subscription: SubscriptionType, value: Union[Optional[str], list[str]] = '') -> None:
         """
         Subscribes to one of the :class:`SubscriptionType`s. Depending on the kind of
         subscription, the value parameter may be required.
