@@ -5,68 +5,9 @@ from typing import Any, Optional
 
 import requests
 
+from tastytrade.order import InstrumentType, TradeableTastytradeJsonDataclass
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeJsonDataclass, validate_response
-
-
-class Deliverable(TastytradeJsonDataclass):
-    id: int
-    root_symbol: str
-    deliverable_type: str
-    description: str
-    amount: Decimal
-    symbol: str
-    instrument_type: str
-    percent: str
-
-
-class DestinationVenueSymbol(TastytradeJsonDataclass):
-    id: int
-    symbol: str
-    destination_venue: str
-    routable: bool
-    max_quantity_precision: Optional[int] = None
-    max_price_precision: Optional[int] = None
-
-
-class QuantityDecimalPrecision(TastytradeJsonDataclass):
-    instrument_type: str
-    value: int
-    minimum_increment_precision: int
-    symbol: Optional[str] = None
-
-
-class Strike(TastytradeJsonDataclass):
-    strike_price: Decimal
-    call: str
-    put: str
-
-
-class TickSize(TastytradeJsonDataclass):
-    value: Decimal
-    threshold: Optional[Decimal] = None
-    symbol: Optional[str] = None
-
-
-class NestedOptionChainExpiration(TastytradeJsonDataclass):
-    expiration_type: str
-    expiration_date: date
-    days_to_expiration: int
-    settlement_type: str
-    strikes: list[Strike]
-
-
-class FutureEtfEquivalent(TastytradeJsonDataclass):
-    symbol: str
-    share_quantity: int
-
-
-class Roll(TastytradeJsonDataclass):
-    name: str
-    active_count: int
-    cash_settled: bool
-    business_days_offset: int
-    first_notice: bool
 
 
 class OptionType(str, Enum):
@@ -81,6 +22,8 @@ class OptionType(str, Enum):
 class FutureMonthCode(str, Enum):
     """
     This is an :class:`~enum.Enum` that contains the valid month codes for futures.
+
+    This is really just here for reference, as the API barely uses these codes.
     """
     JAN = 'F'
     FEB = 'G'
@@ -96,10 +39,99 @@ class FutureMonthCode(str, Enum):
     DEC = 'Z'
 
 
-class Cryptocurrency(TastytradeJsonDataclass):
+class Deliverable(TastytradeJsonDataclass):
+    """
+    Dataclass representing the deliverable for an option.
+    """
+    id: int
+    root_symbol: str
+    deliverable_type: str
+    description: str
+    amount: Decimal
+    symbol: str
+    instrument_type: InstrumentType
+    percent: str
+
+
+class DestinationVenueSymbol(TastytradeJsonDataclass):
+    """
+    Dataclass representing a specific destination venue symbol for a cryptocurrency.
+    """
     id: int
     symbol: str
-    instrument_type: str
+    destination_venue: str
+    routable: bool
+    max_quantity_precision: Optional[int] = None
+    max_price_precision: Optional[int] = None
+
+
+class QuantityDecimalPrecision(TastytradeJsonDataclass):
+    """
+    Dataclass representing the decimal precision (number of places) for an instrument.
+    """
+    instrument_type: InstrumentType
+    value: int
+    minimum_increment_precision: int
+    symbol: Optional[str] = None
+
+
+class Strike(TastytradeJsonDataclass):
+    """
+    Dataclass representing a specific strike in an options chain, containing the
+    symbols for the call and put options.
+    """
+    strike_price: Decimal
+    call: str
+    put: str
+
+
+class TickSize(TastytradeJsonDataclass):
+    """
+    Dataclass representing the tick size for an instrument.
+    """
+    value: Decimal
+    threshold: Optional[Decimal] = None
+    symbol: Optional[str] = None
+
+
+class NestedOptionChainExpiration(TastytradeJsonDataclass):
+    """
+    Dataclass representing an expiration in a nested options chain.
+    """
+    expiration_type: str
+    expiration_date: date
+    days_to_expiration: int
+    settlement_type: str
+    strikes: list[Strike]
+
+
+class FutureEtfEquivalent(TastytradeJsonDataclass):
+    """
+    Dataclass that represents the ETF equivalent for a future (aka, the number
+    of shares of the ETF that are equivalent to one future, leverage-wise).
+    """
+    symbol: str
+    share_quantity: int
+
+
+class Roll(TastytradeJsonDataclass):
+    """
+    Dataclass representing a roll for a future.
+    """
+    name: str
+    active_count: int
+    cash_settled: bool
+    business_days_offset: int
+    first_notice: bool
+
+
+class Cryptocurrency(TradeableTastytradeJsonDataclass):
+    """
+    Dataclass that represents a Tastytrade cryptocurrency object. Contains
+    information about the cryptocurrency and methods to populate that data
+    using cryptocurrency symbol(s).
+    """
+    id: int
     short_description: str
     description: str
     is_closing_only: bool
@@ -154,10 +186,12 @@ class Cryptocurrency(TastytradeJsonDataclass):
         return cls(**data)
 
 
-class Equity(TastytradeJsonDataclass):
+class Equity(TradeableTastytradeJsonDataclass):
+    """
+    Dataclass that represents a Tastytrade equity object. Contains information
+    about the equity and methods to populate that data using equity symbol(s).
+    """
     id: int
-    symbol: str
-    instrument_type: str
     is_index: bool
     listed_market: str
     description: str
@@ -183,7 +217,7 @@ class Equity(TastytradeJsonDataclass):
         cls,
         session: Session,
         per_page: int = 1000,
-        page_offset: int = 0,
+        page_offset: Optional[int] = None,
         lendability: Optional[str] = None
     ) -> list['Equity']:
         """
@@ -191,11 +225,17 @@ class Equity(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         :param per_page: the number of equities to get per page.
-        :param page_offset: the page offset to start at
+        :param page_offset: provide a specific page to get; if not provided, get all pages
         :param lendability: the lendability of the equities; 'Easy To Borrow', 'Locate Required', 'Preborrow'
 
         :return: a list of :class:`Equity` objects.
         """
+        # if a specific page is provided, we just get that page;
+        # otherwise, we loop through all pages
+        paginate = False
+        if page_offset is None:
+            page_offset = 0
+            paginate = True
         params: dict[str, Any] = {
             'per-page': per_page,
             'page-offset': page_offset,
@@ -218,6 +258,8 @@ class Equity(TastytradeJsonDataclass):
 
             pagination = json['pagination']
             if pagination['page-offset'] >= pagination['total-pages'] - 1:
+                break
+            if not paginate:
                 break
             params['page-offset'] += 1  # type: ignore
 
@@ -283,9 +325,11 @@ class Equity(TastytradeJsonDataclass):
         return cls(**data)
 
 
-class Option(TastytradeJsonDataclass):
-    symbol: str
-    instrument_type: str
+class Option(TradeableTastytradeJsonDataclass):
+    """
+    Dataclass that represents a Tastytrade option object. Contains information
+    about the option and methods to populate that data using option symbol(s).
+    """
     active: bool
     strike_price: Decimal
     root_symbol: str
@@ -388,6 +432,14 @@ class Option(TastytradeJsonDataclass):
 
 
 class NestedOptionChain(TastytradeJsonDataclass):
+    """
+    Dataclass that represents a Tastytrade nested option chain object. Contains
+    information about the option chain and a method to fetch one for a symbol.
+
+    The nested option chain is a bit neater than calling :meth:`get_option_chain` but
+    if you want to create actual :class:`Option` objects you'll need to make an extra
+    API request or two.
+    """
     underlying_symbol: str
     root_symbol: str
     option_chain_type: str
@@ -419,6 +471,13 @@ class NestedOptionChain(TastytradeJsonDataclass):
 
 
 class FutureProduct(TastytradeJsonDataclass):
+    """
+    Dataclass that represents a Tastytrade future product object. Contains
+    information about the future product and a method to fetch one for a symbol.
+
+    Useful for fetching general information about a family of futures, without
+    knowing the specific expirations or symbols.
+    """
     root_symbol: str
     code: str
     description: str
@@ -499,8 +558,11 @@ class FutureProduct(TastytradeJsonDataclass):
         return cls(**data)
 
 
-class Future(TastytradeJsonDataclass):
-    symbol: str
+class Future(TradeableTastytradeJsonDataclass):
+    """
+    Dataclass that represents a Tastytrade future object. Contains information about
+    the future and methods to fetch futures for symbol(s).
+    """
     product_code: str
     tick_size: Decimal
     notional_multiplier: Decimal
@@ -521,6 +583,7 @@ class Future(TastytradeJsonDataclass):
     back_month_first_calendar_symbol: bool
     is_tradeable: bool
     future_product: 'FutureProduct'
+    instrument_type: InstrumentType = InstrumentType.FUTURE
     contract_size: Optional[Decimal] = None
     main_fraction: Optional[Decimal] = None
     sub_fraction: Optional[Decimal] = None
@@ -588,6 +651,10 @@ class Future(TastytradeJsonDataclass):
 
 
 class FutureOptionProduct(TastytradeJsonDataclass):
+    """
+    Dataclass that represents a Tastytrade future option product object. Contains
+    information about the future option product (deliverable for the future option).
+    """
     root_symbol: str
     cash_settled: bool
     code: str
@@ -656,8 +723,11 @@ class FutureOptionProduct(TastytradeJsonDataclass):
         return cls(**data)
 
 
-class FutureOption(TastytradeJsonDataclass):
-    symbol: str
+class FutureOption(TradeableTastytradeJsonDataclass):
+    """
+    Dataclass that represents a Tastytrade future option object. Contains
+    information about the future option, and methods to get future options.
+    """
     underlying_symbol: str
     product_code: str
     expiration_date: date
@@ -689,6 +759,7 @@ class FutureOption(TastytradeJsonDataclass):
     exchange_symbol: str
     security_exchange: str
     sx_id: str
+    instrument_type: InstrumentType = InstrumentType.FUTURE_OPTION
     future_option_product: Optional['FutureOptionProduct'] = None
 
     @classmethod
@@ -760,8 +831,12 @@ class FutureOption(TastytradeJsonDataclass):
 
 
 class Warrant(TastytradeJsonDataclass):
+    """
+    Dataclass that represents a Tastytrade warrant object. Contains
+    information about the warrant, and methods to get warrants.
+    """
     symbol: str
-    instrument_type: str
+    instrument_type: InstrumentType
     listed_market: str
     description: str
     is_closing_only: bool
@@ -815,7 +890,19 @@ class Warrant(TastytradeJsonDataclass):
         return cls(**data)
 
 
+# fix pydantic forward references
+FutureProduct.update_forward_refs()
+
+
 def get_quantity_decimal_precisions(session: Session) -> list[QuantityDecimalPrecision]:
+    """
+    Returns a list of :class:`QuantityDecimalPrecision` objects for different
+    types of instruments.
+
+    :param session: the session to use for the request.
+
+    :return: a list of :class:`QuantityDecimalPrecision` objects.
+    """
     response = requests.get(
         f'{session.base_url}/instruments/quantity-decimal-precisions',
         headers=session.headers

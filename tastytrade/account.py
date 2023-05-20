@@ -4,12 +4,17 @@ from typing import Any, Optional
 
 import requests
 
+from tastytrade.order import (InstrumentType, NewOrder, OrderStatus,
+                              PlacedOrder, PlacedOrderResponse, PriceEffect)
 from tastytrade.session import Session
 from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
                               validate_response)
 
 
 class AccountBalance(TastytradeJsonDataclass):
+    """
+    Dataclass containing account balance information.
+    """
     account_number: str
     cash_balance: Decimal
     long_equity_value: Decimal
@@ -37,12 +42,12 @@ class AccountBalance(TastytradeJsonDataclass):
     cash_available_to_withdraw: Decimal
     day_trade_excess: Decimal
     pending_cash: Decimal
-    pending_cash_effect: str
+    pending_cash_effect: PriceEffect
     long_cryptocurrency_value: Decimal
     short_cryptocurrency_value: Decimal
     cryptocurrency_margin_requirement: Decimal
     unsettled_cryptocurrency_fiat_amount: Decimal
-    unsettled_cryptocurrency_fiat_effect: str
+    unsettled_cryptocurrency_fiat_effect: PriceEffect
     closed_loop_available_balance: Decimal
     equity_offering_margin_requirement: Decimal
     long_bond_value: Decimal
@@ -56,12 +61,15 @@ class AccountBalance(TastytradeJsonDataclass):
     pending_margin_interest: Decimal
     apex_starting_day_margin_equity: Decimal
     buying_power_adjustment: Decimal
-    buying_power_adjustment_effect: str
+    buying_power_adjustment_effect: PriceEffect
     effective_cryptocurrency_buying_power: Decimal
     updated_at: datetime
 
 
 class AccountBalanceSnapshot(TastytradeJsonDataclass):
+    """
+    Dataclass containing account balance for a moment in time (snapshot).
+    """
     account_number: str
     cash_balance: Decimal
     long_equity_value: Decimal
@@ -89,12 +97,12 @@ class AccountBalanceSnapshot(TastytradeJsonDataclass):
     cash_available_to_withdraw: Decimal
     day_trade_excess: Decimal
     pending_cash: Decimal
-    pending_cash_effect: str
+    pending_cash_effect: PriceEffect
     long_cryptocurrency_value: Decimal
     short_cryptocurrency_value: Decimal
     cryptocurrency_margin_requirement: Decimal
     unsettled_cryptocurrency_fiat_amount: Decimal
-    unsettled_cryptocurrency_fiat_effect: str
+    unsettled_cryptocurrency_fiat_effect: PriceEffect
     closed_loop_available_balance: Decimal
     equity_offering_margin_requirement: Decimal
     long_bond_value: Decimal
@@ -104,9 +112,12 @@ class AccountBalanceSnapshot(TastytradeJsonDataclass):
 
 
 class CurrentPosition(TastytradeJsonDataclass):
+    """
+    Dataclass containing imformation about an individual position in a portfolio.
+    """
     account_number: str
     symbol: str
-    instrument_type: str
+    instrument_type: InstrumentType
     underlying_symbol: str
     quantity: Decimal
     quantity_direction: str
@@ -119,10 +130,10 @@ class CurrentPosition(TastytradeJsonDataclass):
     is_suppressed: bool
     is_frozen: bool
     realized_day_gain: Decimal
-    realized_day_gain_effect: str
+    realized_day_gain_effect: PriceEffect
     realized_day_gain_date: date
     realized_today: Decimal
-    realized_today_effect: str
+    realized_today_effect: PriceEffect
     realized_today_date: date
     created_at: datetime
     updated_at: datetime
@@ -135,6 +146,9 @@ class CurrentPosition(TastytradeJsonDataclass):
 
 
 class Lot(TastytradeJsonDataclass):
+    """
+    Dataclass containing information about the lot of a position.
+    """
     id: str
     transaction_id: int
     quantity: Decimal
@@ -145,6 +159,10 @@ class Lot(TastytradeJsonDataclass):
 
 
 class MarginReportEntry(TastytradeJsonDataclass):
+    """
+    Dataclass containing an individual entry (relating to a specific position)
+    as part of the overall margin report.
+    """
     description: str
     code: str
     underlying_symbol: str
@@ -154,44 +172,50 @@ class MarginReportEntry(TastytradeJsonDataclass):
     point_of_no_return_percent: Decimal
     margin_calculation_type: str
     margin_requirement: Decimal
-    margin_requirement_effect: str
+    margin_requirement_effect: PriceEffect
     initial_requirement: Decimal
-    initial_requirement_effect: str
+    initial_requirement_effect: PriceEffect
     maintenance_requirement: Decimal
-    maintenance_requirement_effect: str
+    maintenance_requirement_effect: PriceEffect
     buying_power: Decimal
-    buying_power_effect: str
+    buying_power_effect: PriceEffect
     groups: list[dict[str, Any]]
     price_increase_percent: Decimal
     price_decrease_percent: Decimal
 
 
 class MarginReport(TastytradeJsonDataclass):
+    """
+    Dataclass containing an overall portfolio margin report.
+    """
     account_number: str
     description: str
     margin_calculation_type: str
     option_level: str
     margin_requirement: Decimal
-    margin_requirement_effect: str
+    margin_requirement_effect: PriceEffect
     maintenance_requirement: Decimal
-    maintenance_requirement_effect: str
+    maintenance_requirement_effect: PriceEffect
     margin_equity: Decimal
-    margin_equity_effect: str
+    margin_equity_effect: PriceEffect
     option_buying_power: Decimal
-    option_buying_power_effect: str
+    option_buying_power_effect: PriceEffect
     reg_t_margin_requirement: Decimal
-    reg_t_margin_requirement_effect: str
+    reg_t_margin_requirement_effect: PriceEffect
     reg_t_option_buying_power: Decimal
-    reg_t_option_buying_power_effect: str
+    reg_t_option_buying_power_effect: PriceEffect
     maintenance_excess: Decimal
-    maintenance_excess_effect: str
+    maintenance_excess_effect: PriceEffect
     groups: list[MarginReportEntry]
     last_state_timestamp: int
     initial_requirement: Optional[Decimal] = None
-    initial_requirement_effect: Optional[str] = None
+    initial_requirement_effect: Optional[PriceEffect] = None
 
 
 class MarginRequirement(TastytradeJsonDataclass):
+    """
+    Dataclass containing general margin requirement information for a symbol.
+    """
     underlying_symbol: str
     long_equity_initial: Decimal
     short_equity_initial: Decimal
@@ -205,6 +229,10 @@ class MarginRequirement(TastytradeJsonDataclass):
 
 
 class NetLiqOhlc(TastytradeJsonDataclass):
+    """
+    Dataclass containing historical net liquidation data in OHLC format
+    (open, high, low, close), with a timestamp.
+    """
     open: Decimal
     high: Decimal
     low: Decimal
@@ -221,6 +249,9 @@ class NetLiqOhlc(TastytradeJsonDataclass):
 
 
 class PositionLimit(TastytradeJsonDataclass):
+    """
+    Dataclass containing information about general account limits.
+    """
     account_number: str
     equity_order_size: int
     equity_option_order_size: int
@@ -234,6 +265,10 @@ class PositionLimit(TastytradeJsonDataclass):
 
 
 class TradingStatus(TastytradeJsonDataclass):
+    """
+    Dataclass containing information about an account's trading status, such
+    as what types of trades are allowed (e.g. margin, crypto, futures)
+    """
     account_number: str
     equities_margin_calculation_type: str
     fee_schedule_name: str
@@ -274,6 +309,9 @@ class TradingStatus(TastytradeJsonDataclass):
 
 
 class Transaction(TastytradeJsonDataclass):
+    """
+    Dataclass containing information about a past transaction.
+    """
     id: int
     account_number: str
     transaction_type: str
@@ -282,24 +320,24 @@ class Transaction(TastytradeJsonDataclass):
     executed_at: datetime
     transaction_date: date
     value: Decimal
-    value_effect: str
+    value_effect: PriceEffect
     net_value: Decimal
-    net_value_effect: str
+    net_value_effect: PriceEffect
     is_estimated_fee: bool
     symbol: Optional[str] = None
-    instrument_type: Optional[str] = None
+    instrument_type: Optional[InstrumentType] = None
     underlying_symbol: Optional[str] = None
     action: Optional[str] = None
     quantity: Optional[Decimal] = None
     price: Optional[Decimal] = None
     regulatory_fees: Optional[Decimal] = None
-    regulatory_fees_effect: Optional[str] = None
+    regulatory_fees_effect: Optional[PriceEffect] = None
     clearing_fees: Optional[Decimal] = None
-    clearing_fees_effect: Optional[str] = None
+    clearing_fees_effect: Optional[PriceEffect] = None
     commission: Optional[Decimal] = None
-    commission_effect: Optional[str] = None
+    commission_effect: Optional[PriceEffect] = None
     proprietary_index_option_fees: Optional[Decimal] = None
-    proprietary_index_option_fees_effect: Optional[str] = None
+    proprietary_index_option_fees_effect: Optional[PriceEffect] = None
     ext_exchange_order_number: Optional[str] = None
     ext_global_order_number: Optional[int] = None
     ext_group_id: Optional[str] = None
@@ -312,7 +350,7 @@ class Transaction(TastytradeJsonDataclass):
     leg_count: Optional[int] = None
     destination_venue: Optional[str] = None
     other_charge: Optional[Decimal] = None
-    other_charge_effect: Optional[str] = None
+    other_charge_effect: Optional[PriceEffect] = None
     other_charge_description: Optional[str] = None
     reverses_id: Optional[int] = None
     cost_basis_reconciliation_date: Optional[date] = None
@@ -322,6 +360,11 @@ class Transaction(TastytradeJsonDataclass):
 
 
 class Account(TastytradeJsonDataclass):
+    """
+    Dataclass that represents a Tastytrade account object, containing
+    methods for retrieving information about the account, placing orders,
+    and retrieving past transactions.
+    """
     account_number: str
     opened_at: datetime
     nickname: str
@@ -467,7 +510,7 @@ class Account(TastytradeJsonDataclass):
         session: Session,
         underlying_symbols: Optional[list[str]] = None,
         symbol: Optional[str] = None,
-        instrument_type: Optional[str] = None,
+        instrument_type: Optional[InstrumentType] = None,
         include_closed: bool = False,
         underlying_product_code: Optional[str] = None,
         partition_keys: Optional[list[str]] = None,
@@ -480,9 +523,7 @@ class Account(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param underlying_symbols: an array of underlying symbols for positions.
         :param symbol: a single symbol.
-        :param instrument_type:
-            the type of instrument. Available values: Bond, Cryptocurrency, Currency Pair,
-            Equity, Equity Offering, Equity Option, Future, Future Option, Index, Unknown, Warrant.
+        :param instrument_type: the type of instrument.
         :param include_closed: if closed positions should be included in the query.
         :param underlying_product_code: the underlying future's product code.
         :param partition_keys: account partition keys.
@@ -516,14 +557,14 @@ class Account(TastytradeJsonDataclass):
         self,
         session: Session,
         per_page: int = 250,
-        page_offset: int = 0,
+        page_offset: Optional[int] = None,
         sort: str = 'Desc',
         type: Optional[str] = None,
         types: Optional[list[str]] = None,
         sub_types: Optional[list[str]] = None,
         start_date: Optional[date] = None,
         end_date: date = date.today(),
-        instrument_type: Optional[str] = None,
+        instrument_type: Optional[InstrumentType] = None,
         symbol: Optional[str] = None,
         underlying_symbol: Optional[str] = None,
         action: Optional[str] = None,
@@ -537,16 +578,14 @@ class Account(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         :param per_page: the number of results to return per page.
-        :param page_offset: the page offset to use.
+        :param page_offset: provide a specific page to get; if not provided, get all pages
         :param sort: the order to sort results in, either 'Desc' or 'Asc'.
         :param type: the type of transaction.
         :param types: a list of transaction types to filter by.
         :param sub_types: an array of transaction subtypes to filter by.
         :param start_date: the start date of transactions to query.
         :param end_date: the end date of transactions to query.
-        :param instrument_type:
-            the type of instrument, i.e. Bond, Cryptocurrency, Equity, Equity Offering,
-            Equity Option, Future, Future Option, Index, Unknown or Warrant.
+        :param instrument_type: the type of instrument.
         :param symbol: a single symbol.
         :param underlying_symbol: the underlying symbol.
         :param action:
@@ -559,6 +598,12 @@ class Account(TastytradeJsonDataclass):
 
         :return: a list of Tastytrade 'Transaction' objects in JSON format.
         """
+        # if a specific page is provided, we just get that page;
+        # otherwise, we loop through all pages
+        paginate = False
+        if page_offset is None:
+            page_offset = 0
+            paginate = True
         params: dict[str, Any] = {
             'per-page': per_page,
             'page-offset': page_offset,
@@ -593,6 +638,8 @@ class Account(TastytradeJsonDataclass):
 
             pagination = json['pagination']
             if pagination['page-offset'] >= pagination['total-pages'] - 1:
+                break
+            if not paginate:
                 break
             params['page-offset'] += 1  # type: ignore
 
@@ -733,3 +780,176 @@ class Account(TastytradeJsonDataclass):
         data = response.json()['data']
 
         return MarginReport(**data)
+
+    def get_live_orders(self, session: Session) -> list[PlacedOrder]:
+        """
+        Get all live orders for the account.
+
+        :param session: the session to use for the request.
+
+        :return: a list of :class:`Order` objects.
+        """
+        response = requests.get(
+            f'{session.base_url}/accounts/{self.account_number}/orders/live',
+            headers=session.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']['items']
+
+        return [PlacedOrder(**entry) for entry in data]
+
+    def get_order(self, session: Session, order_id: str) -> PlacedOrder:
+        """
+        Gets an order with the given ID.
+
+        :param session: the session to use for the request.
+
+        :return: an :class:`Order` object corresponding to the given ID.
+        """
+        response = requests.get(
+            f'{session.base_url}/accounts/{self.account_number}/orders/{order_id}',
+            headers=session.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']
+
+        return PlacedOrder(**data)
+
+    def delete_order(self, session: Session, order_id: str) -> None:
+        """
+        Delete an order by ID.
+
+        :param session: the session to use for the request.
+        :param order_id: the ID of the order to delete.
+        """
+        response = requests.delete(
+            f'{session.base_url}/accounts/{self.account_number}/orders/{order_id}',
+            headers=session.headers
+        )
+        validate_response(response)
+
+    def get_order_history(
+        self,
+        session: Session,
+        per_page: int = 50,
+        page_offset: Optional[int] = None,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+        underlying_symbol: Optional[str] = None,
+        statuses: Optional[list[OrderStatus]] = None,
+        futures_symbol: Optional[str] = None,
+        underlying_instrument_type: Optional[InstrumentType] = None,
+        sort: str = 'Desc',
+        start_at: Optional[datetime] = None,
+        end_at: Optional[datetime] = None
+    ) -> list[PlacedOrder]:
+        """
+        Get order history of the account.
+
+        :param session: the session to use for the request.
+        :param per_page: the number of results to return per page.
+        :param page_offset: provide a specific page to get; if not provided, get all pages
+        :param start_date: the start date of orders to query.
+        :param end_date: the end date of orders to query.
+        :param underlying_symbol: underlying symbol to filter by.
+        :param statuses: a list of statuses to filter by.
+        :param futures_symbol: Tastytrade future symbol for futures and future options.
+        :param underlying_instrument_type: the type of instrument to filter by.
+        :param sort: the order to sort results in, either 'Desc' or 'Asc'.
+        :param start_at: datetime start range for filtering transactions in full date-time.
+        :param end_at: datetime end range for filtering transactions in full date-time.
+
+        :return: a list of Tastytrade 'Transaction' objects in JSON format.
+        """
+        # if a specific page is provided, we just get that page;
+        # otherwise, we loop through all pages
+        paginate = False
+        if page_offset is None:
+            page_offset = 0
+            paginate = True
+        params: dict[str, Any] = {
+            'per-page': per_page,
+            'page-offset': page_offset,
+            'start-date': start_date,
+            'end-date': end_date,
+            'underlying-symbol': underlying_symbol,
+            'status[]': statuses,
+            'futures-symbol': futures_symbol,
+            'underlying-instrument-type': underlying_instrument_type,
+            'sort': sort,
+            'start-at': start_at,
+            'end-at': end_at
+        }
+
+        # loop through pages and get all transactions
+        results = []
+        while True:
+            response = requests.get(
+                f'{session.base_url}/accounts/{self.account_number}/orders',
+                headers=session.headers,
+                params={k: v for k, v in params.items() if v is not None}
+            )
+            validate_response(response)
+
+            json = response.json()
+            results.extend(json['data']['items'])
+
+            pagination = json['pagination']
+            if pagination['page-offset'] >= pagination['total-pages'] - 1:
+                break
+            if not paginate:
+                break
+            params['page-offset'] += 1  # type: ignore
+
+        return [PlacedOrder(**entry) for entry in results]
+
+    def place_order(self, session: Session, order: NewOrder, dry_run=True) -> PlacedOrderResponse:
+        """
+        Place the given order.
+
+        :param session: the session to use for the request.
+        :param order: the order to place.
+        :param dry_run: whether this is a test order or not.
+
+        :return: a :class:`PlacedOrderResponse` object for the placed order.
+        """
+        url = f'{session.base_url}/accounts/{self.account_number}/orders'
+        if dry_run:
+            url += '/dry-run'
+        headers = session.headers
+        # required because we're passing the JSON as a string
+        headers['Content-Type'] = 'application/json'
+        json = order.json(exclude_none=True, by_alias=True)
+
+        response = requests.post(url, headers=session.headers, data=json)
+        validate_response(response)
+
+        data = response.json()['data']
+
+        return PlacedOrderResponse(**data)
+
+    def replace_order(self, session: Session, old_order_id: str, new_order: NewOrder) -> PlacedOrder:
+        """
+        Replace an order with a new order with different characteristics (but same legs).
+
+        :param session: the session to use for the request.
+        :param old_order_id: the ID of the order to replace.
+        :param new_order: the new order to replace the old order with.
+
+        :return: a :class:`PlacedOrder` object for the modified order.
+        """
+        headers = session.headers
+        # required because we're passing the JSON as a string
+        headers['Content-Type'] = 'application/json'
+        response = requests.put(
+            f'{session.base_url}/accounts/{self.account_number}/orders/{old_order_id}',
+            headers=headers,
+            data=new_order.json(exclude={'legs'}, exclude_none=True, by_alias=True)
+        )
+        validate_response(response)
+
+        data = response.json()['data']
+
+        return PlacedOrder(**data)
