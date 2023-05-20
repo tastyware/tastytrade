@@ -49,4 +49,4 @@ autodoc_pydantic_settings_show_json = False
 autodoc_pydantic_show_field_summary = True
 autodoc_pydantic_model_undoc_members = False
 autodoc_pydantic_model_hide_paramlist = False
-
+autodoc_pydantic_model_show_config = False
