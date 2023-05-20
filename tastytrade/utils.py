@@ -27,6 +27,7 @@ class TastytradeJsonDataclass(BaseModel):
     """
     class Config:
         alias_generator = _dasherize
+        allow_population_by_field_name = True
 
 
 def validate_response(response: Response) -> None:
@@ -37,4 +38,10 @@ def validate_response(response: Response) -> None:
     """
     if response.status_code // 100 != 2:
         content = response.json()['error']
-        raise TastytradeError(f"{content['code']}: {content['message']}")
+        error_message = f"{content['code']}: {content['message']}"
+        errors = content.get('errors')
+        if errors is not None:
+            for error in errors:
+                error_message += f"\n{error['code']}: {error['message']}"
+
+        raise TastytradeError(error_message)

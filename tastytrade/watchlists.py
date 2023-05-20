@@ -2,11 +2,15 @@ from typing import Optional
 
 import requests
 
+from tastytrade.instruments import InstrumentType
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeJsonDataclass, validate_response
 
 
 class Pair(TastytradeJsonDataclass):
+    """
+    Dataclass that represents a specific pair in a pairs watchlist.
+    """
     left_action: str
     left_symbol: str
     left_quantity: int
@@ -16,6 +20,9 @@ class Pair(TastytradeJsonDataclass):
 
 
 class PairsWatchlist(TastytradeJsonDataclass):
+    """
+    Dataclass that represents a pairs watchlist object.
+    """
     name: str
     order_index: int
     pairs_equations: list[Pair]
@@ -54,6 +61,10 @@ class PairsWatchlist(TastytradeJsonDataclass):
 
 
 class Watchlist(TastytradeJsonDataclass):
+    """
+    Dataclass that represents a watchlist object (public or private),
+    with functions to update, publish, modify and remove watchlists.
+    """
     name: str
     watchlist_entries: Optional[list[dict[str, str]]] = None
     group_name: str = 'default'
@@ -167,7 +178,7 @@ class Watchlist(TastytradeJsonDataclass):
         )
         validate_response(response)
 
-    def add_symbol(self, symbol: str, instrument_type: str) -> None:
+    def add_symbol(self, symbol: str, instrument_type: InstrumentType) -> None:
         """
         Adds a symbol to the watchlist.
         """
@@ -175,7 +186,7 @@ class Watchlist(TastytradeJsonDataclass):
             self.watchlist_entries = []
         self.watchlist_entries.append({'symbol': symbol, 'instrument-type': instrument_type})
 
-    def remove_symbol(self, symbol: str, instrument_type: str) -> None:
+    def remove_symbol(self, symbol: str, instrument_type: InstrumentType) -> None:
         """
         Removes a symbol from the watchlist.
         """

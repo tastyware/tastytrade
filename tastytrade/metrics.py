@@ -9,16 +9,25 @@ from tastytrade.utils import TastytradeJsonDataclass, validate_response
 
 
 class DividendInfo(TastytradeJsonDataclass):
+    """
+    Dataclass representing dividend information for a given symbol.
+    """
     occurred_date: date
     amount: Decimal
 
 
 class EarningsInfo(TastytradeJsonDataclass):
+    """
+    Dataclass representing earnings information for a given symbol.
+    """
     occurred_date: date
     eps: Decimal
 
 
 class Liquidity(TastytradeJsonDataclass):
+    """
+    Dataclass representing liquidity information for a given symbol.
+    """
     sum: Decimal
     count: int
     started_at: datetime
@@ -26,6 +35,10 @@ class Liquidity(TastytradeJsonDataclass):
 
 
 class OptionExpirationImpliedVolatility(TastytradeJsonDataclass):
+    """
+    Dataclass containing implied volatility information for a given symbol
+    and expiration date.
+    """
     expiration_date: date
     settlement_type: str
     option_chain_type: str
@@ -33,6 +46,11 @@ class OptionExpirationImpliedVolatility(TastytradeJsonDataclass):
 
 
 class MarketMetricInfo(TastytradeJsonDataclass):
+    """
+    Dataclass representing market metrics for a given symbol.
+
+    Contains lots of useful information, like IV rank, IV percentile and beta.
+    """
     symbol: str
     implied_volatility_index: Decimal
     implied_volatility_index_5_day_change: Decimal

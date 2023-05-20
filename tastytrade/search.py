@@ -5,6 +5,9 @@ from tastytrade.utils import TastytradeJsonDataclass
 
 
 class SymbolData(TastytradeJsonDataclass):
+    """
+    Dataclass holding search results for an individual item.
+    """
     symbol: str
     description: str
 

@@ -61,8 +61,9 @@ class AlertStreamer:
     """
     def __init__(self, session: Session):
         #: The active session used to initiate the streamer or make requests
-        self.token = session.session_token
-        self.base_url = CERT_STREAMER_URL if session.is_certification else STREAMER_URL
+        self.token: str = session.session_token
+        #: The base url for the streamer websocket
+        self.base_url: str = CERT_STREAMER_URL if session.is_certification else STREAMER_URL
 
         self._done = False
         self._queue: Queue = Queue()
@@ -192,7 +193,7 @@ class DataStreamer:
         self._queue_candle: Queue = Queue()
         self._done = False
         #: The unique client identifier received from the server
-        self.client_id = None
+        self.client_id: Optional[str] = None
 
         response = requests.get(f'{session.base_url}/quote-streamer-tokens', headers=session.headers)
         validate_response(response)

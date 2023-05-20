@@ -47,6 +47,7 @@ The streamer is a websocket connection to the Tastytrade API that allows you to 
    streamer = await DataStreamer.create(session)
    subs_list = ['SPY', 'SPX']
 
+   # this function fetches quotes once, then closes the subscription
    quotes = await streamer.oneshot(EventType.QUOTE, subs_list)
    print(quotes)
 
@@ -63,7 +64,7 @@ Getting current positions
    positions = account.get_positions(session)
    print(positions[0])
 
->>> {'account-number': '########', 'symbol': 'INTC', 'instrument-type': 'Equity', 'underlying-symbol': 'INTC', 'quantity': 1, 'quantity-direction': 'Long', 'close-price': '29.8', 'average-open-price': '29.2997', 'average-yearly-market-close-price': '29.2997', 'average-daily-market-close-price': '29.8', 'multiplier': 1, 'cost-effect': 'Credit', 'is-suppressed': False, 'is-frozen': False, 'restricted-quantity': 0, 'realized-day-gain': '0.015', 'realized-day-gain-effect': 'Debit', 'realized-day-gain-date': '2023-05-15', 'realized-today': '0.015', 'realized-today-effect': 'Debit', 'realized-today-date': '2023-05-15', 'created-at': '2023-05-15T15:38:38.124+00:00', 'updated-at': '2023-05-15T15:42:08.991+00:00'}
+>>> CurrentPosition(account_number='5WV69754', symbol='IAU', instrument_type=<InstrumentType.EQUITY: 'Equity'>, underlying_symbol='IAU', quantity=Decimal('20'), quantity_direction='Long', close_price=Decimal('37.09'), average_open_price=Decimal('37.51'), average_yearly_market_close_price=Decimal('37.51'), average_daily_market_close_price=Decimal('37.51'), multiplier=1, cost_effect='Credit', is_suppressed=False, is_frozen=False, realized_day_gain=Decimal('7.888'), realized_day_gain_effect='Credit', realized_day_gain_date=datetime.date(2023, 5, 19), realized_today=Decimal('0.512'), realized_today_effect='Debit', realized_today_date=datetime.date(2023, 5, 19), created_at=datetime.datetime(2023, 3, 31, 14, 38, 32, 58000, tzinfo=datetime.timezone.utc), updated_at=datetime.datetime(2023, 5, 19, 16, 56, 51, 920000, tzinfo=datetime.timezone.utc), mark=None, mark_price=None, restricted_quantity=Decimal('0'), expires_at=None, fixing_price=None, deliverable_type=None)
 
 Symbol search
 -------------
@@ -75,9 +76,33 @@ Symbol search
    results = symbol_search(session, 'AAP')
    print(results)
 
->>> [{'symbol': 'AAP', 'description': 'Advance Auto Parts Inc.'}, {'symbol': 'AAPL', 'description': 'Apple Inc. - Common Stock'}]
+>>> [SymbolData(symbol='AAP', description='Advance Auto Parts Inc.'), SymbolData(symbol='AAPD', description='Direxion Daily AAPL Bear 1X Shares'), SymbolData(symbol='AAPL', description='Apple Inc. - Common Stock'), SymbolData(symbol='AAPB', description='GraniteShares 1.75x Long AAPL Daily ETF'), SymbolData(symbol='AAPU', description='Direxion Daily AAPL Bull 1.5X Shares')]
 
 For more examples, check out the `documentation <https://tastyworks-api.readthedocs.io/en/latest/>`_.
+
+Placing an order
+----------------
+
+.. code-block:: python
+
+   from decimal import Decimal
+   from tastytrade.account import Account
+   from tastytrade.instruments import Equity
+   from tastytrade.order import NewOrder, OrderAction, OrderTimeInForce, OrderType, PriceEffect
+
+   account = Account.get_account(session, '5WV69754')
+   symbol = Equity.get_equity(session, 'USO')
+   leg = symbol.build_leg(Decimal('5'), OrderAction.BUY_TO_OPEN)  # buy to open 5 shares
+
+   order = NewOrder(
+      time_in_force=OrderTimeInForce.DAY,
+      order_type=OrderType.LIMIT,
+      legs=[leg],  # you can have multiple legs in an order
+      price=Decimal('50'),  # limit price, here $50 for 5 shares = $10/share
+      price_effect=PriceEffect.DEBIT
+   )
+
+>>> PlacedOrderResponse(buying_power_effect=BuyingPowerEffect(change_in_margin_requirement=Decimal('125.0'), change_in_margin_requirement_effect=<PriceEffect.DEBIT: 'Debit'>, change_in_buying_power=Decimal('125.004'), change_in_buying_power_effect=<PriceEffect.DEBIT: 'Debit'>, current_buying_power=Decimal('1000.0'), current_buying_power_effect=<PriceEffect.CREDIT: 'Credit'>, new_buying_power=Decimal('874.996'), new_buying_power_effect=<PriceEffect.CREDIT: 'Credit'>, isolated_order_margin_requirement=Decimal('125.0'), isolated_order_margin_requirement_effect=<PriceEffect.DEBIT: 'Debit'>, is_spread=False, impact=Decimal('125.004'), effect=<PriceEffect.DEBIT: 'Debit'>), fee_calculation=FeeCalculation(regulatory_fees=Decimal('0.0'), regulatory_fees_effect=<PriceEffect.NONE: 'None'>, clearing_fees=Decimal('0.004'), clearing_fees_effect=<PriceEffect.DEBIT: 'Debit'>, commission=Decimal('0.0'), commission_effect=<PriceEffect.NONE: 'None'>, proprietary_index_option_fees=Decimal('0.0'), proprietary_index_option_fees_effect=<PriceEffect.NONE: 'None'>, total_fees=Decimal('0.004'), total_fees_effect=<PriceEffect.DEBIT: 'Debit'>), order=PlacedOrder(account_number='5WV69754', time_in_force=<OrderTimeInForce.DAY: 'Day'>, order_type=<OrderType.LIMIT: 'Limit'>, size='5', underlying_symbol='USO', underlying_instrument_type=<InstrumentType.EQUITY: 'Equity'>, status=<OrderStatus.RECEIVED: 'Received'>, cancellable=True, editable=True, edited=False, updated_at=datetime.datetime(1970, 1, 1, 0, 0, tzinfo=datetime.timezone.utc), legs=[Leg(instrument_type=<InstrumentType.EQUITY: 'Equity'>, symbol='USO', action=<OrderAction.BUY_TO_OPEN: 'Buy to Open'>, quantity=Decimal('5'), remaining_quantity=Decimal('5'), fills=[])], id=None, price=Decimal('50.0'), price_effect=<PriceEffect.DEBIT: 'Debit'>, gtc_date=None, value=None, value_effect=None, stop_trigger=None, contingent_status=None, confirmation_status=None, cancelled_at=None, cancel_user_id=None, cancel_username=None, replacing_order_id=None, replaces_order_id=None, in_flight_at=None, live_at=None, received_at=None, reject_reason=None, user_id=None, username=None, terminal_at=None, complex_order_id=None, complex_order_tag=None, preflight_id=None, order_rule=None), complex_order=None, warnings=[Message(code='tif_next_valid_sesssion', message='Your order will begin working during next valid session.', preflight_id=None)], errors=None)
 
 Disclaimer
 ----------
