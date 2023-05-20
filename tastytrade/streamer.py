@@ -453,7 +453,8 @@ class DataStreamer:
         async for candle in self.listen_candle():
             candles.append(candle)
             # until we hit the start date, keep going
-            if datetime.fromtimestamp(candle.time / 1000) <= start_time:
+            # use timestamp to support timezone in start_time
+            if candle.time <= start_time.timestamp() * 1000:
                 break
         await self.unsubscribe_candle(ticker, interval)
 
