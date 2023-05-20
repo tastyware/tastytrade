@@ -34,7 +34,7 @@ def validate_response(response: Response) -> None:
     """
     Checks if the given code is an error; if so, raises an exception.
 
-    :param json: response to check for errors
+    :param response: response to check for errors
     """
     if response.status_code // 100 != 2:
         content = response.json()['error']

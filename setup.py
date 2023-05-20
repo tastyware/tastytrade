@@ -12,11 +12,11 @@ setup(
     version=VERSION,
     description='An unofficial SDK for Tastytrade!',
     long_description=LONG_DESCRIPTION,
-    long_description_content_type='text/markdown',
+    long_description_content_type='text/x-rst',
     author='Graeme Holliday',
     author_email='graeme.holliday@pm.me',
     url='https://github.com/tastyware/tastytrade',
-    license='Apache',
+    license='MIT',
     install_requires=[
         'requests<3',
         'dataclasses',
@@ -24,5 +24,5 @@ setup(
         'pydantic>=1.10.7'
     ],
     packages=find_packages(exclude=['ez_setup', 'tests*']),
-    include_package_data=True,
+    include_package_data=True
 )

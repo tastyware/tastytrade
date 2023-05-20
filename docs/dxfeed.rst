@@ -10,65 +10,54 @@ If you want to double-check you typed the symbol right, or want to troubleshoot 
 Event
 -----
 
-.. module:: tastytrade.dxfeed.event
-
-.. autoenum:: EventType
-
-.. autoclass:: Event
+.. automodule:: tastytrade.dxfeed.event
    :members:
 
 Candle
 ------
 
-.. module:: tastytrade.dxfeed.candle
-
-.. autoclass:: Candle
+.. automodule:: tastytrade.dxfeed.candle
    :members:
+   :show-inheritance:
 
 Greeks
 ------
 
-.. module:: tastytrade.dxfeed.greeks
-
-.. autoclass:: Greeks
+.. automodule:: tastytrade.dxfeed.greeks
    :members:
+   :show-inheritance:
 
 Profile
 -------
 
-.. module:: tastytrade.dxfeed.profile
-
-.. autoclass:: Profile
+.. automodule:: tastytrade.dxfeed.profile
    :members:
+   :show-inheritance:
 
 Quote
 -----
 
-.. module:: tastytrade.dxfeed.quote
-
-.. autoclass:: Quote
+.. automodule:: tastytrade.dxfeed.quote
    :members:
+   :show-inheritance:
 
 Summary
 -------
 
-.. module:: tastytrade.dxfeed.summary
-
-.. autoclass:: Summary
+.. automodule:: tastytrade.dxfeed.summary
    :members:
+   :show-inheritance:
 
 TheoPrice
 ---------
 
-.. module:: tastytrade.dxfeed.theoprice
-
-.. autoclass:: TheoPrice
+.. automodule:: tastytrade.dxfeed.theoprice
    :members:
+   :show-inheritance:
 
 Trade
 -----
 
-.. module:: tastytrade.dxfeed.trade
-
-.. autoclass:: Trade
+.. automodule:: tastytrade.dxfeed.trade
    :members:
+   :show-inheritance:
