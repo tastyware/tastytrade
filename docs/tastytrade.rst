@@ -45,9 +45,18 @@ Streamer
 
 Utils
 -----
-.. automodule:: tastytrade.utils
+.. module:: tastytrade.utils
+
+.. autoclass:: TastytradeError
+
+.. autofunction:: _dasherize
+
+.. autopydantic_model:: TastytradeJsonDataclass
    :members:
    :inherited-members:
+   :model-show-config-summary:
+
+.. autofunction:: validate_response
 
 Watchlists
 ----------
