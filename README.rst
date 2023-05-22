@@ -78,8 +78,6 @@ Symbol search
 
 >>> [SymbolData(symbol='AAP', description='Advance Auto Parts Inc.'), SymbolData(symbol='AAPD', description='Direxion Daily AAPL Bear 1X Shares'), SymbolData(symbol='AAPL', description='Apple Inc. - Common Stock'), SymbolData(symbol='AAPB', description='GraniteShares 1.75x Long AAPL Daily ETF'), SymbolData(symbol='AAPU', description='Direxion Daily AAPL Bull 1.5X Shares')]
 
-For more examples, check out the `documentation <https://tastyworks-api.readthedocs.io/en/latest/>`_.
-
 Placing an order
 ----------------
 
@@ -121,6 +119,8 @@ Options chain/streaming greeks
    print(greeks)
 
 >>> [Greeks(eventSymbol='.SPLG230616C23', eventTime=0, eventFlags=0, index=7235129486797176832, time=1684559855338, sequence=0, price=26.3380972233688, volatility=0.396983376650804, delta=0.999999999996191, gamma=4.81989763184255e-12, theta=-2.5212017514875e-12, rho=0.01834504287973133, vega=3.7003015672215e-12)]
+
+For more examples, check out the `documentation <https://tastyworks-api.readthedocs.io/en/latest/>`_.
 
 Disclaimer
 ----------

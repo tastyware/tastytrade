@@ -3,7 +3,7 @@ import json
 from asyncio import Lock, Queue
 from datetime import datetime
 from enum import Enum
-from typing import Any, AsyncIterator, Optional
+from typing import Any, AsyncIterator, Optional, Union
 
 import requests
 import websockets
@@ -153,7 +153,7 @@ class AlertStreamer:
             # send the heartbeat every 10 seconds
             await asyncio.sleep(10)
 
-    async def _subscribe(self, subscription: SubscriptionType, value: Optional[str] | list[str] = '') -> None:
+    async def _subscribe(self, subscription: SubscriptionType, value: Union[Optional[str], list[str]] = '') -> None:
         """
         Subscribes to one of the :class:`SubscriptionType`s. Depending on the kind of
         subscription, the value parameter may be required.
@@ -211,11 +211,21 @@ class DataStreamer:
         constructor and performs the asynchronous setup tasks. This should be used
         instead of the constructor.
 
+        Setup time is around 10-15 seconds.
+
         :param session: active user session to use
         """
         self = cls(session)
         while not self.client_id:
             await asyncio.sleep(0.1)
+
+        # see Github issue #45:
+        # once the handshake completes, although setup is completed locally, remotely there
+        # is still some kind of setup process that hasn't happened that takes about 8-9
+        # seconds, and afterwards you're good to go. Unfortunately, there's no way to know
+        # when that process concludes remotely, as there's no kind of confirmation message
+        # sent. This is a hacky solution to ensure streamer setup completes.
+        await self.oneshot(EventType.QUOTE, ['SPY'])
 
         return self
 
@@ -453,7 +463,8 @@ class DataStreamer:
         async for candle in self.listen_candle():
             candles.append(candle)
             # until we hit the start date, keep going
-            if datetime.fromtimestamp(candle.time / 1000) <= start_time:
+            # use timestamp to support timezone in start_time
+            if candle.time <= start_time.timestamp() * 1000:
                 break
         await self.unsubscribe_candle(ticker, interval)
 
