@@ -211,11 +211,21 @@ class DataStreamer:
         constructor and performs the asynchronous setup tasks. This should be used
         instead of the constructor.
 
+        Setup time is around 10-15 seconds.
+
         :param session: active user session to use
         """
         self = cls(session)
         while not self.client_id:
             await asyncio.sleep(0.1)
+
+        # see Github issue #45:
+        # once the handshake completes, although setup is completed locally, remotely there
+        # is still some kind of setup process that hasn't happened that takes about 8-9
+        # seconds, and afterwards you're good to go. Unfortunately, there's no way to know
+        # when that process concludes remotely, as there's no kind of confirmation message
+        # sent. This is a hacky solution to ensure streamer setup completes.
+        await self.oneshot(EventType.QUOTE, ['SPY'])
 
         return self
 
