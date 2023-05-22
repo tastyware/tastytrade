@@ -105,6 +105,43 @@ class NestedOptionChainExpiration(TastytradeJsonDataclass):
     strikes: list[Strike]
 
 
+class NestedFutureOptionChainExpiration(TastytradeJsonDataclass):
+    """
+    Dataclass representing an expiration in a nested future options chain.
+    """
+    root_symbol: str
+    notional_value: Decimal
+    underlying_symbol: str
+    strike_factor: Decimal
+    days_to_expiration: int
+    option_root_symbol: str
+    expiration_date: date
+    expires_at: datetime
+    asset: str
+    expiration_type: str
+    display_factor: Decimal
+    option_contract_symbol: str
+    stops_trading_at: datetime
+    settlement_type: str
+    strikes: list[Strike]
+    tick_sizes: list[TickSize]
+
+
+class NestedFutureOptionFuture(TastytradeJsonDataclass):
+    """
+    Dataclass representing an underlying future in a nested future options chain.
+    """
+    root_symbol: str
+    days_to_expiration: int
+    expiration_date: date
+    expires_at: datetime
+    next_active_month: bool
+    symbol: str
+    active_month: bool
+    stops_trading_at: datetime
+    maturity_date: Optional[date] = None
+
+
 class FutureEtfEquivalent(TastytradeJsonDataclass):
     """
     Dataclass that represents the ETF equivalent for a future (aka, the number
@@ -449,7 +486,7 @@ class NestedOptionChain(TastytradeJsonDataclass):
     expirations: list[NestedOptionChainExpiration]
 
     @classmethod
-    def get_nested_option_chain(cls, session: Session, symbol: str) -> 'NestedOptionChain':
+    def get_chain(cls, session: Session, symbol: str) -> 'NestedOptionChain':
         """
         Gets the option chain for the given symbol in nested format.
 
@@ -830,6 +867,51 @@ class FutureOption(TradeableTastytradeJsonDataclass):
         return cls(**data)
 
 
+class NestedFutureOptionSubchain(TastytradeJsonDataclass):
+    """
+    Dataclass that represents a Tastytrade nested future option chain for a
+    specific futures underlying symbol.
+    """
+    underlying_symbol: str
+    root_symbol: str
+    exercise_style: str
+    expirations: list[NestedFutureOptionChainExpiration]
+
+
+class NestedFutureOptionChain(TastytradeJsonDataclass):
+    """
+    Dataclass that represents a Tastytrade nested option chain object. Contains
+    information about the option chain and a method to fetch one for a symbol.
+
+    The nested option chain is a bit neater than calling :meth:`get_future_option_chain`
+    but if you want to create actual :class:`FutureOption` objects you'll need to make an
+    extra API request or two.
+    """
+    futures: list[NestedFutureOptionFuture]
+    option_chains: list[NestedFutureOptionSubchain]
+
+    @classmethod
+    def get_chain(cls, session: Session, symbol: str) -> 'NestedFutureOptionChain':
+        """
+        Gets the futures option chain for the given symbol in nested format.
+
+        :param session: the session to use for the request.
+        :param symbol: the symbol to get the option chain for.
+
+        :return: a :class:`NestedFutureOptionChain` object.
+        """
+        symbol = symbol.replace('/', '')
+        response = requests.get(
+            f'{session.base_url}/futures-option-chains/{symbol}/nested',
+            headers=session.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']
+
+        return cls(**data)
+
+
 class Warrant(TastytradeJsonDataclass):
     """
     Dataclass that represents a Tastytrade warrant object. Contains
@@ -953,7 +1035,7 @@ def get_future_option_chain(session: Session, symbol: str) -> dict[date, list[Fu
 
     :return: a dict mapping expiration date to a list of :class:`FutureOption` objects.
     """
-    symbol = symbol.replace('/', '%2F')
+    symbol = symbol.replace('/', '')
     response = requests.get(
         f'{session.base_url}/futures-option-chains/{symbol}',
         headers=session.headers
