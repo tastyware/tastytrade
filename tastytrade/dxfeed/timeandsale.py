@@ -6,7 +6,7 @@ from .event import Event
 @dataclass
 class TimeAndSale(Event):
     """
-    A Quote event is a snapshot of the best bid and ask prices, and other fields that change with each quote.
+    TimeAndSale event represents a trade or other market event with a price, like market open/close price. TimeAndSale events are intended to provide information about trades in a continuous-time slice (unlike Trade events which are supposed to provide snapshots about the most recent trade). TimeAndSale events have a unique index that can be used for later correction/cancellation processing.
     """
     #: symbol of this event
     eventSymbol: str
