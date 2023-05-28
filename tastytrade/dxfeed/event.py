@@ -15,8 +15,8 @@ class EventType(str, Enum):
     PROFILE = 'Profile'
     QUOTE = 'Quote'
     SUMMARY = 'Summary'
-    TIME_AND_SALE = 'TimeAndSale'
     THEO_PRICE = 'TheoPrice'
+    TIME_AND_SALE = 'TimeAndSale'
     TRADE = 'Trade'
 
 
