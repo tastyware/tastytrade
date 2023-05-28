@@ -496,10 +496,10 @@ def _map_message(message) -> list[Event]:
         res = Quote.from_stream(data)
     elif msg_type == EventType.SUMMARY:
         res = Summary.from_stream(data)
-    elif msg_type == EventType.TIME_AND_SALE:
-        res = TimeAndSale.from_stream(data)
     elif msg_type == EventType.THEO_PRICE:
         res = TheoPrice.from_stream(data)
+    elif msg_type == EventType.TIME_AND_SALE:
+        res = TimeAndSale.from_stream(data)
     elif msg_type == EventType.TRADE:
         res = Trade.from_stream(data)
     else:
