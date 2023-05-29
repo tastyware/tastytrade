@@ -12,11 +12,12 @@ class EventType(str, Enum):
     """
     CANDLE = 'Candle'
     GREEKS = 'Greeks'
-    QUOTE = 'Quote'
-    TRADE = 'Trade'
     PROFILE = 'Profile'
+    QUOTE = 'Quote'
     SUMMARY = 'Summary'
     THEO_PRICE = 'TheoPrice'
+    TIME_AND_SALE = 'TimeAndSale'
+    TRADE = 'Trade'
 
 
 class Event(ABC):

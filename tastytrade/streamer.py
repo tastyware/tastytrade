@@ -18,6 +18,7 @@ from tastytrade.dxfeed.profile import Profile
 from tastytrade.dxfeed.quote import Quote
 from tastytrade.dxfeed.summary import Summary
 from tastytrade.dxfeed.theoprice import TheoPrice
+from tastytrade.dxfeed.timeandsale import TimeAndSale
 from tastytrade.dxfeed.trade import Trade
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeError, validate_response
@@ -497,6 +498,8 @@ def _map_message(message) -> list[Event]:
         res = Summary.from_stream(data)
     elif msg_type == EventType.THEO_PRICE:
         res = TheoPrice.from_stream(data)
+    elif msg_type == EventType.TIME_AND_SALE:
+        res = TimeAndSale.from_stream(data)
     elif msg_type == EventType.TRADE:
         res = Trade.from_stream(data)
     else:
