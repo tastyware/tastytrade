@@ -53,6 +53,12 @@ class OrderStatus(str, Enum):
     LIVE = 'Live'
     REJECTED = 'Rejected'
     CONTINGENT = 'Contingent'
+    ROUTED = 'Routed'
+    IN_FLIGHT = 'In Flight'
+    CANCEL_REQUESTED = 'Cancel Requested'
+    REPLACE_REQUESTED = 'Replace Requested'
+    REMOVED = 'Removed'
+    PARTIALLY_REMOVED = 'Partially Removed'
 
 
 class OrderTimeInForce(str, Enum):
