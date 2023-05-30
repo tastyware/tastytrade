@@ -9,7 +9,8 @@ import requests
 import websockets
 
 from tastytrade import logger
-from tastytrade.account import Account
+from tastytrade.account import (Account, AccountBalance, CurrentPosition,
+                                TradingStatus)
 from tastytrade.dxfeed import Channel
 from tastytrade.dxfeed.candle import Candle
 from tastytrade.dxfeed.event import Event, EventType
@@ -20,6 +21,7 @@ from tastytrade.dxfeed.summary import Summary
 from tastytrade.dxfeed.theoprice import TheoPrice
 from tastytrade.dxfeed.timeandsale import TimeAndSale
 from tastytrade.dxfeed.trade import Trade
+from tastytrade.order import PlacedOrder
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeError, validate_response
 
@@ -102,14 +104,51 @@ class AlertStreamer:
                 logger.debug('raw message: %s', raw_message)
                 await self._queue.put(json.loads(raw_message))
 
-    async def listen(self) -> AsyncIterator[Any]:
+    async def listen(self) -> AsyncIterator[Union[
+        AccountBalance,
+        CurrentPosition,
+        PlacedOrder,
+        TradingStatus,
+        dict  # some possible messages are not yet implemented
+    ]]:
         """
-        Iterate over non-heartbeat messages received from the streamer.
+        Iterate over non-heartbeat messages received from the streamer,
+        mapping them to their appropriate data class.
         """
         while True:
             data = await self._queue.get()
-            if data.get('action') != SubscriptionType.HEARTBEAT:
-                yield data
+            type_str = data.get('type')
+            if type_str is not None:
+                yield self._map_message(type_str, data['data'])
+            elif data.get('action') != 'heartbeat':
+                logger.debug('subscription message: %s', data)
+
+    def _map_message(self, type_str: str, data: dict) -> Union[
+        AccountBalance,
+        CurrentPosition,
+        PlacedOrder,
+        TradingStatus,
+        dict  # some possible messages are not yet implemented
+    ]:
+        """
+        TODO: implement the following:
+        - OrderChain
+        - UnderlyingYearGainSummary
+        - User status related messages
+        - Watchlist related messages
+        - Quote alert messages
+        - Others?
+        """
+        if type_str == 'AccountBalance':
+            return AccountBalance(**data)
+        elif type_str == 'CurrentPosition':
+            return CurrentPosition(**data)
+        elif type_str == 'Order':
+            return PlacedOrder(**data)
+        elif type_str == 'TradingStatus':
+            return TradingStatus(**data)
+        else:
+            return data
 
     async def account_subscribe(self, accounts: list[Account]) -> None:
         """
