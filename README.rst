@@ -15,7 +15,7 @@ Tastytrade Python SDK
 
 .. inclusion-marker
 
-A simple, reverse-engineered SDK for Tastytrade built on their (mostly) public API. This will allow you to create trading algorithms for whatever strategies you may have quickly and painlessly in Python.
+A simple, reverse-engineered SDK for Tastytrade built on their (now mostly public) API. This will allow you to create trading algorithms for whatever strategies you may have quickly and painlessly in Python.
 
 Installation
 ------------
