@@ -327,3 +327,97 @@ class PlacedOrderResponse(TastytradeJsonDataclass):
     complex_order: Optional[ComplexOrder] = None
     warnings: Optional[list[Message]] = None
     errors: Optional[list[Message]] = None
+
+
+class OrderChainEntry(TastytradeJsonDataclass):
+    """
+    Dataclass containing information about a single order in an order chain.
+    """
+    symbol: str
+    instrument_type: InstrumentType
+    quantity: str
+    quantity_type: str
+    quantity_numeric: Decimal
+
+
+class OrderChainLeg(TastytradeJsonDataclass):
+    """
+    Dataclass containing information about a single leg in an order from an order chain.
+    """
+    symbol: str
+    instrument_type: InstrumentType
+    action: OrderAction
+    fill_quantity: Decimal
+    order_quantity: Decimal
+
+
+class OrderChainNode(TastytradeJsonDataclass):
+    """
+    Dataclass containing information about a single node in an order chain.
+    """
+    node_type: str
+    id: str
+    description: str
+    occurred_at: Optional[datetime] = None
+    total_fees: Optional[Decimal] = None
+    total_fees_effect: Optional[PriceEffect] = None
+    total_fill_cost: Optional[Decimal] = None
+    total_fill_cost_effect: Optional[PriceEffect] = None
+    gcd_quantity: Optional[Decimal] = None
+    fill_cost_per_quantity: Optional[Decimal] = None
+    fill_cost_per_quantity_effect: Optional[PriceEffect] = None
+    order_fill_count: Optional[int] = None
+    roll: Optional[bool] = None
+    legs: Optional[list[OrderChainLeg]] = None
+    entries: Optional[list[OrderChainEntry]] = None
+
+
+class ComputedData(TastytradeJsonDataclass):
+    """
+    Dataclass containing computed data about an order chain.
+    """
+    open: bool
+    updated_at: datetime
+    total_fees: Decimal
+    total_fees_effect: PriceEffect
+    total_commissions: Decimal
+    total_commissions_effect: PriceEffect
+    realized_gain: Decimal
+    realized_gain_effect: PriceEffect
+    realized_gain_with_fees: Decimal
+    realized_gain_with_fees_effect: PriceEffect
+    winner_realized_and_closed: bool
+    winner_realized: bool
+    winner_realized_with_fees: bool
+    roll_count: int
+    opened_at: datetime
+    last_occurred_at: datetime
+    started_at_days_to_expiration: int
+    duration: int
+    total_opening_cost: Decimal
+    total_opening_cost_effect: PriceEffect
+    total_closing_cost: Decimal
+    total_closing_cost_effect: PriceEffect
+    total_cost: Decimal
+    total_cost_effect: PriceEffect
+    gcd_open_quantity: Decimal
+    fees_missing: bool
+    open_entries: list[OrderChainEntry]
+    total_cost_per_unit: Optional[Decimal] = None
+    total_cost_per_unit_effect: Optional[PriceEffect] = None
+
+
+class OrderChain(TastytradeJsonDataclass):
+    """
+    Dataclass containing information about an order chain: a group of orders for a
+    specific underlying, such as total P/L, rolls, current P/L in a symbol, etc.
+    """
+    id: int
+    updated_at: datetime
+    created_at: datetime
+    account_number: str
+    description: str
+    underlying_symbol: str
+    computed_data: ComputedData
+    lite_nodes_sizes: int
+    lite_nodes: list[OrderChainNode]
