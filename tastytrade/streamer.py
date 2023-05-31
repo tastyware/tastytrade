@@ -2,6 +2,7 @@ import asyncio
 import json
 from asyncio import Lock, Queue
 from datetime import datetime
+from decimal import Decimal
 from enum import Enum
 from typing import Any, AsyncIterator, Optional, Union
 
@@ -21,12 +22,51 @@ from tastytrade.dxfeed.summary import Summary
 from tastytrade.dxfeed.theoprice import TheoPrice
 from tastytrade.dxfeed.timeandsale import TimeAndSale
 from tastytrade.dxfeed.trade import Trade
-from tastytrade.order import PlacedOrder
+from tastytrade.order import (InstrumentType, OrderChain, PlacedOrder,
+                              PriceEffect)
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeError, validate_response
+from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
+                              validate_response)
+from tastytrade.watchlists import Watchlist
 
 CERT_STREAMER_URL = 'wss://streamer.cert.tastyworks.com'
 STREAMER_URL = 'wss://streamer.tastyworks.com'
+
+
+class QuoteAlert(TastytradeJsonDataclass):
+    """
+    Dataclass that contains information about a quote alert
+    """
+    user_external_id: str
+    symbol: str
+    alert_external_id: str
+    expires_at: int
+    completed_at: datetime
+    created_at: datetime
+    triggered_at: datetime
+    field: str
+    operator: str
+    threshold: str
+    threshold_numeric: Decimal
+    dx_symbol: str
+
+
+class UnderlyingYearGainSummary(TastytradeJsonDataclass):
+    """
+    Dataclass that contains information about the yearly gainYloss for an underlying
+    """
+    year: int
+    account_number: str
+    symbol: str
+    instrument_type: InstrumentType
+    fees: Decimal
+    fees_effect: PriceEffect
+    commissions: Decimal
+    commissions_effect: PriceEffect
+    yearly_realized_gain: Decimal
+    yearly_realized_gain_effect: PriceEffect
+    realized_lot_gain: Decimal
+    realized_lot_gain_effect: PriceEffect
 
 
 class SubscriptionType(str, Enum):
@@ -56,7 +96,6 @@ class AlertStreamer:
         await streamer.account_subscribe(accounts)
         await streamer.public_watchlists_subscribe()
         await streamer.quote_alerts_subscribe()
-        await streamer.user_message_subscribe(session)
 
         async for data in streamer.listen():
             print(data)
@@ -68,7 +107,6 @@ class AlertStreamer:
         #: The base url for the streamer websocket
         self.base_url: str = CERT_STREAMER_URL if session.is_certification else STREAMER_URL
 
-        self._done = False
         self._queue: Queue = Queue()
         self._websocket = None
 
@@ -99,18 +137,12 @@ class AlertStreamer:
             self._websocket = websocket
             self._heartbeat_task = asyncio.create_task(self._heartbeat())
 
-            while not self._done:
+            while True:
                 raw_message = await self._websocket.recv()  # type: ignore
                 logger.debug('raw message: %s', raw_message)
                 await self._queue.put(json.loads(raw_message))
 
-    async def listen(self) -> AsyncIterator[Union[
-        AccountBalance,
-        CurrentPosition,
-        PlacedOrder,
-        TradingStatus,
-        dict  # some possible messages are not yet implemented
-    ]]:
+    async def listen(self) -> AsyncIterator[TastytradeJsonDataclass]:
         """
         Iterate over non-heartbeat messages received from the streamer,
         mapping them to their appropriate data class.
@@ -123,21 +155,9 @@ class AlertStreamer:
             elif data.get('action') != 'heartbeat':
                 logger.debug('subscription message: %s', data)
 
-    def _map_message(self, type_str: str, data: dict) -> Union[
-        AccountBalance,
-        CurrentPosition,
-        PlacedOrder,
-        TradingStatus,
-        dict  # some possible messages are not yet implemented
-    ]:
+    def _map_message(self, type_str: str, data: dict) -> TastytradeJsonDataclass:
         """
-        TODO: implement the following:
-        - OrderChain
-        - UnderlyingYearGainSummary
-        - User status related messages
-        - Watchlist related messages
-        - Quote alert messages
-        - Others?
+        I'm not sure what the user-status messages look like, so they're absent.
         """
         if type_str == 'AccountBalance':
             return AccountBalance(**data)
@@ -145,10 +165,18 @@ class AlertStreamer:
             return CurrentPosition(**data)
         elif type_str == 'Order':
             return PlacedOrder(**data)
+        elif type_str == 'OrderChain':
+            return OrderChain(**data)
+        elif type_str == 'QuoteAlert':
+            return QuoteAlert(**data)
         elif type_str == 'TradingStatus':
             return TradingStatus(**data)
+        elif type_str == 'UnderlyingYearGainSummary':
+            return UnderlyingYearGainSummary(**data)
+        elif type_str == 'PublicWatchlists':
+            return Watchlist(**data)
         else:
-            return data
+            raise TastytradeError(f'Unknown message type: {type_str}\n{data}')
 
     async def account_subscribe(self, accounts: list[Account]) -> None:
         """
@@ -172,23 +200,23 @@ class AlertStreamer:
 
     async def user_message_subscribe(self, session: Session) -> None:
         """
-        Subscribes to user-level messages.
+        Subscribes to user-level messages, e.g. new account creation.
         """
         external_id = session.user['external-id']
         await self._subscribe(SubscriptionType.USER_MESSAGE, value=external_id)
 
-    async def close(self) -> None:
+    def close(self) -> None:
         """
         Closes the websocket connection and cancels the heartbeat task.
         """
-        self._done = True
-        await asyncio.gather(self._connect_task, self._heartbeat_task)
+        self._connect_task.cancel()
+        self._heartbeat_task.cancel()
 
     async def _heartbeat(self) -> None:
         """
         Sends a heartbeat message every 10 seconds to keep the connection alive.
         """
-        while not self._done:
+        while True:
             await self._subscribe(SubscriptionType.HEARTBEAT, '')
             # send the heartbeat every 10 seconds
             await asyncio.sleep(10)
@@ -231,7 +259,6 @@ class DataStreamer:
         self._lock: Lock = Lock()
         self._queue: Queue = Queue()
         self._queue_candle: Queue = Queue()
-        self._done = False
         #: The unique client identifier received from the server
         self.client_id: Optional[str] = None
 
@@ -297,7 +324,8 @@ class DataStreamer:
                     else:
                         raise TastytradeError('Handshake failed')
 
-            while not self._done:
+            # main loop
+            while True:
                 raw_message = await self._websocket.recv()
                 message = json.loads(raw_message)[0]
 
@@ -338,7 +366,7 @@ class DataStreamer:
         """
         while True:
             raw_data = await self._queue.get()
-            messages = _map_message(raw_data)
+            messages = self._map_message(raw_data)
             for message in messages:
                 yield message
 
@@ -349,22 +377,22 @@ class DataStreamer:
         """
         while True:
             raw_data = await self._queue_candle.get()
-            messages = _map_message(raw_data)
+            messages = self._map_message(raw_data)
             for message in messages:
                 yield message  # type: ignore
 
-    async def close(self) -> None:
+    def close(self) -> None:
         """
         Closes the websocket connection and cancels the heartbeat task.
         """
-        self._done = True
-        await asyncio.gather(self._connect_task, self._heartbeat_task)
+        self._connect_task.cancel()
+        self._heartbeat_task.cancel()
 
     async def _heartbeat(self) -> None:
         """
         Sends a heartbeat message every 10 seconds to keep the connection alive.
         """
-        while not self._done:
+        while True:
             id = await self._next_id()
             message = {
                 'id': id,
@@ -511,37 +539,34 @@ class DataStreamer:
         candles.reverse()
         return candles
 
+    def _map_message(self, message) -> list[Event]:
+        """
+        Takes the raw JSON data and returns a list of parsed :class:`~tastytrade.dxfeed.event.Event` objects.
+        """
+        # the first time around, types are shown
+        if isinstance(message[0], str):
+            msg_type = message[0]
+        else:
+            msg_type = message[0][0]
+        # regardless, the second element will be the raw data
+        data = message[1]
 
-def _map_message(message) -> list[Event]:
-    """
-    Takes the raw JSON data and returns a list of parsed :class:`~tastytrade.dxfeed.event.Event` objects.
-    """
-    # the first time around, types are shown
-    if isinstance(message[0], str):
-        msg_type = message[0]
-    else:
-        msg_type = message[0][0]
-    # regardless, the second element will be the raw data
-    data = message[1]
-
-    # parse type or warn for unknown type
-    if msg_type == EventType.CANDLE:
-        res = Candle.from_stream(data)
-    elif msg_type == EventType.GREEKS:
-        res = Greeks.from_stream(data)
-    elif msg_type == EventType.PROFILE:
-        res = Profile.from_stream(data)
-    elif msg_type == EventType.QUOTE:
-        res = Quote.from_stream(data)
-    elif msg_type == EventType.SUMMARY:
-        res = Summary.from_stream(data)
-    elif msg_type == EventType.THEO_PRICE:
-        res = TheoPrice.from_stream(data)
-    elif msg_type == EventType.TIME_AND_SALE:
-        res = TimeAndSale.from_stream(data)
-    elif msg_type == EventType.TRADE:
-        res = Trade.from_stream(data)
-    else:
-        raise TastytradeError(f'Unknown message type received from streamer: {message}')
-
-    return res
+        # parse type or warn for unknown type
+        if msg_type == EventType.CANDLE:
+            return Candle.from_stream(data)
+        elif msg_type == EventType.GREEKS:
+            return Greeks.from_stream(data)
+        elif msg_type == EventType.PROFILE:
+            return Profile.from_stream(data)
+        elif msg_type == EventType.QUOTE:
+            return Quote.from_stream(data)
+        elif msg_type == EventType.SUMMARY:
+            return Summary.from_stream(data)
+        elif msg_type == EventType.THEO_PRICE:
+            return TheoPrice.from_stream(data)
+        elif msg_type == EventType.TIME_AND_SALE:
+            return TimeAndSale.from_stream(data)
+        elif msg_type == EventType.TRADE:
+            return Trade.from_stream(data)
+        else:
+            raise TastytradeError(f'Unknown message type received from streamer: {message}')

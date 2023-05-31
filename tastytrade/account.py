@@ -53,7 +53,6 @@ class AccountBalance(TastytradeJsonDataclass):
     long_bond_value: Decimal
     bond_margin_requirement: Decimal
     snapshot_date: date
-    time_of_day: str
     reg_t_margin_requirement: Decimal
     futures_overnight_margin_requirement: Decimal
     futures_intraday_margin_requirement: Decimal
@@ -64,6 +63,7 @@ class AccountBalance(TastytradeJsonDataclass):
     buying_power_adjustment_effect: PriceEffect
     effective_cryptocurrency_buying_power: Decimal
     updated_at: datetime
+    time_of_day: Optional[str] = None
 
 
 class AccountBalanceSnapshot(TastytradeJsonDataclass):
@@ -123,18 +123,12 @@ class CurrentPosition(TastytradeJsonDataclass):
     quantity_direction: str
     close_price: Decimal
     average_open_price: Decimal
-    average_yearly_market_close_price: Decimal
-    average_daily_market_close_price: Decimal
     multiplier: int
     cost_effect: str
     is_suppressed: bool
     is_frozen: bool
     realized_day_gain: Decimal
-    realized_day_gain_effect: PriceEffect
-    realized_day_gain_date: date
     realized_today: Decimal
-    realized_today_effect: PriceEffect
-    realized_today_date: date
     created_at: datetime
     updated_at: datetime
     mark: Optional[Decimal] = None
@@ -143,6 +137,12 @@ class CurrentPosition(TastytradeJsonDataclass):
     expires_at: Optional[datetime] = None
     fixing_price: Optional[Decimal] = None
     deliverable_type: Optional[str] = None
+    average_yearly_market_close_price: Optional[Decimal] = None
+    average_daily_market_close_price: Optional[Decimal] = None
+    realized_day_gain_effect: Optional[PriceEffect] = None
+    realized_day_gain_date: Optional[date] = None
+    realized_today_effect: Optional[PriceEffect] = None
+    realized_today_date: Optional[date] = None
 
 
 class Lot(TastytradeJsonDataclass):
