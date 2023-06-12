@@ -109,9 +109,6 @@ class AccountBalanceSnapshot(TastytradeJsonDataclass):
     long_bond_value: Optional[Decimal] = None
     bond_margin_requirement: Optional[Decimal] = None
 
-
-
-
 class CurrentPosition(TastytradeJsonDataclass):
     """
     Dataclass containing imformation about an individual position in a portfolio.
