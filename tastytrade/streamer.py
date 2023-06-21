@@ -293,6 +293,9 @@ class DataStreamer:
         # when that process concludes remotely, as there's no kind of confirmation message
         # sent. This is a hacky solution to ensure streamer setup completes.
         await self.oneshot(EventType.QUOTE, ['SPY'])
+        # clear queue if there's any lingering data
+        while not self._queue.empty():
+            self._queue.get_nowait()
 
         return self
 

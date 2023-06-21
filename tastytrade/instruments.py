@@ -1001,6 +1001,10 @@ def get_option_chain(session: Session, symbol: str) -> dict[date, list[Option]]:
     Returns a mapping of expiration date to a list of :class:`Option` objects
     representing the options chain for the given symbol.
 
+    In the case that there are two expiries on the same day (e.g. SPXW and SPX AM
+    options), both will be returned in the same list. If you just want one expiry,
+    you'll need to filter the list yourself, or use ~:class:`NestedOptionChain` instead.
+
     :param session: the session to use for the request.
     :param symbol: the symbol to get the option chain for.
 
@@ -1029,6 +1033,10 @@ def get_future_option_chain(session: Session, symbol: str) -> dict[date, list[Fu
     """
     Returns a mapping of expiration date to a list of :class:`FutureOption` objects
     representing the options chain for the given symbol.
+
+    In the case that there are two expiries on the same day (e.g. EW and ES options),
+    both will be returned in the same list. If you just want one expiry, you'll need
+    to filter the list yourself, or use ~:class:`NestedFutureOptionChain` instead.
 
     :param session: the session to use for the request.
     :param symbol: the symbol to get the option chain for.
