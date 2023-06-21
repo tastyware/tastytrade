@@ -1,5 +1,4 @@
 import asyncio
-from decimal import Decimal
 import json
 from asyncio import Lock, Queue
 from datetime import datetime
@@ -8,7 +7,6 @@ from enum import Enum
 from typing import Any, AsyncIterator, Optional, Union
 
 import requests
-from tastytrade.watchlists import Watchlist
 import websockets
 
 from tastytrade import logger
