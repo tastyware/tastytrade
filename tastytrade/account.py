@@ -65,6 +65,7 @@ class AccountBalance(TastytradeJsonDataclass):
     updated_at: datetime
     time_of_day: Optional[str] = None
 
+
 class AccountBalanceSnapshot(TastytradeJsonDataclass):
     """
     Dataclass containing account balance for a moment in time (snapshot).
@@ -108,6 +109,7 @@ class AccountBalanceSnapshot(TastytradeJsonDataclass):
     equity_offering_margin_requirement: Optional[Decimal] = None
     long_bond_value: Optional[Decimal] = None
     bond_margin_requirement: Optional[Decimal] = None
+
 
 class CurrentPosition(TastytradeJsonDataclass):
     """
