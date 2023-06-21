@@ -98,17 +98,17 @@ class AccountBalanceSnapshot(TastytradeJsonDataclass):
     day_trade_excess: Decimal
     pending_cash: Decimal
     pending_cash_effect: PriceEffect
-    long_cryptocurrency_value: Decimal
-    short_cryptocurrency_value: Decimal
-    cryptocurrency_margin_requirement: Decimal
-    unsettled_cryptocurrency_fiat_amount: Decimal
-    unsettled_cryptocurrency_fiat_effect: PriceEffect
-    closed_loop_available_balance: Decimal
-    equity_offering_margin_requirement: Decimal
-    long_bond_value: Decimal
-    bond_margin_requirement: Decimal
     snapshot_date: date
     time_of_day: Optional[str] = None
+    long_cryptocurrency_value: Optional[Decimal] = None
+    short_cryptocurrency_value: Optional[Decimal] = None
+    cryptocurrency_margin_requirement: Optional[Decimal] = None
+    unsettled_cryptocurrency_fiat_amount: Optional[Decimal] = None
+    unsettled_cryptocurrency_fiat_effect: Optional[PriceEffect] = None
+    closed_loop_available_balance: Optional[Decimal] = None
+    equity_offering_margin_requirement: Optional[Decimal] = None
+    long_bond_value: Optional[Decimal] = None
+    bond_margin_requirement: Optional[Decimal] = None
 
 
 class CurrentPosition(TastytradeJsonDataclass):
