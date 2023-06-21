@@ -3,6 +3,7 @@ from decimal import Decimal
 import json
 from asyncio import Lock, Queue
 from datetime import datetime
+from decimal import Decimal
 from enum import Enum
 from typing import Any, AsyncIterator, Optional, Union
 
@@ -23,9 +24,12 @@ from tastytrade.dxfeed.summary import Summary
 from tastytrade.dxfeed.theoprice import TheoPrice
 from tastytrade.dxfeed.timeandsale import TimeAndSale
 from tastytrade.dxfeed.trade import Trade
-from tastytrade.order import InstrumentType, OrderChain, PlacedOrder, PriceEffect
+from tastytrade.order import (InstrumentType, OrderChain, PlacedOrder,
+                              PriceEffect)
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeError, TastytradeJsonDataclass, validate_response
+from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
+                              validate_response)
+from tastytrade.watchlists import Watchlist
 
 CERT_STREAMER_URL = 'wss://streamer.cert.tastyworks.com'
 STREAMER_URL = 'wss://streamer.tastyworks.com'
@@ -390,7 +394,7 @@ class DataStreamer:
         """
         Sends a heartbeat message every 10 seconds to keep the connection alive.
         """
-        while not self._done:
+        while True:
             id = await self._next_id()
             message = {
                 'id': id,
