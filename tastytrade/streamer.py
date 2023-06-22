@@ -248,7 +248,12 @@ class DataStreamer:
         streamer = await DataStreamer.create(session)
 
         subs = ['SPY', 'GLD']  # list of quotes to fetch
-        quote = await streamer.oneshot(EventType.QUOTE, subs)
+        await streamer.subscribe(EventType.QUOTE, subs)
+        quotes = []
+        async for quote in streamer.listen():
+            quotes.append(quote)
+            if len(quotes) >= len(subs):
+                break
 
     """
     def __init__(self, session: Session):
@@ -285,17 +290,6 @@ class DataStreamer:
         self = cls(session)
         while not self.client_id:
             await asyncio.sleep(0.1)
-
-        # see Github issue #45:
-        # once the handshake completes, although setup is completed locally, remotely there
-        # is still some kind of setup process that hasn't happened that takes about 8-9
-        # seconds, and afterwards you're good to go. Unfortunately, there's no way to know
-        # when that process concludes remotely, as there's no kind of confirmation message
-        # sent. This is a hacky solution to ensure streamer setup completes.
-        await self.oneshot(EventType.QUOTE, ['SPY'])
-        # clear queue if there's any lingering data
-        while not self._queue.empty():
-            self._queue.get_nowait()
 
         return self
 
@@ -410,8 +404,7 @@ class DataStreamer:
 
     async def subscribe(self, event_type: EventType, symbols: list[str], reset: bool = False) -> None:
         """
-        Subscribes to quotes for given list of symbols. Used for recurring data feeds;
-        if you just want to get a one-time quote, use :meth:`oneshot`.
+        Subscribes to quotes for given list of symbols. Used for recurring data feeds.
 
         :param event_type: type of subscription to add
         :param symbols: list of symbols to subscribe for
@@ -450,31 +443,6 @@ class DataStreamer:
         }
         logger.debug('sending unsubscription: %s', message)
         await self._websocket.send(json.dumps([message]))
-
-    async def oneshot(self, event_type: EventType, symbols: list[str]) -> list[Event]:
-        """
-        Using the given information, subscribes to the list of symbols passed, streams
-        the requested information once, then unsubscribes. If you want to maintain the
-        subscription open, add a subscription with :meth:`subscribe` and listen with
-        :meth:`listen`.
-
-        If you use this alongside :meth:`subscribe` and :meth:`listen`, you will get
-        some unexpected behavior. Most apps should use either this or :meth:`listen`
-        but not both.
-
-        :param event_type: the type of subscription to stream, either greeks or quotes
-        :param symbols: list of symbols to subscribe to
-
-        :return: list of :class:`~tastytrade.dxfeed.event.Event`s pulled.
-        """
-        await self.subscribe(event_type, symbols)
-        data = []
-        async for item in self.listen():
-            data.append(item)
-            if len(data) >= len(symbols):
-                break
-        await self.unsubscribe(event_type, symbols)
-        return data
 
     async def subscribe_candle(self, ticker: str, start_time: datetime, interval: str) -> None:
         """
@@ -519,28 +487,6 @@ class DataStreamer:
         }
         logger.debug('sending unsubscription: %s', message)
         await self._websocket.send(json.dumps([message]))
-
-    async def oneshot_candle(self, ticker: str, start_time: datetime, interval: str) -> list[Candle]:
-        """
-        Subscribes to candle-style 'OHLC' data for the given symbol, waits for
-        the complete range to be received, then unsubscribes.
-
-        :param ticker: symbol to get date for
-        :param start_time: starting time for the data range
-        :param interval: the width of each candle in time, e.g. '5m', '1h', '3d', '1w', '1mo'
-        """
-        await self.subscribe_candle(ticker, start_time, interval)
-        candles = []
-        async for candle in self.listen_candle():
-            candles.append(candle)
-            # until we hit the start date, keep going
-            # use timestamp to support timezone in start_time
-            if candle.time <= start_time.timestamp() * 1000:
-                break
-        await self.unsubscribe_candle(ticker, interval)
-
-        candles.reverse()
-        return candles
 
     def _map_message(self, message) -> list[Event]:
         """

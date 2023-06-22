@@ -48,7 +48,12 @@ The streamer is a websocket connection to the Tastytrade API that allows you to 
    subs_list = ['SPY', 'SPX']
 
    # this function fetches quotes once, then closes the subscription
-   quotes = await streamer.oneshot(EventType.QUOTE, subs_list)
+   await streamer.subscribe(EventType.QUOTE, subs_list)
+   quotes = []
+   async for quote in streamer.listen():
+      quotes.append(quote)
+      if len(quotes) >= len(subs_list):
+         break
    print(quotes)
 
 >>> [Quote(eventSymbol='SPY', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='Q', bidPrice=411.58, bidSize=400.0, askTime=0, askExchangeCode='Q', askPrice=411.6, askSize=1313.0), Quote(eventSymbol='SPX', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='\x00', bidPrice=4122.49, bidSize='NaN', askTime=0, askExchangeCode='\x00', askPrice=4123.65, askSize='NaN')]
@@ -115,7 +120,12 @@ Options chain/streaming greeks
    chain = get_option_chain(session, 'SPLG')
    subs_list = [chain[date(2023, 6, 16)][0].streamer_symbol]
 
-   greeks = await streamer.oneshot(EventType.GREEKS, subs_list)
+   await streamer.subscribe(EventType.GREEKS, subs_list)
+   greeks = []
+   async for greek in streamer.listen():
+      greeks.append(greek)
+      if len(greeks) >= len(subs_list):
+         break
    print(greeks)
 
 >>> [Greeks(eventSymbol='.SPLG230616C23', eventTime=0, eventFlags=0, index=7235129486797176832, time=1684559855338, sequence=0, price=26.3380972233688, volatility=0.396983376650804, delta=0.999999999996191, gamma=4.81989763184255e-12, theta=-2.5212017514875e-12, rho=0.01834504287973133, vega=3.7003015672215e-12)]
