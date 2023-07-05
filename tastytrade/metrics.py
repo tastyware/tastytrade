@@ -154,3 +154,21 @@ def get_earnings(session: Session, symbol: str, start_date: date) -> list[Earnin
     data = response.json()['data']['items']
 
     return [EarningsInfo(**entry) for entry in data]
+
+
+def get_risk_free_rate(session: Session) -> Decimal:
+    """
+    Retrieves the current risk-free rate.
+
+    :param session: active user session to use
+
+    :return: the current risk-free rate
+    """
+    response = requests.get(
+        f'{session.base_url}/margin-requirements-public-configuration',
+        headers=session.headers
+    )
+    validate_response(response)
+
+    data = response.json()['data']['risk-free-rate']
+    return Decimal(data)

@@ -58,11 +58,11 @@ class AccountBalance(TastytradeJsonDataclass):
     futures_intraday_margin_requirement: Decimal
     maintenance_excess: Decimal
     pending_margin_interest: Decimal
-    apex_starting_day_margin_equity: Decimal
-    buying_power_adjustment: Decimal
-    buying_power_adjustment_effect: PriceEffect
     effective_cryptocurrency_buying_power: Decimal
     updated_at: datetime
+    apex_starting_day_margin_equity: Optional[Decimal] = None
+    buying_power_adjustment: Optional[Decimal] = None
+    buying_power_adjustment_effect: Optional[PriceEffect] = None
     time_of_day: Optional[str] = None
 
 
