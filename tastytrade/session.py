@@ -13,14 +13,20 @@ class Session:
     :param login: tastytrade username or email
     :param password: tastytrade password or a remember token obtained previously
     :param remember_me:
-        whether or not to generate a token which can be used to login without a password;
-        appears to be bugged currently.
+        whether or not to create a single-use remember token to use in place of a password;
+        currently appears to be bugged.
     :param two_factor_authentication:
         if two factor authentication is enabled, this is the code sent to the user's device
     :param is_certification: whether or not to use the certification API
     """
-    def __init__(self, login: str, password: str, remember_me: bool = False,
-                 two_factor_authentication: str = '', is_certification: bool = False):
+    def __init__(
+        self,
+        login: str,
+        password: str,
+        remember_me: bool = False,
+        two_factor_authentication: str = '',
+        is_certification: bool = False
+    ):
         body = {
             'login': login,
             'password': password,
@@ -43,7 +49,7 @@ class Session:
         self.user: dict[str, str] = json['data']['user']
         #: The session token used to authenticate requests
         self.session_token: str = json['data']['session-token']
-        #: An alternate token which can be used to login without a password
+        #: A single-use token which can be used to login without a password
         self.remember_token: Optional[str] = json['data']['remember-token'] if remember_me else None
         #: The headers to use for API requests
         self.headers: dict[str, str] = {'Authorization': self.session_token}
