@@ -182,7 +182,7 @@ class AlertStreamer:
         """
         Subscribes to account-level updates (balances, orders, positions).
 
-        :param accounts: list of :class:`tastytrade.account.Account`s to subscribe to updates for
+        :param accounts: list of :class:`Account` to subscribe to updates for
         """
         await self._subscribe(SubscriptionType.ACCOUNT, [acc.account_number for acc in accounts])
 
@@ -358,7 +358,7 @@ class DataStreamer:
 
     async def listen(self) -> AsyncIterator[Event]:
         """
-        Using the existing subscriptions, pulls :class:`~tastytrade.dxfeed.event.Event`s and yield returns
+        Using the existing subscriptions, pulls :class:`~tastytrade.dxfeed.event.Event` and yield returns
         them. Never exits unless there's an error or the channel is closed.
         """
         while True:

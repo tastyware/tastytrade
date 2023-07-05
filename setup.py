@@ -19,9 +19,8 @@ setup(
     license='MIT',
     install_requires=[
         'requests<3',
-        'dataclasses',
         'websockets>=11.0.3',
-        'pydantic>=1.10.7'
+        'pydantic<2'
     ],
     packages=find_packages(exclude=['ez_setup', 'tests*']),
     include_package_data=True
