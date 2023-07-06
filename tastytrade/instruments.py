@@ -12,8 +12,8 @@ from tastytrade.utils import TastytradeJsonDataclass, validate_response
 
 class OptionType(str, Enum):
     """
-    This is an :class:`~enum.Enum` that contains the valid types of options and
-    their abbreviations in the API.
+    This is an :class:`~enum.Enum` that contains the valid types of options
+    and their abbreviations in the API.
     """
     CALL = 'C'
     PUT = 'P'
@@ -21,9 +21,10 @@ class OptionType(str, Enum):
 
 class FutureMonthCode(str, Enum):
     """
-    This is an :class:`~enum.Enum` that contains the valid month codes for futures.
+    This is an :class:`~enum.Enum` that contains the valid month codes for
+    futures.
 
-    This is really just here for reference, as the API barely uses these codes.
+    This is really here for reference, as the API barely uses these codes.
     """
     JAN = 'F'
     FEB = 'G'
@@ -55,7 +56,8 @@ class Deliverable(TastytradeJsonDataclass):
 
 class DestinationVenueSymbol(TastytradeJsonDataclass):
     """
-    Dataclass representing a specific destination venue symbol for a cryptocurrency.
+    Dataclass representing a specific destination venue symbol for a
+    cryptocurrency.
     """
     id: int
     symbol: str
@@ -67,7 +69,8 @@ class DestinationVenueSymbol(TastytradeJsonDataclass):
 
 class QuantityDecimalPrecision(TastytradeJsonDataclass):
     """
-    Dataclass representing the decimal precision (number of places) for an instrument.
+    Dataclass representing the decimal precision (number of places) for an
+    instrument.
     """
     instrument_type: InstrumentType
     value: int
@@ -77,8 +80,8 @@ class QuantityDecimalPrecision(TastytradeJsonDataclass):
 
 class Strike(TastytradeJsonDataclass):
     """
-    Dataclass representing a specific strike in an options chain, containing the
-    symbols for the call and put options.
+    Dataclass representing a specific strike in an options chain, containing
+    the symbols for the call and put options.
     """
     strike_price: Decimal
     call: str
@@ -129,7 +132,8 @@ class NestedFutureOptionChainExpiration(TastytradeJsonDataclass):
 
 class NestedFutureOptionFuture(TastytradeJsonDataclass):
     """
-    Dataclass representing an underlying future in a nested future options chain.
+    Dataclass representing an underlying future in a nested future options
+    chain.
     """
     root_symbol: str
     days_to_expiration: int
@@ -182,12 +186,12 @@ class Cryptocurrency(TradeableTastytradeJsonDataclass):
         cls, session: Session, symbols: list[str] = []
     ) -> list['Cryptocurrency']:
         """
-        Returns a list of :class:`Cryptocurrency` objects from the given symbols.
+        Returns a list of cryptocurrency objects from the given symbols.
 
         :param session: the session to use for the request.
         :param symbols: the symbols to get the cryptocurrencies for.
 
-        :return: a list of :class:`Cryptocurrency` objects.
+        :return: a list of cryptocurrency objects.
         """
         params = {'symbol[]': symbols} if symbols else None
         response = requests.get(
@@ -202,7 +206,11 @@ class Cryptocurrency(TradeableTastytradeJsonDataclass):
         return [cls(**entry) for entry in data]
 
     @classmethod
-    def get_cryptocurrency(cls, session: Session, symbol: str) -> 'Cryptocurrency':
+    def get_cryptocurrency(
+        cls,
+        session: Session,
+        symbol: str
+    ) -> 'Cryptocurrency':
         """
         Returns a :class:`Cryptocurrency` object from the given symbol.
 
@@ -262,8 +270,11 @@ class Equity(TradeableTastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         :param per_page: the number of equities to get per page.
-        :param page_offset: provide a specific page to get; if not provided, get all pages
-        :param lendability: the lendability of the equities; 'Easy To Borrow', 'Locate Required', 'Preborrow'
+        :param page_offset:
+            provide a specific page to get; if not provided, get all pages
+        :param lendability:
+            the lendability of the equities; e.g. 'Easy To Borrow',
+            'Locate Required', 'Preborrow'
 
         :return: a list of :class:`Equity` objects.
         """
@@ -317,7 +328,8 @@ class Equity(TradeableTastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param symbols: the symbols to get the equities for.
         :param lendability:
-            the lendability of the equities; 'Easy To Borrow', 'Locate Required', 'Preborrow'
+            the lendability of the equities; e.g. 'Easy To Borrow',
+            'Locate Required', 'Preborrow'
         :param is_index: whether the equities are indexes.
         :param is_etf: whether the equities are ETFs.
 
@@ -470,12 +482,13 @@ class Option(TradeableTastytradeJsonDataclass):
 
 class NestedOptionChain(TastytradeJsonDataclass):
     """
-    Dataclass that represents a Tastytrade nested option chain object. Contains
-    information about the option chain and a method to fetch one for a symbol.
+    Dataclass that represents a Tastytrade nested option chain object.
+    Contains information about the option chain and a method to fetch one for
+    a symbol.
 
-    The nested option chain is a bit neater than calling :meth:`get_option_chain` but
-    if you want to create actual :class:`Option` objects you'll need to make an extra
-    API request or two.
+    This is cleaner than calling :meth:`get_option_chain` but if you want to
+    create actual :class:`Option` objects you'll need to make an extra API
+    request or two.
     """
     underlying_symbol: str
     root_symbol: str
@@ -510,7 +523,8 @@ class NestedOptionChain(TastytradeJsonDataclass):
 class FutureProduct(TastytradeJsonDataclass):
     """
     Dataclass that represents a Tastytrade future product object. Contains
-    information about the future product and a method to fetch one for a symbol.
+    information about the future product and a method to fetch one for a
+    symbol.
 
     Useful for fetching general information about a family of futures, without
     knowing the specific expirations or symbols.
@@ -579,13 +593,14 @@ class FutureProduct(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         :param code: the product code, e.g. 'ES'
-        :param exchange: the exchange to get the product from: 'CME', 'SMALLS', 'CFE', 'CBOED'
+        :param exchange:
+            the exchange to fetch from: 'CME', 'SMALLS', 'CFE', 'CBOED'
 
         :return: a :class:`FutureProduct` object.
         """
         code = code.replace('/', '')
         response = requests.get(
-            f'{session.base_url}/instruments/future-products/{exchange}/{code}',
+            f'{session.base_url}/instruments/future-products/{exchange}/{code}',  # noqa: E501
             headers=session.headers
         )
         validate_response(response)
@@ -597,8 +612,8 @@ class FutureProduct(TastytradeJsonDataclass):
 
 class Future(TradeableTastytradeJsonDataclass):
     """
-    Dataclass that represents a Tastytrade future object. Contains information about
-    the future and methods to fetch futures for symbol(s).
+    Dataclass that represents a Tastytrade future object. Contains information
+    about the future and methods to fetch futures for symbol(s).
     """
     product_code: str
     tick_size: Decimal
@@ -640,13 +655,15 @@ class Future(TradeableTastytradeJsonDataclass):
         product_codes: Optional[list[str]] = None
     ) -> list['Future']:
         """
-        Returns a list of :class:`Future` objects from the given symbols or product codes.
+        Returns a list of :class:`Future` objects from the given symbols
+        or product codes.
 
         :param session: the session to use for the request.
         :param symbols:
-            symbols of the futures, e.g. 'ESZ9'. Leading forward slash is not required.
+            symbols of the futures, e.g. 'ESZ9', '/ESZ9'.
         :param product_codes:
-            the product codes of the futures, e.g. 'ES', '6A'. Ignored if symbols are provided.
+            the product codes of the futures, e.g. 'ES', '6A'. Ignored if
+            symbols are provided.
 
         :return: a list of :class:`Future` objects.
         """
@@ -689,8 +706,9 @@ class Future(TradeableTastytradeJsonDataclass):
 
 class FutureOptionProduct(TastytradeJsonDataclass):
     """
-    Dataclass that represents a Tastytrade future option product object. Contains
-    information about the future option product (deliverable for the future option).
+    Dataclass that represents a Tastytrade future option product object.
+    Contains information about the future option product (deliverable for
+    the future option).
     """
     root_symbol: str
     cash_settled: bool
@@ -750,7 +768,7 @@ class FutureOptionProduct(TastytradeJsonDataclass):
         """
         root_symbol = root_symbol.replace('/', '')
         response = requests.get(
-            f'{session.base_url}/instruments/future-option-products/{exchange}/{root_symbol}',
+            f'{session.base_url}/instruments/future-option-products/{exchange}/{root_symbol}',  # noqa: E501
             headers=session.headers
         )
         validate_response(response)
@@ -812,11 +830,13 @@ class FutureOption(TradeableTastytradeJsonDataclass):
         """
         Returns a list of :class:`FutureOption` objects from the given symbols.
 
-        NOTE: As far as I can tell, all of the parameters are bugged except for `symbols`.
+        NOTE: As far as I can tell, all of the parameters are bugged except
+        for `symbols`.
 
         :param session: the session to use for the request.
         :param symbols: the Tastytrade symbols to filter by.
-        :param root_symbol: the root symbol to get the future options for, e.g. 'EW3', 'SO'
+        :param root_symbol:
+            the root symbol to get the future options for, e.g. 'EW3', 'SO'
         :param expiration_date: the expiration date for the future options.
         :param option_type: the option type to filter by.
         :param strike_price: the strike price to filter by.
@@ -883,15 +903,19 @@ class NestedFutureOptionChain(TastytradeJsonDataclass):
     Dataclass that represents a Tastytrade nested option chain object. Contains
     information about the option chain and a method to fetch one for a symbol.
 
-    The nested option chain is a bit neater than calling :meth:`get_future_option_chain`
-    but if you want to create actual :class:`FutureOption` objects you'll need to make an
+    This is cleaner than calling :meth:`get_future_option_chain` but if you
+    want to create actual :class:`FutureOption` objects you'll need to make an
     extra API request or two.
     """
     futures: list[NestedFutureOptionFuture]
     option_chains: list[NestedFutureOptionSubchain]
 
     @classmethod
-    def get_chain(cls, session: Session, symbol: str) -> 'NestedFutureOptionChain':
+    def get_chain(
+        cls,
+        session: Session,
+        symbol: str
+    ) -> 'NestedFutureOptionChain':
         """
         Gets the futures option chain for the given symbol in nested format.
 
@@ -976,7 +1000,9 @@ class Warrant(TastytradeJsonDataclass):
 FutureProduct.update_forward_refs()
 
 
-def get_quantity_decimal_precisions(session: Session) -> list[QuantityDecimalPrecision]:
+def get_quantity_decimal_precisions(
+    session: Session
+) -> list[QuantityDecimalPrecision]:
     """
     Returns a list of :class:`QuantityDecimalPrecision` objects for different
     types of instruments.
@@ -996,19 +1022,23 @@ def get_quantity_decimal_precisions(session: Session) -> list[QuantityDecimalPre
     return [QuantityDecimalPrecision(**entry) for entry in data]
 
 
-def get_option_chain(session: Session, symbol: str) -> dict[date, list[Option]]:
+def get_option_chain(
+    session: Session,
+    symbol: str
+) -> dict[date, list[Option]]:
     """
-    Returns a mapping of expiration date to a list of :class:`Option` objects
+    Returns a mapping of expiration date to a list of option objects
     representing the options chain for the given symbol.
 
-    In the case that there are two expiries on the same day (e.g. SPXW and SPX AM
-    options), both will be returned in the same list. If you just want one expiry,
-    you'll need to filter the list yourself, or use ~:class:`NestedOptionChain` instead.
+    In the case that there are two expiries on the same day (e.g. SPXW
+    and SPX AM options), both will be returned in the same list. If you
+    just want one expiry, you'll need to filter the list yourself, or use
+    ~:class:`NestedOptionChain` instead.
 
     :param session: the session to use for the request.
     :param symbol: the symbol to get the option chain for.
 
-    :return: a dict mapping expiration date to a list of :class:`Option` objects.
+    :return: a dict mapping expiration date to a list of options
     """
     symbol = symbol.replace('/', '%2F')
     response = requests.get(
@@ -1029,19 +1059,23 @@ def get_option_chain(session: Session, symbol: str) -> dict[date, list[Option]]:
     return chain
 
 
-def get_future_option_chain(session: Session, symbol: str) -> dict[date, list[FutureOption]]:
+def get_future_option_chain(
+    session: Session,
+    symbol: str
+) -> dict[date, list[FutureOption]]:
     """
-    Returns a mapping of expiration date to a list of :class:`FutureOption` objects
-    representing the options chain for the given symbol.
+    Returns a mapping of expiration date to a list of futures options
+    objects representing the options chain for the given symbol.
 
-    In the case that there are two expiries on the same day (e.g. EW and ES options),
-    both will be returned in the same list. If you just want one expiry, you'll need
-    to filter the list yourself, or use ~:class:`NestedFutureOptionChain` instead.
+    In the case that there are two expiries on the same day (e.g. EW
+    and ES options), both will be returned in the same list. If you
+    just want one expiry, you'll need to filter the list yourself, or
+    use ~:class:`NestedFutureOptionChain` instead.
 
     :param session: the session to use for the request.
     :param symbol: the symbol to get the option chain for.
 
-    :return: a dict mapping expiration date to a list of :class:`FutureOption` objects.
+    :return: a dict mapping expiration date to a list of futures options.
     """
     symbol = symbol.replace('/', '')
     response = requests.get(

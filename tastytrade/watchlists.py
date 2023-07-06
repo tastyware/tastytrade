@@ -36,14 +36,21 @@ class PairsWatchlist(TastytradeJsonDataclass):
 
         :return: a list of :class:`PairsWatchlist` objects.
         """
-        response = requests.get(f'{session.base_url}/pairs-watchlists', headers=session.headers)
+        response = requests.get(
+            f'{session.base_url}/pairs-watchlists',
+            headers=session.headers
+        )
         validate_response(response)
         data = response.json()['data']['items']
 
         return [cls(**entry) for entry in data]
 
     @classmethod
-    def get_pairs_watchlist(cls, session: Session, name: str) -> 'PairsWatchlist':
+    def get_pairs_watchlist(
+        cls,
+        session: Session,
+        name: str
+    ) -> 'PairsWatchlist':
         """
         Fetches a Tastytrade public pairs watchlist by name.
 
@@ -52,7 +59,10 @@ class PairsWatchlist(TastytradeJsonDataclass):
 
         :return: a :class:`PairsWatchlist` object.
         """
-        response = requests.get(f'{session.base_url}/pairs-watchlists/{name}', headers=session.headers)
+        response = requests.get(
+            f'{session.base_url}/pairs-watchlists/{name}',
+            headers=session.headers
+        )
         validate_response(response)
 
         data = response.json()['data']
@@ -71,7 +81,11 @@ class Watchlist(TastytradeJsonDataclass):
     order_index: int = 9999
 
     @classmethod
-    def get_public_watchlists(cls, session: Session, counts_only: bool = False) -> list['Watchlist']:
+    def get_public_watchlists(
+        cls,
+        session: Session,
+        counts_only: bool = False
+    ) -> list['Watchlist']:
         """
         Fetches a list of all Tastytrade public watchlists.
 
@@ -101,7 +115,10 @@ class Watchlist(TastytradeJsonDataclass):
 
         :return: a :class:`Watchlist` object.
         """
-        response = requests.get(f'{session.base_url}/public-watchlists/{name}', headers=session.headers)
+        response = requests.get(
+            f'{session.base_url}/public-watchlists/{name}',
+            headers=session.headers
+        )
         validate_response(response)
 
         data = response.json()['data']
@@ -117,7 +134,10 @@ class Watchlist(TastytradeJsonDataclass):
 
         :return: a list of :class:`Watchlist` objects.
         """
-        response = requests.get(f'{session.base_url}/watchlists', headers=session.headers)
+        response = requests.get(
+            f'{session.base_url}/watchlists',
+            headers=session.headers
+        )
         validate_response(response)
 
         data = response.json()['data']['items']
@@ -134,7 +154,10 @@ class Watchlist(TastytradeJsonDataclass):
 
         :return: a :class:`Watchlist` object.
         """
-        response = requests.get(f'{session.base_url}/watchlists/{name}', headers=session.headers)
+        response = requests.get(
+            f'{session.base_url}/watchlists/{name}',
+            headers=session.headers
+        )
         validate_response(response)
 
         data = response.json()['data']
@@ -149,7 +172,10 @@ class Watchlist(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param name: the name of the watchlist to delete.
         """
-        response = requests.delete(f'{session.base_url}/watchlists/{name}', headers=session.headers)
+        response = requests.delete(
+            f'{session.base_url}/watchlists/{name}',
+            headers=session.headers
+        )
         validate_response(response)
 
     def upload_private_watchlist(self, session: Session) -> None:
@@ -184,11 +210,21 @@ class Watchlist(TastytradeJsonDataclass):
         """
         if self.watchlist_entries is None:
             self.watchlist_entries = []
-        self.watchlist_entries.append({'symbol': symbol, 'instrument-type': instrument_type})
+        self.watchlist_entries.append({
+            'symbol': symbol,
+            'instrument-type': instrument_type
+        })
 
-    def remove_symbol(self, symbol: str, instrument_type: InstrumentType) -> None:
+    def remove_symbol(
+        self,
+        symbol: str,
+        instrument_type: InstrumentType
+    ) -> None:
         """
         Removes a symbol from the watchlist.
         """
         if self.watchlist_entries is not None:
-            self.watchlist_entries.remove({'symbol': symbol, 'instrument-type': instrument_type})
+            self.watchlist_entries.remove({
+                'symbol': symbol,
+                'instrument-type': instrument_type
+            })

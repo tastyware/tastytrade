@@ -6,7 +6,11 @@ from .event import Event
 @dataclass
 class TheoPrice(Event):
     """
-    Theo price is a snapshot of the theoretical option price computation that is periodically performed by dxPrice model-free computation. dxFeed does not send recalculations for all options at the same time, so we provide you with a formula so you can perform calculations based on values from this event.
+    Theo price is a snapshot of the theoretical option price computation that
+    is periodically performed by dxPrice model-free computation. dxFeed does
+    not send recalculations for all options at the same time, so we provide
+    you with a formula so you can perform calculations based on values from
+    this event.
     """
     #: symbol of this event
     eventSymbol: str
@@ -18,7 +22,7 @@ class TheoPrice(Event):
     index: int
     #: timestamp of this event in milliseconds
     time: int
-    #: sequence number of this event to distinguish events that have the same time
+    #: sequence number to distinguish events that have the same time
     sequence: int
     #: theoretical price
     price: float

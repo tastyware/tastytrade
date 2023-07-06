@@ -6,11 +6,12 @@ from .event import Event
 @dataclass
 class TimeAndSale(Event):
     """
-    TimeAndSale event represents a trade or other market event with a price, like
-    market open/close price. TimeAndSale events are intended to provide information
-    about trades in a continuous-time slice (unlike Trade events which are supposed
-    to provide snapshots about the most recent trade). TimeAndSale events have a
-    unique index that can be used for later correction/cancellation processing.
+    TimeAndSale event represents a trade or other market event with a price,
+    like market open/close price. TimeAndSale events are intended to provide
+    information about trades in a continuous-time slice (unlike Trade events
+    which are supposed to provide snapshots about the most recent trade).
+    TimeAndSale events have a unique index that can be used for later
+    correction/cancellation processing.
     """
     #: symbol of this event
     eventSymbol: str
@@ -32,9 +33,9 @@ class TimeAndSale(Event):
     price: float
     #: size of this time and sale event as integer number (rounded toward zero)
     size: int
-    #: the current bid price on the market when this time and sale event had occured
+    #: the bid price on the market when this time and sale event occured
     bidPrice: float
-    #: the current ask price on the market when this time and sale event had occured
+    #: the ask price on the market when this time and sale event occured
     askPrice: float
     #: sale conditions provided for this event by data feed
     exchangeSaleConditions: str

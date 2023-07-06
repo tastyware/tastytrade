@@ -6,7 +6,11 @@ from .event import Event
 @dataclass
 class Trade(Event):
     """
-    A Trade event provides prices and the volume of the last transaction in regular trading hours, as well as the total amount per day in the number of securities and in their value. This event does not contain information about all transactions, but only about the last transaction for a single instrument.
+    A Trade event provides prices and the volume of the last transaction in
+    regular trading hours, as well as the total amount per day in the number
+    of securities and in their value. This event does not contain information
+    about all transactions, but only about the last transaction for a single
+    instrument.
     """
     #: symbol of this event
     eventSymbol: str

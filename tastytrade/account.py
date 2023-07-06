@@ -113,7 +113,8 @@ class AccountBalanceSnapshot(TastytradeJsonDataclass):
 
 class CurrentPosition(TastytradeJsonDataclass):
     """
-    Dataclass containing imformation about an individual position in a portfolio.
+    Dataclass containing imformation about an individual position in a
+    portfolio.
     """
     account_number: str
     symbol: str
@@ -391,7 +392,11 @@ class Account(TastytradeJsonDataclass):
     submitting_user_id: Optional[str] = None
 
     @classmethod
-    def get_accounts(cls, session: Session, include_closed=False) -> list['Account']:
+    def get_accounts(
+        cls,
+        session: Session,
+        include_closed=False
+    ) -> list['Account']:
         """
         Gets all trading accounts from the Tastyworks platform. By default
         excludes closed accounts from the results.
@@ -445,7 +450,7 @@ class Account(TastytradeJsonDataclass):
         :return: a Tastytrade 'TradingStatus' object in JSON format.
         """
         response = requests.get(
-            f'{session.base_url}/accounts/{self.account_number}/trading-status',
+            f'{session.base_url}/accounts/{self.account_number}/trading-status',  # noqa: E501
             headers=session.headers
         )
         validate_response(response)  # throws exception if not 200
@@ -477,17 +482,20 @@ class Account(TastytradeJsonDataclass):
         time_of_day: Optional[str] = None
     ) -> list[AccountBalanceSnapshot]:
         """
-        Returns a list of two balance snapshots. The first one is the specified date,
-        or, if not provided, the oldest snapshot available. The second one is the most
-        recent snapshot.
+        Returns a list of two balance snapshots. The first one is the
+        specified date, or, if not provided, the oldest snapshot available.
+        The second one is the most recent snapshot.
 
-        If you provide the snapshot date, you must also provide the time of day.
+        If you provide the snapshot date, you must also provide the time of
+        day.
 
         :param session: the session to use for the request.
         :param snapshot_date: the date of the snapshot to get.
-        :param time_of_day: the time of day of the snapshot to get, either 'EOD' or 'BOD'.
+        :param time_of_day:
+            the time of day of the snapshot to get, either 'EOD' or 'BOD'.
 
-        :return: a list of two Tastytrade 'AccountBalanceSnapshot' objects in JSON format.
+        :return:
+            a list of two Tastytrade 'AccountBalanceSnapshot' in JSON format.
         """
         params: dict[str, Any] = {
             'snapshot-date': snapshot_date,
@@ -495,7 +503,7 @@ class Account(TastytradeJsonDataclass):
         }
 
         response = requests.get(
-            f'{session.base_url}/accounts/{self.account_number}/balance-snapshots',
+            f'{session.base_url}/accounts/{self.account_number}/balance-snapshots',  # noqa: E501
             headers=session.headers,
             params={k: v for k, v in params.items() if v is not None}
         )
@@ -521,14 +529,18 @@ class Account(TastytradeJsonDataclass):
         Get the current positions of the account.
 
         :param session: the session to use for the request.
-        :param underlying_symbols: an array of underlying symbols for positions.
+        :param underlying_symbols:
+            an array of underlying symbols for positions.
         :param symbol: a single symbol.
         :param instrument_type: the type of instrument.
-        :param include_closed: if closed positions should be included in the query.
+        :param include_closed:
+            if closed positions should be included in the query.
         :param underlying_product_code: the underlying future's product code.
         :param partition_keys: account partition keys.
-        :param net_positions: returns net positions grouped by instrument type and symbol.
-        :param include_marks: include current quote mark (note: can decrease performance).
+        :param net_positions:
+            returns net positions grouped by instrument type and symbol.
+        :param include_marks:
+            include current quote mark (note: can decrease performance).
 
         :return: a list of Tastytrade 'CurrentPosition' objects in JSON format.
         """
@@ -578,7 +590,8 @@ class Account(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         :param per_page: the number of results to return per page.
-        :param page_offset: provide a specific page to get; if not provided, get all pages
+        :param page_offset:
+            provide a specific page to get; if not provided, get all pages
         :param sort: the order to sort results in, either 'Desc' or 'Asc'.
         :param type: the type of transaction.
         :param types: a list of transaction types to filter by.
@@ -589,12 +602,14 @@ class Account(TastytradeJsonDataclass):
         :param symbol: a single symbol.
         :param underlying_symbol: the underlying symbol.
         :param action:
-            the action of the transaction: 'Sell to Open', 'Sell to Close', 'Buy to Open',
-            'Buy to Close', 'Sell' or 'Buy'.
+            the action of the transaction: 'Sell to Open', 'Sell to Close',
+            'Buy to Open', 'Buy to Close', 'Sell' or 'Buy'.
         :param partition_key: account partition key.
         :param futures_symbol: the full TW Future Symbol, e.g. /ESZ9, /NGZ19.
-        :param start_at: datetime start range for filtering transactions in full date-time.
-        :param end_at: datetime end range for filtering transactions in full date-time.
+        :param start_at:
+            datetime start range for filtering transactions in full date-time.
+        :param end_at:
+            datetime end range for filtering transactions in full date-time.
 
         :return: a list of Tastytrade 'Transaction' objects in JSON format.
         """
@@ -627,7 +642,7 @@ class Account(TastytradeJsonDataclass):
         results = []
         while True:
             response = requests.get(
-                f'{session.base_url}/accounts/{self.account_number}/transactions',
+                f'{session.base_url}/accounts/{self.account_number}/transactions',  # noqa: E501
                 headers=session.headers,
                 params={k: v for k, v in params.items() if v is not None}
             )
@@ -655,7 +670,7 @@ class Account(TastytradeJsonDataclass):
         :return: a Tastytrade 'Transaction' object in JSON format.
         """
         response = requests.get(
-            f'{session.base_url}/accounts/{self.account_number}/transactions/{id}',
+            f'{session.base_url}/accounts/{self.account_number}/transactions/{id}',  # noqa: E501
             headers=session.headers
         )
         validate_response(response)
@@ -664,7 +679,11 @@ class Account(TastytradeJsonDataclass):
 
         return Transaction(**data)
 
-    def get_total_fees(self, session: Session, date: date = date.today()) -> dict[str, Any]:
+    def get_total_fees(
+        self,
+        session: Session,
+        date: date = date.today()
+    ) -> dict[str, Any]:
         """
         Get the total fees for a given date.
 
@@ -675,7 +694,7 @@ class Account(TastytradeJsonDataclass):
         """
         params: dict[str, Any] = {'date': date}
         response = requests.get(
-            f'{session.base_url}/accounts/{self.account_number}/transactions/total-fees',
+            f'{session.base_url}/accounts/{self.account_number}/transactions/total-fees',  # noqa: E501
             headers=session.headers,
             params=params
         )
@@ -690,30 +709,35 @@ class Account(TastytradeJsonDataclass):
         start_time: Optional[datetime] = None
     ) -> list[NetLiqOhlc]:
         """
-        Returns a list of account net liquidating value snapshots over the specified time period.
+        Returns a list of account net liquidating value snapshots over the
+        specified time period.
 
         :param session: the session to use for the request.
         :param time_back:
-            the time period to get net liquidating value snapshots for. This param is required
-            if start_time is not given. Possible values are: '1d', '1m', '3m', '6m', '1y', 'all'.
+            the time period to get net liquidating value snapshots for. This
+            param is required if start_time is not given. Possible values are:
+            '1d', '1m', '3m', '6m', '1y', 'all'.
         :param start_time:
-            the start point for the query. This param is required is time-back is not given.
-            If given, will take precedence over time-back.
+            the start point for the query. This param is required is time-back
+            is not given. If given, will take precedence over time-back.
 
         :return: a list of Tastytrade 'NetLiqOhlc' objects in JSON format.
         """
         params: dict[str, Any] = {}
         if start_time:
             # format to Tastytrade DateTime format
-            start_time = str(start_time).replace(' ', 'T').split('.')[0] + 'Z'  # type: ignore
+            start_time = str(start_time) \
+                .replace(' ', 'T') \
+                .split('.')[0] + 'Z'  # type: ignore
             params = {'start-time': start_time}
         elif not time_back:
-            raise TastytradeError('Either time_back or start_time must be specified.')
+            msg = 'Either time_back or start_time must be specified.'
+            raise TastytradeError(msg)
         else:
             params = {'time-back': time_back}
 
         response = requests.get(
-            f'{session.base_url}/accounts/{self.account_number}/net-liq/history',
+            f'{session.base_url}/accounts/{self.account_number}/net-liq/history',  # noqa: E501
             headers=session.headers,
             params=params
         )
@@ -732,7 +756,7 @@ class Account(TastytradeJsonDataclass):
         :return: a Tastytrade 'PositionLimit' object in JSON format.
         """
         response = requests.get(
-            f'{session.base_url}/accounts/{self.account_number}/position-limit',
+            f'{session.base_url}/accounts/{self.account_number}/position-limit',  # noqa: E501
             headers=session.headers
         )
         validate_response(response)
@@ -741,7 +765,11 @@ class Account(TastytradeJsonDataclass):
 
         return PositionLimit(**data)
 
-    def get_effective_margin_requirements(self, session: Session, symbol: str) -> MarginRequirement:
+    def get_effective_margin_requirements(
+        self,
+        session: Session,
+        symbol: str
+    ) -> MarginRequirement:
         """
         Get the effective margin requirements for a given symbol.
 
@@ -753,7 +781,7 @@ class Account(TastytradeJsonDataclass):
         if symbol:
             symbol = symbol.replace('/', '%2F')
         response = requests.get(
-            f'{session.base_url}/accounts/{self.account_number}/margin-requirements/{symbol}/effective',
+            f'{session.base_url}/accounts/{self.account_number}/margin-requirements/{symbol}/effective',  # noqa: E501
             headers=session.headers
         )
         validate_response(response)
@@ -764,15 +792,15 @@ class Account(TastytradeJsonDataclass):
 
     def get_margin_requirements(self, session: Session) -> MarginReport:
         """
-        Get the margin report for the account, with total margin requirements as well
-        as a breakdown per symbol/instrument.
+        Get the margin report for the account, with total margin requirements
+        as well as a breakdown per symbol/instrument.
 
         :param session: the session to use for the request.
 
         :return: a :class:`MarginReport` object.
         """
         response = requests.get(
-            f'{session.base_url}/margin/accounts/{self.account_number}/requirements',
+            f'{session.base_url}/margin/accounts/{self.account_number}/requirements',  # noqa: E501
             headers=session.headers
         )
         validate_response(response)
@@ -808,7 +836,7 @@ class Account(TastytradeJsonDataclass):
         :return: an :class:`Order` object corresponding to the given ID.
         """
         response = requests.get(
-            f'{session.base_url}/accounts/{self.account_number}/orders/{order_id}',
+            f'{session.base_url}/accounts/{self.account_number}/orders/{order_id}',  # noqa: E501
             headers=session.headers
         )
         validate_response(response)
@@ -825,7 +853,7 @@ class Account(TastytradeJsonDataclass):
         :param order_id: the ID of the order to delete.
         """
         response = requests.delete(
-            f'{session.base_url}/accounts/{self.account_number}/orders/{order_id}',
+            f'{session.base_url}/accounts/{self.account_number}/orders/{order_id}',  # noqa: E501
             headers=session.headers
         )
         validate_response(response)
@@ -850,16 +878,20 @@ class Account(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         :param per_page: the number of results to return per page.
-        :param page_offset: provide a specific page to get; if not provided, get all pages
+        :param page_offset:
+            provide a specific page to get; if not provided, get all pages
         :param start_date: the start date of orders to query.
         :param end_date: the end date of orders to query.
         :param underlying_symbol: underlying symbol to filter by.
         :param statuses: a list of statuses to filter by.
-        :param futures_symbol: Tastytrade future symbol for futures and future options.
-        :param underlying_instrument_type: the type of instrument to filter by.
+        :param futures_symbol:
+            Tastytrade future symbol for futures and future options.
+        :param underlying_instrument_type: the type of instrument to filter by
         :param sort: the order to sort results in, either 'Desc' or 'Asc'.
-        :param start_at: datetime start range for filtering transactions in full date-time.
-        :param end_at: datetime end range for filtering transactions in full date-time.
+        :param start_at:
+            datetime start range for filtering transactions in full date-time.
+        :param end_at:
+            datetime end range for filtering transactions in full date-time.
 
         :return: a list of Tastytrade 'Transaction' objects in JSON format.
         """
@@ -905,7 +937,12 @@ class Account(TastytradeJsonDataclass):
 
         return [PlacedOrder(**entry) for entry in results]
 
-    def place_order(self, session: Session, order: NewOrder, dry_run=True) -> PlacedOrderResponse:
+    def place_order(
+        self,
+        session: Session,
+        order: NewOrder,
+        dry_run=True
+    ) -> PlacedOrderResponse:
         """
         Place the given order.
 
@@ -930,9 +967,15 @@ class Account(TastytradeJsonDataclass):
 
         return PlacedOrderResponse(**data)
 
-    def replace_order(self, session: Session, old_order_id: str, new_order: NewOrder) -> PlacedOrder:
+    def replace_order(
+        self,
+        session: Session,
+        old_order_id: str,
+        new_order: NewOrder
+    ) -> PlacedOrder:
         """
-        Replace an order with a new order with different characteristics (but same legs).
+        Replace an order with a new order with different characteristics (but
+        same legs).
 
         :param session: the session to use for the request.
         :param old_order_id: the ID of the order to replace.
@@ -944,9 +987,13 @@ class Account(TastytradeJsonDataclass):
         # required because we're passing the JSON as a string
         headers['Content-Type'] = 'application/json'
         response = requests.put(
-            f'{session.base_url}/accounts/{self.account_number}/orders/{old_order_id}',
+            f'{session.base_url}/accounts/{self.account_number}/orders/{old_order_id}',  # noqa: E501
             headers=headers,
-            data=new_order.json(exclude={'legs'}, exclude_none=True, by_alias=True)
+            data=new_order.json(
+                exclude={'legs'},
+                exclude_none=True,
+                by_alias=True
+            )
         )
         validate_response(response)
 

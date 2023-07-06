@@ -9,7 +9,7 @@ venv:
 
 test:
 	isort --check --diff tastytrade/
-	flake8 --count --show-source --statistics --ignore=E501 tastytrade/
+	flake8 --count --show-source --statistics tastytrade/
 	mypy -p tastytrade
 
 install:
