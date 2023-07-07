@@ -616,10 +616,10 @@ class Future(TradeableTastytradeJsonDataclass):
     product_group: str
     exchange: str
     streamer_exchange_code: str
-    # streamer_symbol: str
+    streamer_symbol: str = None
     back_month_first_calendar_symbol: bool
-    # is_tradeable: bool
-    # future_product: 'FutureProduct'
+    is_tradeable: bool = None
+    future_product: 'FutureProduct' = None
     instrument_type: InstrumentType = InstrumentType.FUTURE
     contract_size: Optional[Decimal] = None
     main_fraction: Optional[Decimal] = None
