@@ -64,9 +64,8 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     liquidity_value: Decimal
     liquidity_rank: Decimal
     liquidity_rating: int
-    created_at: datetime
     updated_at: datetime
-    option_expiration_implied_volatilities: list[OptionExpirationImpliedVolatility]
+    option_expiration_implied_volatilities: list[OptionExpirationImpliedVolatility]  # noqa: E501
     liquidity_running_state: Liquidity
     beta: Decimal
     beta_updated_at: datetime
@@ -84,13 +83,17 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     iv_hv_30_day_difference: Decimal
     price_earnings_ratio: Decimal
     earnings_per_share: Decimal
+    created_at: Optional[datetime] = None
     dividend_ex_date: Optional[date] = None
     dividend_next_date: Optional[date] = None
     dividend_pay_date: Optional[date] = None
     dividend_updated_at: Optional[datetime] = None
 
 
-def get_market_metrics(session: Session, symbols: list[str]) -> list[MarketMetricInfo]:
+def get_market_metrics(
+    session: Session,
+    symbols: list[str]
+) -> list[MarketMetricInfo]:
     """
     Retrieves market metrics for the given symbols.
 
@@ -122,7 +125,7 @@ def get_dividends(session: Session, symbol: str) -> list[DividendInfo]:
     """
     symbol = symbol.replace('/', '%2F')
     response = requests.get(
-        f'{session.base_url}/market-metrics/historic-corporate-events/dividends/{symbol}',
+        f'{session.base_url}/market-metrics/historic-corporate-events/dividends/{symbol}',  # noqa: E501
         headers=session.headers
     )
     validate_response(response)
@@ -132,7 +135,11 @@ def get_dividends(session: Session, symbol: str) -> list[DividendInfo]:
     return [DividendInfo(**entry) for entry in data]
 
 
-def get_earnings(session: Session, symbol: str, start_date: date) -> list[EarningsInfo]:
+def get_earnings(
+    session: Session,
+    symbol: str,
+    start_date: date
+) -> list[EarningsInfo]:
     """
     Retrieves earnings information for the given symbol.
 
@@ -145,7 +152,7 @@ def get_earnings(session: Session, symbol: str, start_date: date) -> list[Earnin
     symbol = symbol.replace('/', '%2F')
     params: dict[str, Any] = {'start-date': start_date}
     response = requests.get(
-        f'{session.base_url}/market-metrics/historic-corporate-events/earnings-reports/{symbol}',
+        f'{session.base_url}/market-metrics/historic-corporate-events/earnings-reports/{symbol}',  # noqa: E501
         headers=session.headers,
         params=params
     )

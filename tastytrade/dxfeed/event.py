@@ -8,7 +8,7 @@ class EventType(str, Enum):
     the quote streamer.
 
     Information on different types of events, their uses and their properties can be
-    found at the `dxfeed Knowledge Base <https://kb.dxfeed.com/en/data-model/dxfeed-api-market-events.html>`_.
+    found at the `dxfeed Knowledge Base <https://kb.dxfeed.com/en/data-model/dxfeed-api-market-events.html>`_.  # noqa: E501
     """
     CANDLE = 'Candle'
     GREEKS = 'Greeks'
@@ -24,18 +24,19 @@ class Event(ABC):
     @classmethod
     def from_stream(cls, data: list) -> list['Event']:
         """
-        Takes a list of raw trade data fetched by :class:`~tastyworks.streamer.DataStreamer`
-        and returns a list of :class:`~tastyworks.dxfeed.event.Event` objects.
+        Makes a list of event objects from a list of raw trade data fetched by
+        a :class:`~tastyworks.streamer.DataStreamer`.
 
         :param data: list of raw quote data from streamer
 
-        :return: list of :class:`~tastyworks.dxfeed.event.Event` objects from data
+        :return: list of event objects from data
         """
         objs = []
         size = len(cls.__dataclass_fields__)  # type: ignore
         multiples = len(data) / size
         if not multiples.is_integer():
-            raise Exception('Mapper data input values are not an integer multiple of the key size')
+            msg = 'Mapper data input values are not a multiple of the key size'
+            raise Exception(msg)
         for i in range(int(multiples)):
             offset = i * size
             local_values = data[offset:(i + 1) * size]

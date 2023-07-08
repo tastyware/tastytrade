@@ -6,7 +6,9 @@ from .event import Event
 @dataclass
 class Profile(Event):
     """
-    A Profile event provides the security instrument description. It represents the most recent information that is available about the traded security on the market at any given moment of time.
+    A Profile event provides the security instrument description. It
+    represents the most recent information that is available about the
+    traded security on the market at any given moment of time.
     """
     #: symbol of this event
     eventSymbol: str

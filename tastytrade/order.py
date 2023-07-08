@@ -342,7 +342,8 @@ class OrderChainEntry(TastytradeJsonDataclass):
 
 class OrderChainLeg(TastytradeJsonDataclass):
     """
-    Dataclass containing information about a single leg in an order from an order chain.
+    Dataclass containing information about a single leg in an order
+    from an order chain.
     """
     symbol: str
     instrument_type: InstrumentType
@@ -409,8 +410,9 @@ class ComputedData(TastytradeJsonDataclass):
 
 class OrderChain(TastytradeJsonDataclass):
     """
-    Dataclass containing information about an order chain: a group of orders for a
-    specific underlying, such as total P/L, rolls, current P/L in a symbol, etc.
+    Dataclass containing information about an order chain: a group of orders
+    for a specific underlying, such as total P/L, rolls, current P/L in a
+    symbol, etc.
     """
     id: int
     updated_at: datetime
