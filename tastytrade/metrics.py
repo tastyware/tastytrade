@@ -64,7 +64,6 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     liquidity_value: Decimal
     liquidity_rank: Decimal
     liquidity_rating: int
-    created_at: datetime
     updated_at: datetime
     option_expiration_implied_volatilities: list[OptionExpirationImpliedVolatility]  # noqa: E501
     liquidity_running_state: Liquidity
@@ -84,6 +83,7 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     iv_hv_30_day_difference: Decimal
     price_earnings_ratio: Decimal
     earnings_per_share: Decimal
+    created_at: Optional[datetime] = None
     dividend_ex_date: Optional[date] = None
     dividend_next_date: Optional[date] = None
     dividend_pay_date: Optional[date] = None
