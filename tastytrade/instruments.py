@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Optional, List, Dict
 
 import requests
 
@@ -105,7 +105,7 @@ class NestedOptionChainExpiration(TastytradeJsonDataclass):
     expiration_date: date
     days_to_expiration: int
     settlement_type: str
-    strikes: list[Strike]
+    strikes: List[Strike]
 
 
 class NestedFutureOptionChainExpiration(TastytradeJsonDataclass):
@@ -126,8 +126,8 @@ class NestedFutureOptionChainExpiration(TastytradeJsonDataclass):
     option_contract_symbol: str
     stops_trading_at: datetime
     settlement_type: str
-    strikes: list[Strike]
-    tick_sizes: list[TickSize]
+    strikes: List[Strike]
+    tick_sizes: List[TickSize]
 
 
 class NestedFutureOptionFuture(TastytradeJsonDataclass):
@@ -178,13 +178,13 @@ class Cryptocurrency(TradeableTastytradeJsonDataclass):
     is_closing_only: bool
     active: bool
     tick_size: Decimal
-    destination_venue_symbols: list[DestinationVenueSymbol]
+    destination_venue_symbols: List[DestinationVenueSymbol]
     streamer_symbol: Optional[str] = None
 
     @classmethod
     def get_cryptocurrencies(
-        cls, session: Session, symbols: list[str] = []
-    ) -> list['Cryptocurrency']:
+        cls, session: Session, symbols: List[str] = []
+    ) -> List['Cryptocurrency']:
         """
         Returns a list of cryptocurrency objects from the given symbols.
 
@@ -254,8 +254,8 @@ class Equity(TradeableTastytradeJsonDataclass):
     halted_at: Optional[datetime] = None
     stops_trading_at: Optional[datetime] = None
     is_fractional_quantity_eligible: Optional[bool] = None
-    tick_sizes: Optional[list[TickSize]] = None
-    option_tick_sizes: Optional[list[TickSize]] = None
+    tick_sizes: Optional[List[TickSize]] = None
+    option_tick_sizes: Optional[List[TickSize]] = None
 
     @classmethod
     def get_active_equities(
@@ -264,7 +264,7 @@ class Equity(TradeableTastytradeJsonDataclass):
         per_page: int = 1000,
         page_offset: Optional[int] = None,
         lendability: Optional[str] = None
-    ) -> list['Equity']:
+    ) -> List['Equity']:
         """
         Returns a list of actively traded :class:`Equity` objects.
 
@@ -284,7 +284,7 @@ class Equity(TradeableTastytradeJsonDataclass):
         if page_offset is None:
             page_offset = 0
             paginate = True
-        params: dict[str, Any] = {
+        params: Dict[str, Any] = {
             'per-page': per_page,
             'page-offset': page_offset,
             'lendability': lendability
@@ -317,11 +317,11 @@ class Equity(TradeableTastytradeJsonDataclass):
     def get_equities(
         cls,
         session: Session,
-        symbols: Optional[list[str]] = None,
+        symbols: Optional[List[str]] = None,
         lendability: Optional[str] = None,
         is_index: Optional[bool] = None,
         is_etf: Optional[bool] = None
-    ) -> list['Equity']:
+    ) -> List['Equity']:
         """
         Returns a list of :class:`Equity` objects from the given symbols.
 
@@ -335,7 +335,7 @@ class Equity(TradeableTastytradeJsonDataclass):
 
         :return: a list of :class:`Equity` objects.
         """
-        params: dict[str, Any] = {
+        params: Dict[str, Any] = {
             'symbol[]': symbols,
             'lendability': lendability,
             'is-index': is_index,
@@ -409,10 +409,10 @@ class Option(TradeableTastytradeJsonDataclass):
     def get_options(
         cls,
         session: Session,
-        symbols: Optional[list[str]] = None,
+        symbols: Optional[List[str]] = None,
         active: Optional[bool] = None,
         with_expired: Optional[bool] = None
-    ) -> list['Option']:
+    ) -> List['Option']:
         """
         Returns a list of :class:`Option` objects from the given symbols.
 
@@ -423,7 +423,7 @@ class Option(TradeableTastytradeJsonDataclass):
 
         :return: a list of :class:`Option` objects.
         """
-        params: dict[str, Any] = {
+        params: Dict[str, Any] = {
             'symbol[]': symbols,
             'active': active,
             'with-expired': with_expired
@@ -494,9 +494,9 @@ class NestedOptionChain(TastytradeJsonDataclass):
     root_symbol: str
     option_chain_type: str
     shares_per_contract: int
-    tick_sizes: list[TickSize]
-    deliverables: list[Deliverable]
-    expirations: list[NestedOptionChainExpiration]
+    tick_sizes: List[TickSize]
+    deliverables: List[Deliverable]
+    expirations: List[NestedOptionChainExpiration]
 
     @classmethod
     def get_chain(cls, session: Session, symbol: str) -> 'NestedOptionChain':
@@ -534,8 +534,8 @@ class FutureProduct(TastytradeJsonDataclass):
     description: str
     exchange: str
     product_type: str
-    listed_months: list[FutureMonthCode]
-    active_months: list[FutureMonthCode]
+    listed_months: List[FutureMonthCode]
+    active_months: List[FutureMonthCode]
     notional_multiplier: Decimal
     tick_size: Decimal
     display_factor: Decimal
@@ -557,13 +557,13 @@ class FutureProduct(TastytradeJsonDataclass):
     clearport_code: Optional[str] = None
     legacy_code: Optional[str] = None
     legacy_exchange_code: Optional[str] = None
-    option_products: Optional[list['FutureOptionProduct']] = None
+    option_products: Optional[List['FutureOptionProduct']] = None
 
     @classmethod
     def get_future_products(
         cls,
         session: Session
-    ) -> list['FutureProduct']:
+    ) -> List['FutureProduct']:
         """
         Returns a list of :class:`FutureProduct` objects available.
 
@@ -643,17 +643,17 @@ class Future(TradeableTastytradeJsonDataclass):
     roll_target_symbol: Optional[str] = None
     true_underlying_symbol: Optional[str] = None
     future_etf_equivalent: Optional[FutureEtfEquivalent] = None
-    tick_sizes: Optional[list[TickSize]] = None
-    option_tick_sizes: Optional[list[TickSize]] = None
-    spread_tick_sizes: Optional[list[TickSize]] = None
+    tick_sizes: Optional[List[TickSize]] = None
+    option_tick_sizes: Optional[List[TickSize]] = None
+    spread_tick_sizes: Optional[List[TickSize]] = None
 
     @classmethod
     def get_futures(
         cls,
         session: Session,
-        symbols: Optional[list[str]] = None,
-        product_codes: Optional[list[str]] = None
-    ) -> list['Future']:
+        symbols: Optional[List[str]] = None,
+        product_codes: Optional[List[str]] = None
+    ) -> List['Future']:
         """
         Returns a list of :class:`Future` objects from the given symbols
         or product codes.
@@ -667,7 +667,7 @@ class Future(TradeableTastytradeJsonDataclass):
 
         :return: a list of :class:`Future` objects.
         """
-        params: dict[str, Any] = {
+        params: Dict[str, Any] = {
             'symbol[]': symbols,
             'product-code[]': product_codes
         }
@@ -732,7 +732,7 @@ class FutureOptionProduct(TastytradeJsonDataclass):
     def get_future_option_products(
         cls,
         session: Session
-    ) -> list['FutureOptionProduct']:
+    ) -> List['FutureOptionProduct']:
         """
         Returns a list of :class:`FutureOptionProduct` objects available.
 
@@ -821,12 +821,12 @@ class FutureOption(TradeableTastytradeJsonDataclass):
     def get_future_options(
         cls,
         session: Session,
-        symbols: Optional[list[str]] = None,
+        symbols: Optional[List[str]] = None,
         root_symbol: Optional[str] = None,
         expiration_date: Optional[date] = None,
         option_type: Optional[OptionType] = None,
         strike_price: Optional[Decimal] = None
-    ) -> list['FutureOption']:
+    ) -> List['FutureOption']:
         """
         Returns a list of :class:`FutureOption` objects from the given symbols.
 
@@ -843,7 +843,7 @@ class FutureOption(TradeableTastytradeJsonDataclass):
 
         :return: a list of :class:`FutureOption` objects.
         """
-        params: dict[str, Any] = {
+        params: Dict[str, Any] = {
             'symbol[]': symbols,
             'option-root-symbol': root_symbol,
             'expiration-date': expiration_date,
@@ -895,7 +895,7 @@ class NestedFutureOptionSubchain(TastytradeJsonDataclass):
     underlying_symbol: str
     root_symbol: str
     exercise_style: str
-    expirations: list[NestedFutureOptionChainExpiration]
+    expirations: List[NestedFutureOptionChainExpiration]
 
 
 class NestedFutureOptionChain(TastytradeJsonDataclass):
@@ -907,8 +907,8 @@ class NestedFutureOptionChain(TastytradeJsonDataclass):
     want to create actual :class:`FutureOption` objects you'll need to make an
     extra API request or two.
     """
-    futures: list[NestedFutureOptionFuture]
-    option_chains: list[NestedFutureOptionSubchain]
+    futures: List[NestedFutureOptionFuture]
+    option_chains: List[NestedFutureOptionSubchain]
 
     @classmethod
     def get_chain(
@@ -953,8 +953,8 @@ class Warrant(TastytradeJsonDataclass):
     def get_warrants(
         cls,
         session: Session,
-        symbols: Optional[list[str]] = None
-    ) -> list['Warrant']:
+        symbols: Optional[List[str]] = None
+    ) -> List['Warrant']:
         """
         Returns a list of :class:`Warrant` objects from the given symbols.
 
@@ -1002,7 +1002,7 @@ FutureProduct.update_forward_refs()
 
 def get_quantity_decimal_precisions(
     session: Session
-) -> list[QuantityDecimalPrecision]:
+) -> List[QuantityDecimalPrecision]:
     """
     Returns a list of :class:`QuantityDecimalPrecision` objects for different
     types of instruments.
@@ -1025,7 +1025,7 @@ def get_quantity_decimal_precisions(
 def get_option_chain(
     session: Session,
     symbol: str
-) -> dict[date, list[Option]]:
+) -> Dict[date, List[Option]]:
     """
     Returns a mapping of expiration date to a list of option objects
     representing the options chain for the given symbol.
@@ -1062,7 +1062,7 @@ def get_option_chain(
 def get_future_option_chain(
     session: Session,
     symbol: str
-) -> dict[date, list[FutureOption]]:
+) -> Dict[date, List[FutureOption]]:
     """
     Returns a mapping of expiration date to a list of futures options
     objects representing the options chain for the given symbol.

@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any, Optional, Dict, List
 
 import requests
 
@@ -180,7 +180,7 @@ class MarginReportEntry(TastytradeJsonDataclass):
     maintenance_requirement_effect: PriceEffect
     buying_power: Decimal
     buying_power_effect: PriceEffect
-    groups: list[dict[str, Any]]
+    groups: List[Dict[str, Any]]
     price_increase_percent: Decimal
     price_decrease_percent: Decimal
 
@@ -207,7 +207,7 @@ class MarginReport(TastytradeJsonDataclass):
     reg_t_option_buying_power_effect: PriceEffect
     maintenance_excess: Decimal
     maintenance_excess_effect: PriceEffect
-    groups: list[MarginReportEntry]
+    groups: List[MarginReportEntry]
     last_state_timestamp: int
     initial_requirement: Optional[Decimal] = None
     initial_requirement_effect: Optional[PriceEffect] = None
@@ -355,7 +355,7 @@ class Transaction(TastytradeJsonDataclass):
     other_charge_description: Optional[str] = None
     reverses_id: Optional[int] = None
     cost_basis_reconciliation_date: Optional[date] = None
-    lots: Optional[list[Lot]] = None
+    lots: Optional[List[Lot]] = None
     agency_price: Optional[Decimal] = None
     principal_price: Optional[Decimal] = None
 
@@ -396,7 +396,7 @@ class Account(TastytradeJsonDataclass):
         cls,
         session: Session,
         include_closed=False
-    ) -> list['Account']:
+    ) -> List['Account']:
         """
         Gets all trading accounts from the Tastyworks platform. By default
         excludes closed accounts from the results.
@@ -480,7 +480,7 @@ class Account(TastytradeJsonDataclass):
         session: Session,
         snapshot_date: Optional[date] = None,
         time_of_day: Optional[str] = None
-    ) -> list[AccountBalanceSnapshot]:
+    ) -> List[AccountBalanceSnapshot]:
         """
         Returns a list of two balance snapshots. The first one is the
         specified date, or, if not provided, the oldest snapshot available.
@@ -516,15 +516,15 @@ class Account(TastytradeJsonDataclass):
     def get_positions(
         self,
         session: Session,
-        underlying_symbols: Optional[list[str]] = None,
+        underlying_symbols: Optional[List[str]] = None,
         symbol: Optional[str] = None,
         instrument_type: Optional[InstrumentType] = None,
         include_closed: bool = False,
         underlying_product_code: Optional[str] = None,
-        partition_keys: Optional[list[str]] = None,
+        partition_keys: Optional[List[str]] = None,
         net_positions: bool = False,
         include_marks: bool = False
-    ) -> list[CurrentPosition]:
+    ) -> List[CurrentPosition]:
         """
         Get the current positions of the account.
 
@@ -572,8 +572,8 @@ class Account(TastytradeJsonDataclass):
         page_offset: Optional[int] = None,
         sort: str = 'Desc',
         type: Optional[str] = None,
-        types: Optional[list[str]] = None,
-        sub_types: Optional[list[str]] = None,
+        types: Optional[List[str]] = None,
+        sub_types: Optional[List[str]] = None,
         start_date: Optional[date] = None,
         end_date: date = date.today(),
         instrument_type: Optional[InstrumentType] = None,
@@ -584,7 +584,7 @@ class Account(TastytradeJsonDataclass):
         futures_symbol: Optional[str] = None,
         start_at: Optional[datetime] = None,
         end_at: Optional[datetime] = None
-    ) -> list[Transaction]:
+    ) -> List[Transaction]:
         """
         Get transaction history of the account.
 
@@ -683,7 +683,7 @@ class Account(TastytradeJsonDataclass):
         self,
         session: Session,
         date: date = date.today()
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """
         Get the total fees for a given date.
 
@@ -707,7 +707,7 @@ class Account(TastytradeJsonDataclass):
         session: Session,
         time_back: Optional[str] = None,
         start_time: Optional[datetime] = None
-    ) -> list[NetLiqOhlc]:
+    ) -> List[NetLiqOhlc]:
         """
         Returns a list of account net liquidating value snapshots over the
         specified time period.
@@ -809,7 +809,7 @@ class Account(TastytradeJsonDataclass):
 
         return MarginReport(**data)
 
-    def get_live_orders(self, session: Session) -> list[PlacedOrder]:
+    def get_live_orders(self, session: Session) -> List[PlacedOrder]:
         """
         Get all live orders for the account.
 
@@ -866,13 +866,13 @@ class Account(TastytradeJsonDataclass):
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
         underlying_symbol: Optional[str] = None,
-        statuses: Optional[list[OrderStatus]] = None,
+        statuses: Optional[List[OrderStatus]] = None,
         futures_symbol: Optional[str] = None,
         underlying_instrument_type: Optional[InstrumentType] = None,
         sort: str = 'Desc',
         start_at: Optional[datetime] = None,
         end_at: Optional[datetime] = None
-    ) -> list[PlacedOrder]:
+    ) -> List[PlacedOrder]:
         """
         Get order history of the account.
 

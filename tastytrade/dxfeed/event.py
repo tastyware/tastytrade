@@ -1,6 +1,6 @@
 from abc import ABC
 from enum import Enum
-
+from typing import List
 
 class EventType(str, Enum):
     """
@@ -22,7 +22,7 @@ class EventType(str, Enum):
 
 class Event(ABC):
     @classmethod
-    def from_stream(cls, data: list) -> list['Event']:
+    def from_stream(cls, data: list) -> List['Event']:
         """
         Makes a list of event objects from a list of raw trade data fetched by
         a :class:`~tastyworks.streamer.DataStreamer`.

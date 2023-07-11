@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 
 import requests
 
@@ -89,7 +89,7 @@ class Session:
         )
         return (response.status_code // 100 == 2)
 
-    def get_customer(self) -> dict[str, Any]:
+    def get_customer(self) -> Dict[str, Any]:
         """
         Gets the customer dict from the API.
 
