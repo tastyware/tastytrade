@@ -40,7 +40,8 @@ class Session:
         elif remember_token:
             body['remember-token'] = remember_token
         else:
-            print("Error: you must provide a password or remember token to log in.")
+            print("Error: you must provide a password or remember "
+                  "token to log in.")
         #: The base url to use for API requests
         self.base_url: str = CERT_URL if is_certification else API_URL
         #: Whether or not this session is using the certification API
