@@ -1,8 +1,10 @@
+from typing import List
+
 import requests
 
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeJsonDataclass
-from typing import List
+
 
 class SymbolData(TastytradeJsonDataclass):
     """

@@ -2,6 +2,7 @@ from abc import ABC
 from enum import Enum
 from typing import List
 
+
 class EventType(str, Enum):
     """
     This is an :class:`~enum.Enum` that contains the valid subscription types for

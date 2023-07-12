@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Optional, Dict, List
+from typing import Any, Dict, List, Optional
 
 import requests
 
