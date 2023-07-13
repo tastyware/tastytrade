@@ -469,7 +469,7 @@ class DataStreamer:
 
     async def subscribe_candle(
         self,
-        symbols: list[str],
+        symbols: List[str],
         interval: str,
         start_time: datetime,
         end_time: Optional[datetime] = None,
