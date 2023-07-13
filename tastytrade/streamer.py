@@ -6,27 +6,18 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any, AsyncIterator, Optional, Union
 
-import requests
 import websockets
 
 from tastytrade import logger
 from tastytrade.account import (Account, AccountBalance, CurrentPosition,
                                 TradingStatus)
-from tastytrade.dxfeed import Channel
-from tastytrade.dxfeed.candle import Candle
-from tastytrade.dxfeed.event import Event, EventType
-from tastytrade.dxfeed.greeks import Greeks
-from tastytrade.dxfeed.profile import Profile
-from tastytrade.dxfeed.quote import Quote
-from tastytrade.dxfeed.summary import Summary
-from tastytrade.dxfeed.theoprice import TheoPrice
-from tastytrade.dxfeed.timeandsale import TimeAndSale
-from tastytrade.dxfeed.trade import Trade
+from tastytrade.dxfeed import (Candle, Channel, Event, EventType, Greeks,
+                               Profile, Quote, Summary, TheoPrice, TimeAndSale,
+                               Trade, Underlying)
 from tastytrade.order import (InstrumentType, OrderChain, PlacedOrder,
                               PriceEffect)
 from tastytrade.session import Session
-from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
-                              validate_response)
+from tastytrade.utils import TastytradeError, TastytradeJsonDataclass
 from tastytrade.watchlists import Watchlist
 
 CERT_STREAMER_URL = 'wss://streamer.cert.tastyworks.com'
@@ -277,25 +268,24 @@ class DataStreamer:
 
     """
     def __init__(self, session: Session):
-        #: The active session used to initiate the streamer or make requests
-        self.session: Session = session
-
         self._counter = 0
         self._lock: Lock = Lock()
-        self._queue: Queue = Queue()
-        self._queue_candle: Queue = Queue()
+        self._queues: dict[str, Queue] = {
+            EventType.CANDLE: Queue(),
+            EventType.GREEKS: Queue(),
+            EventType.PROFILE: Queue(),
+            EventType.QUOTE: Queue(),
+            EventType.SUMMARY: Queue(),
+            EventType.THEO_PRICE: Queue(),
+            EventType.TIME_AND_SALE: Queue(),
+            EventType.TRADE: Queue(),
+            EventType.UNDERLYING: Queue()
+        }
         #: The unique client identifier received from the server
         self.client_id: Optional[str] = None
 
-        response = requests.get(
-            f'{session.base_url}/quote-streamer-tokens',
-            headers=session.headers
-        )
-        validate_response(response)
-        logger.debug('response %s', json.dumps(response.json()))
-        self._auth_token = response.json()['data']['token']
-        url = response.json()['data']['websocket-url'] + '/cometd'
-        self._wss_url = url.replace('https', 'wss')
+        self._auth_token = session.streamer_token
+        self._wss_url = session.streamer_url
 
         self._connect_task = asyncio.create_task(self._connect())
 
@@ -353,12 +343,10 @@ class DataStreamer:
                 raw_message = await self._websocket.recv()
                 message = json.loads(raw_message)[0]
 
-                if message['channel'] == Channel.DATA:
+                if (message['channel'] == Channel.DATA or
+                        message['channel'] == Channel.TIME_SERIES):
                     logger.debug('data received: %s', message)
-                    await self._queue.put(message['data'])
-                elif message['channel'] == Channel.CANDLE:
-                    logger.debug('candle received: %s', message)
-                    await self._queue_candle.put(message['data'])
+                    await self._map_message(message['data'])
                 elif message['channel'] == Channel.SUBSCRIPTION:
                     logger.debug('sub received: %s', message)
 
@@ -388,28 +376,19 @@ class DataStreamer:
         }
         await self._websocket.send(json.dumps([message]))
 
-    async def listen(self) -> AsyncIterator[Event]:
+    async def listen(
+        self,
+        event_type: EventType
+    ) -> AsyncIterator[Event]:
         """
-        Using the existing subscriptions, pulls events and yield returns
-        them. Never exits unless there's an error or the channel is closed.
-        """
-        while True:
-            raw_data = await self._queue.get()
-            messages = self._map_message(raw_data)
-            for message in messages:
-                yield message
+        Using the existing subscriptions, pulls events of the given type and
+        yield returns them. Never exits unless there's an error or the channel
+        is closed.
 
-    async def listen_candle(self) -> AsyncIterator[Candle]:
-        """
-        Using the existing subscriptions, pulls candles and yield
-        returns them.
-        Never exits unless there's an error or the channel is closed.
+        :param event_type: the type of event to listen for
         """
         while True:
-            raw_data = await self._queue_candle.get()
-            messages = self._map_message(raw_data)
-            for message in messages:
-                yield message  # type: ignore
+            yield await self._queues[event_type].get()
 
     def close(self) -> None:
         """
@@ -445,6 +424,7 @@ class DataStreamer:
         """
         Subscribes to quotes for given list of symbols. Used for recurring data
         feeds.
+        For candles, use :meth:`subscribe_candle` instead.
 
         :param event_type: type of subscription to add
         :param symbols: list of symbols to subscribe for
@@ -472,6 +452,7 @@ class DataStreamer:
     ) -> None:
         """
         Removes existing subscription for given list of symbols.
+        For candles, use :meth:`unsubscribe_candle` instead.
 
         :param event_type: type of subscription to remove
         :param symbols: list of symbols to unsubscribe from
@@ -480,10 +461,7 @@ class DataStreamer:
         message = {
             'id': id,
             'channel': Channel.SUBSCRIPTION,
-            'data': {
-                'reset': False,
-                'remove': {event_type: symbols}
-            },
+            'data': {'remove': {event_type: symbols}},
             'clientId': self.client_id
         }
         logger.debug('sending unsubscription: %s', message)
@@ -491,58 +469,86 @@ class DataStreamer:
 
     async def subscribe_candle(
         self,
-        ticker: str,
+        symbols: list[str],
+        interval: str,
         start_time: datetime,
-        interval: str
+        end_time: Optional[datetime] = None,
+        extended_trading_hours: bool = False,
+        reset: bool = False
     ) -> None:
         """
-        Subscribes to candle-style 'OHLC' data for the given symbol.
+        Subscribes to time series data for the given symbol.
 
-        :param ticker: symbol to get date for
-        :param start_time: starting time for the data range
+        :param symbols: list of symbols to get data for
         :param interval:
-            the width of each candle in time, e.g. '5m', '1h', '3d',
+            the width of each candle in time, e.g. '15s', '5m', '1h', '3d',
             '1w', '1mo'
+        :param start_time: starting time for the data range
+        :param end_time: ending time for the data range
+        :param extended_trading_hours: whether to include extended trading
+        :param reset: whether to reset the subscription list
         """
         id = await self._next_id()
+        key = EventType.CANDLE
         message = {
             'id': id,
             'channel': Channel.SUBSCRIPTION,
             'data': {
+                'reset': reset,
                 'addTimeSeries': {
-                    'Candle': [{
-                        'eventSymbol': f'{ticker}{{={interval}}}',
+                    key: [{
+                        'eventSymbol': f'{ticker}{{={interval},tho=true}}'
+                        if extended_trading_hours
+                        else f'{ticker}{{={interval}}}',
                         'fromTime': int(start_time.timestamp() * 1000)
-                    }]
+                    } for ticker in symbols]
                 }
             },
             'clientId': self.client_id
         }
-        logger.debug('sending subscription: %s', message)
+        if end_time is not None:
+            message['data']['addTimeSeries'][key][0]['toTime'] = \
+                int(end_time.timestamp() * 1000)
         await self._websocket.send(json.dumps([message]))
 
-    async def unsubscribe_candle(self, ticker: str, interval: str) -> None:
+    async def unsubscribe_candle(
+        self,
+        ticker: str,
+        interval: Optional[str] = None,
+        extended_trading_hours: bool = False
+    ) -> None:
         """
-        Removes existing candle subscription for given list of symbols.
+        Removes existing subscription for a candle.
 
         :param ticker: symbol to unsubscribe from
         :param interval: candle width to unsubscribe from
+        :param extended_trading_hours:
+            whether candle to unsubscribe from contains extended trading hours
         """
         id = await self._next_id()
         message = {
             'id': id,
             'channel': Channel.SUBSCRIPTION,
             'data': {
-                'removeTimeSeries': {'Candle': [f'{ticker}{{={interval}}}']}
+                'removeTimeSeries': {
+                    EventType.CANDLE: [
+                        f'{ticker}{{={interval},tho=true}}'
+                        if extended_trading_hours
+                        else f'{ticker}{{={interval}}}'
+                    ]
+                }
             },
             'clientId': self.client_id
         }
         logger.debug('sending unsubscription: %s', message)
         await self._websocket.send(json.dumps([message]))
 
-    def _map_message(self, message) -> list[Event]:
+    async def _map_message(self, message) -> None:
         """
-        Takes the raw JSON data and returns a list of parsed event objects.
+        Takes the raw JSON data, parses the events and places them into their
+        respective queues.
+
+        :param message: raw JSON data from the websocket
         """
         # the first time around, types are shown
         if isinstance(message[0], str):
@@ -554,21 +560,40 @@ class DataStreamer:
 
         # parse type or warn for unknown type
         if msg_type == EventType.CANDLE:
-            return Candle.from_stream(data)
+            candles = Candle.from_stream(data)
+            for candle in candles:
+                await self._queues[EventType.CANDLE].put(candle)
         elif msg_type == EventType.GREEKS:
-            return Greeks.from_stream(data)
+            greeks = Greeks.from_stream(data)
+            for greek in greeks:
+                await self._queues[EventType.GREEKS].put(greek)
         elif msg_type == EventType.PROFILE:
-            return Profile.from_stream(data)
+            profiles = Profile.from_stream(data)
+            for profile in profiles:
+                await self._queues[EventType.PROFILE].put(profile)
         elif msg_type == EventType.QUOTE:
-            return Quote.from_stream(data)
+            quotes = Quote.from_stream(data)
+            for quote in quotes:
+                await self._queues[EventType.QUOTE].put(quote)
         elif msg_type == EventType.SUMMARY:
-            return Summary.from_stream(data)
+            summaries = Summary.from_stream(data)
+            for summary in summaries:
+                await self._queues[EventType.SUMMARY].put(summary)
         elif msg_type == EventType.THEO_PRICE:
-            return TheoPrice.from_stream(data)
+            theo_prices = TheoPrice.from_stream(data)
+            for theo_price in theo_prices:
+                await self._queues[EventType.THEO_PRICE].put(theo_price)
         elif msg_type == EventType.TIME_AND_SALE:
-            return TimeAndSale.from_stream(data)
+            time_and_sales = TimeAndSale.from_stream(data)
+            for tas in time_and_sales:
+                await self._queues[EventType.TIME_AND_SALE].put(tas)
         elif msg_type == EventType.TRADE:
-            return Trade.from_stream(data)
+            trades = Trade.from_stream(data)
+            for trade in trades:
+                await self._queues[EventType.TRADE].put(trade)
+        elif msg_type == EventType.UNDERLYING:
+            underlyings = Underlying.from_stream(data)
+            for underlying in underlyings:
+                await self._queues[EventType.UNDERLYING].put(underlying)
         else:
-            msg = f'Unknown message type received from streamer: {message}'
-            raise TastytradeError(msg)
+            raise TastytradeError(f'Unknown message type received: {message}')
