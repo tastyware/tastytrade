@@ -13,14 +13,12 @@
 Tastytrade Python SDK
 =====================
 
-.. inclusion-marker
-
 A simple, reverse-engineered SDK for Tastytrade built on their (now mostly public) API. This will allow you to create trading algorithms for whatever strategies you may have quickly and painlessly in Python.
 
 Installation
 ------------
 
-.. code-block:: bash
+::
 
    $ pip install tastytrade
 
@@ -38,7 +36,7 @@ You can create a real session using your normal login, or a certification (test)
 Using the streamer
 ------------------
 
-The streamer is a websocket connection to the Tastytrade API that allows you to subscribe to real-time data for Quotes, Greeks, and more.
+The streamer is a websocket connection to dxfeed (the Tastytrade data provider) that allows you to subscribe to real-time data for quotes, greeks, and more.
 
 .. code-block:: python
 
@@ -47,8 +45,8 @@ The streamer is a websocket connection to the Tastytrade API that allows you to 
    streamer = await DataStreamer.create(session)
    subs_list = ['SPY', 'SPX']
 
-   # this function fetches quotes once, then closes the subscription
    await streamer.subscribe(EventType.QUOTE, subs_list)
+   # this example fetches quotes once, then exits
    quotes = []
    async for quote in streamer.listen():
       quotes.append(quote)
