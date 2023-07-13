@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 
@@ -65,7 +65,7 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     liquidity_rank: Decimal
     liquidity_rating: int
     updated_at: datetime
-    option_expiration_implied_volatilities: list[OptionExpirationImpliedVolatility]  # noqa: E501
+    option_expiration_implied_volatilities: List[OptionExpirationImpliedVolatility]  # noqa: E501
     liquidity_running_state: Liquidity
     beta: Decimal
     beta_updated_at: datetime
@@ -92,8 +92,8 @@ class MarketMetricInfo(TastytradeJsonDataclass):
 
 def get_market_metrics(
     session: Session,
-    symbols: list[str]
-) -> list[MarketMetricInfo]:
+    symbols: List[str]
+) -> List[MarketMetricInfo]:
     """
     Retrieves market metrics for the given symbols.
 
@@ -114,7 +114,7 @@ def get_market_metrics(
     return [MarketMetricInfo(**entry) for entry in data]
 
 
-def get_dividends(session: Session, symbol: str) -> list[DividendInfo]:
+def get_dividends(session: Session, symbol: str) -> List[DividendInfo]:
     """
     Retrieves dividend information for the given symbol.
 
@@ -139,7 +139,7 @@ def get_earnings(
     session: Session,
     symbol: str,
     start_date: date
-) -> list[EarningsInfo]:
+) -> List[EarningsInfo]:
     """
     Retrieves earnings information for the given symbol.
 
@@ -150,7 +150,7 @@ def get_earnings(
     :return: a list of Tastytrade 'EarningsInfo' objects in JSON format.
     """
     symbol = symbol.replace('/', '%2F')
-    params: dict[str, Any] = {'start-date': start_date}
+    params: Dict[str, Any] = {'start-date': start_date}
     response = requests.get(
         f'{session.base_url}/market-metrics/historic-corporate-events/earnings-reports/{symbol}',  # noqa: E501
         headers=session.headers,

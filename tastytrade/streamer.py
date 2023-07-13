@@ -4,7 +4,7 @@ from asyncio import Lock, Queue
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, AsyncIterator, Optional, Union
+from typing import Any, AsyncIterator, Dict, List, Optional, Union
 
 import requests
 import websockets
@@ -189,7 +189,7 @@ class AlertStreamer:
         else:
             raise TastytradeError(f'Unknown message type: {type_str}\n{data}')
 
-    async def account_subscribe(self, accounts: list[Account]) -> None:
+    async def account_subscribe(self, accounts: List[Account]) -> None:
         """
         Subscribes to account-level updates (balances, orders, positions).
 
@@ -239,13 +239,13 @@ class AlertStreamer:
     async def _subscribe(
         self,
         subscription: SubscriptionType,
-        value: Union[Optional[str], list[str]] = ''
+        value: Union[Optional[str], List[str]] = ''
     ) -> None:
         """
         Subscribes to a :class:`SubscriptionType`. Depending on the kind of
         subscription, the value parameter may be required.
         """
-        message: dict[str, Any] = {
+        message: Dict[str, Any] = {
             'auth-token': self.token,
             'action': subscription
         }
@@ -439,7 +439,7 @@ class DataStreamer:
     async def subscribe(
         self,
         event_type: EventType,
-        symbols: list[str],
+        symbols: List[str],
         reset: bool = False
     ) -> None:
         """
@@ -468,7 +468,7 @@ class DataStreamer:
     async def unsubscribe(
         self,
         event_type: EventType,
-        symbols: list[str]
+        symbols: List[str]
     ) -> None:
         """
         Removes existing subscription for given list of symbols.
@@ -540,7 +540,7 @@ class DataStreamer:
         logger.debug('sending unsubscription: %s', message)
         await self._websocket.send(json.dumps([message]))
 
-    def _map_message(self, message) -> list[Event]:
+    def _map_message(self, message) -> List[Event]:
         """
         Takes the raw JSON data and returns a list of parsed event objects.
         """

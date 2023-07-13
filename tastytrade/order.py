@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
+from typing import Dict, List, Optional
 
 from tastytrade import VERSION
 from tastytrade.utils import TastytradeJsonDataclass
@@ -120,7 +120,7 @@ class Leg(TastytradeJsonDataclass):
     action: OrderAction
     quantity: Decimal
     remaining_quantity: Optional[Decimal] = None
-    fills: Optional[list[FillInfo]] = None
+    fills: Optional[List[FillInfo]] = None
 
 
 class TradeableTastytradeJsonDataclass(TastytradeJsonDataclass):
@@ -187,7 +187,7 @@ class OrderCondition(TastytradeJsonDataclass):
     is_threshold_based_on_notional: bool
     triggered_at: datetime
     triggered_value: Decimal
-    price_components: list[OrderConditionPriceComponent]
+    price_components: List[OrderConditionPriceComponent]
 
 
 class OrderRule(TastytradeJsonDataclass):
@@ -198,7 +198,7 @@ class OrderRule(TastytradeJsonDataclass):
     routed_at: datetime
     cancel_at: datetime
     cancelled_at: datetime
-    order_conditions: list[OrderCondition]
+    order_conditions: List[OrderCondition]
 
 
 class NewOrder(TastytradeJsonDataclass):
@@ -209,7 +209,7 @@ class NewOrder(TastytradeJsonDataclass):
     time_in_force: OrderTimeInForce
     order_type: OrderType
     source: str = f'tastyware/tastytrade:v{VERSION}'
-    legs: list[Leg]
+    legs: List[Leg]
     gtc_date: Optional[date] = None
     stop_trigger: Optional[Decimal] = None
     price: Optional[Decimal] = None  # optional for market orders
@@ -237,7 +237,7 @@ class PlacedOrder(TastytradeJsonDataclass):
     editable: bool
     edited: bool
     updated_at: datetime
-    legs: list[Leg]
+    legs: List[Leg]
     id: Optional[str] = None
     price: Optional[Decimal] = None
     price_effect: Optional[PriceEffect] = None
@@ -276,8 +276,8 @@ class ComplexOrder(TastytradeJsonDataclass):
     ratio_price_threshold: Decimal
     ratio_price_comparator: str
     ratio_price_is_threshold_based_on_notional: bool
-    related_orders: list[dict[str, str]]
-    orders: list[PlacedOrder]
+    related_orders: List[Dict[str, str]]
+    orders: List[PlacedOrder]
     trigger_order: PlacedOrder
 
 
@@ -325,8 +325,8 @@ class PlacedOrderResponse(TastytradeJsonDataclass):
     fee_calculation: FeeCalculation
     order: Optional[PlacedOrder] = None
     complex_order: Optional[ComplexOrder] = None
-    warnings: Optional[list[Message]] = None
-    errors: Optional[list[Message]] = None
+    warnings: Optional[List[Message]] = None
+    errors: Optional[List[Message]] = None
 
 
 class OrderChainEntry(TastytradeJsonDataclass):
@@ -369,8 +369,8 @@ class OrderChainNode(TastytradeJsonDataclass):
     fill_cost_per_quantity_effect: Optional[PriceEffect] = None
     order_fill_count: Optional[int] = None
     roll: Optional[bool] = None
-    legs: Optional[list[OrderChainLeg]] = None
-    entries: Optional[list[OrderChainEntry]] = None
+    legs: Optional[List[OrderChainLeg]] = None
+    entries: Optional[List[OrderChainEntry]] = None
 
 
 class ComputedData(TastytradeJsonDataclass):
@@ -403,7 +403,7 @@ class ComputedData(TastytradeJsonDataclass):
     total_cost_effect: PriceEffect
     gcd_open_quantity: Decimal
     fees_missing: bool
-    open_entries: list[OrderChainEntry]
+    open_entries: List[OrderChainEntry]
     total_cost_per_unit: Optional[Decimal] = None
     total_cost_per_unit_effect: Optional[PriceEffect] = None
 
@@ -422,4 +422,4 @@ class OrderChain(TastytradeJsonDataclass):
     underlying_symbol: str
     computed_data: ComputedData
     lite_nodes_sizes: int
-    lite_nodes: list[OrderChainNode]
+    lite_nodes: List[OrderChainNode]
