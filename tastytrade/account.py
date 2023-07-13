@@ -726,9 +726,7 @@ class Account(TastytradeJsonDataclass):
         params: Dict[str, Any] = {}
         if start_time:
             # format to Tastytrade DateTime format
-            start_time = str(start_time).replace(' ', 'T')
-            start_time = start_time.split('.')[0] + 'Z'  # type: ignore
-            params = {'start-time': start_time}
+            params = {'start-time': start_time.strftime('%Y-%m-%dT%H:%M:%SZ')}
         elif not time_back:
             msg = 'Either time_back or start_time must be specified.'
             raise TastytradeError(msg)
