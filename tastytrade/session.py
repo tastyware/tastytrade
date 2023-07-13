@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 
@@ -16,42 +16,43 @@ class Session:
     remote API.
 
     :param login: tastytrade username or email
-    :param password:
-        tastytrade password or a remember token obtained previously
     :param remember_me:
-        whether or not to create a single-use remember token to use in place
-        of a password; currently appears to be bugged.
+        whether or not to create a remember token to use instead of a password
+    :param is_certification: whether or not to use the certification API
+    :param password:
+        tastytrade password to login; if absent, remember token is required
+    :param remember_token:
+        previously generated token; if absent, password is required
     :param two_factor_authentication:
         if two factor authentication is enabled, this is the code sent to the
         user's device
-    :param is_certification: whether or not to use the certification API
     """
     def __init__(
         self,
         login: str,
-        password: str = None,
-        remember_token: str = None,
         remember_me: bool = False,
-        two_factor_authentication: str = '',
-        is_certification: bool = False
+        is_certification: bool = False,
+        password: Optional[str] = None,
+        remember_token: Optional[str] = None,
+        two_factor_authentication: Optional[str] = None
     ):
         body = {
             'login': login,
             'remember-me': remember_me
         }
-        if password:
+        if password is not None:
             body['password'] = password
-        elif remember_token:
+        elif remember_token is not None:
             body['remember-token'] = remember_token
         else:
-            print("Error: you must provide a password or remember "
-                  "token to log in.")
+            raise TastytradeError('You must provide a password or remember '
+                                  'token to log in.')
         #: The base url to use for API requests
         self.base_url: str = CERT_URL if is_certification else API_URL
         #: Whether or not this session is using the certification API
         self.is_certification: bool = is_certification
 
-        if two_factor_authentication:
+        if two_factor_authentication is not None:
             headers = {'X-Tastyworks-OTP': two_factor_authentication}
             response = requests.post(
                 f'{self.base_url}/sessions',
@@ -64,14 +65,14 @@ class Session:
 
         json = response.json()
         #: The user dict returned by the API; contains basic user information
-        self.user: dict[str, str] = json['data']['user']
+        self.user: Dict[str, str] = json['data']['user']
         #: The session token used to authenticate requests
         self.session_token: str = json['data']['session-token']
         #: A single-use token which can be used to login without a password
         self.remember_token: Optional[str] = \
             json['data']['remember-token'] if remember_me else None
         #: The headers to use for API requests
-        self.headers: dict[str, str] = {'Authorization': self.session_token}
+        self.headers: Dict[str, str] = {'Authorization': self.session_token}
         self.validate()
 
         #: Pull streamer tokens and urls
@@ -131,12 +132,12 @@ class Session:
 
     def get_candle(
         self,
-        symbols: list[str],
+        symbols: List[str],
         interval: str,
         start_time: datetime,
         end_time: Optional[datetime] = None,
         extended_trading_hours: bool = False
-    ) -> list[Candle]:
+    ) -> List[Candle]:
         """
         Using the dxfeed REST API, fetchs Candle events for the given list of
         symbols.
@@ -154,8 +155,8 @@ class Session:
 
         :return: a list of Candle events
         """
-        candle_str = (f'{{={interval},tho=true}}'
-        if extended_trading_hours else f'{{={interval}}}')
+        candle_str = f'{{={interval},tho=true}}' \
+            if extended_trading_hours else f'{{={interval}}}'
         params = {
             'events': EventType.CANDLE,
             'symbols': (candle_str + ',').join(symbols) + candle_str,
@@ -166,7 +167,7 @@ class Session:
         response = requests.get(
             self.rest_url,
             headers=self.streamer_headers,
-            params=params
+            params=params  # type: ignore
         )
         validate_response(response)  # throws exception if not 200
 
@@ -180,10 +181,10 @@ class Session:
     def get_event(
         self,
         event_type: EventType,
-        symbols: list[str],
+        symbols: List[str],
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None
-    ) -> list[Event]:
+    ) -> List[Event]:
         """
         Using the dxfeed REST API, fetches an event for the given list of
         symbols. For `EventType.CANDLE`, use :meth:`get_candle` instead, and
@@ -199,7 +200,7 @@ class Session:
 
         :return: a list of events
         """
-        params: dict[str, Any] = {
+        params: Dict[str, Any] = {
             'events': event_type,
             'symbols': ','.join(symbols)
         }
@@ -220,10 +221,10 @@ class Session:
 
     def get_time_and_sale(
         self,
-        symbols: list[str],
+        symbols: List[str],
         start_time: datetime,
         end_time: Optional[datetime] = None
-    ) -> list[TimeAndSale]:
+    ) -> List[TimeAndSale]:
         """
         Using the dxfeed REST API, fetchs TimeAndSale events for the given
         list of symbols.
@@ -247,7 +248,7 @@ class Session:
         response = requests.get(
             self.rest_url,
             headers=self.streamer_headers,
-            params=params
+            params=params  # type: ignore
         )
         validate_response(response)  # throws exception if not 200
 
@@ -261,7 +262,7 @@ class Session:
 
 def _map_event(
     event_type: str,
-    event_dict: dict[str, Any]
+    event_dict: Dict[str, Any]
 ) -> Event:
     """
     Parses the raw JSON data from the dxfeed REST API into event objects.
@@ -282,6 +283,6 @@ def _map_event(
     elif event_type == EventType.TRADE:
         return Trade(**event_dict)
     elif event_type == EventType.UNDERLYING:
-        return Underlying(**event_dict[0])
+        return Underlying(**event_dict[0])  # type: ignore
     else:
         raise TastytradeError(f'Unknown event type: {event_type}')

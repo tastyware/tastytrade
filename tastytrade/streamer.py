@@ -270,7 +270,7 @@ class DataStreamer:
     def __init__(self, session: Session):
         self._counter = 0
         self._lock: Lock = Lock()
-        self._queues: dict[str, Queue] = {
+        self._queues: Dict[str, Queue] = {
             EventType.CANDLE: Queue(),
             EventType.GREEKS: Queue(),
             EventType.PROFILE: Queue(),

@@ -497,7 +497,7 @@ class Account(TastytradeJsonDataclass):
         :return:
             a list of two Tastytrade 'AccountBalanceSnapshot' in JSON format.
         """
-        params: dict[str, Any] = {
+        params: Dict[str, Any] = {
             'snapshot-date': snapshot_date,
             'time-of-day': time_of_day
         }
@@ -544,7 +544,7 @@ class Account(TastytradeJsonDataclass):
 
         :return: a list of Tastytrade 'CurrentPosition' objects in JSON format.
         """
-        params: dict[str, Any] = {
+        params: Dict[str, Any] = {
             'underlying-symbol[]': underlying_symbols,
             'symbol': symbol,
             'instrument-type': instrument_type,
@@ -619,7 +619,7 @@ class Account(TastytradeJsonDataclass):
         if page_offset is None:
             page_offset = 0
             paginate = True
-        params: dict[str, Any] = {
+        params: Dict[str, Any] = {
             'per-page': per_page,
             'page-offset': page_offset,
             'sort': sort,
@@ -692,7 +692,7 @@ class Account(TastytradeJsonDataclass):
 
         :return: a dict containing the total fees and the price effect.
         """
-        params: dict[str, Any] = {'date': date}
+        params: Dict[str, Any] = {'date': date}
         response = requests.get(
             f'{session.base_url}/accounts/{self.account_number}/transactions/total-fees',  # noqa: E501
             headers=session.headers,
@@ -723,7 +723,7 @@ class Account(TastytradeJsonDataclass):
 
         :return: a list of Tastytrade 'NetLiqOhlc' objects in JSON format.
         """
-        params: dict[str, Any] = {}
+        params: Dict[str, Any] = {}
         if start_time:
             # format to Tastytrade DateTime format
             start_time = str(start_time).replace(
@@ -900,7 +900,7 @@ class Account(TastytradeJsonDataclass):
         if page_offset is None:
             page_offset = 0
             paginate = True
-        params: dict[str, Any] = {
+        params: Dict[str, Any] = {
             'per-page': per_page,
             'page-offset': page_offset,
             'start-date': start_date,
