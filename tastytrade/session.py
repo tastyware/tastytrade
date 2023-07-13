@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import requests
 
@@ -29,16 +29,23 @@ class Session:
     def __init__(
         self,
         login: str,
-        password: str,
+        password: str = None,
+        remember_token: str = None,
         remember_me: bool = False,
         two_factor_authentication: str = '',
         is_certification: bool = False
     ):
         body = {
             'login': login,
-            'password': password,
             'remember-me': remember_me
         }
+        if password:
+            body['password'] = password
+        elif remember_token:
+            body['remember-token'] = remember_token
+        else:
+            print("Error: you must provide a password or remember "
+                  "token to log in.")
         #: The base url to use for API requests
         self.base_url: str = CERT_URL if is_certification else API_URL
         #: Whether or not this session is using the certification API
@@ -108,7 +115,7 @@ class Session:
         )
         return (response.status_code // 100 == 2)
 
-    def get_customer(self) -> dict[str, Any]:
+    def get_customer(self) -> Dict[str, Any]:
         """
         Gets the customer dict from the API.
 

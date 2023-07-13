@@ -2,7 +2,6 @@ from setuptools import find_packages, setup
 
 from tastytrade import VERSION
 
-
 f = open('README.rst', 'r')
 LONG_DESCRIPTION = f.read()
 f.close()
