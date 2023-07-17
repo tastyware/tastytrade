@@ -30,7 +30,7 @@ You can create a real session using your normal login, or a certification (test)
 
 .. code-block:: python
 
-   from tastytrade.session import Session
+   from tastytrade import Session
    session = Session('username', 'password')
 
 Using the streamer
@@ -40,7 +40,8 @@ The streamer is a websocket connection to dxfeed (the Tastytrade data provider) 
 
 .. code-block:: python
 
-   from tastytrade.streamer import DataStreamer, EventType
+   from tastytrade import DataStreamer
+   from tastytrade.dxfeed import EventType
 
    streamer = await DataStreamer.create(session)
    subs_list = ['SPY', 'SPX']
@@ -61,7 +62,7 @@ Getting current positions
 
 .. code-block:: python
    
-   from tastytrade.account import Account
+   from tastytrade import Account
 
    account = Account.get_accounts(session)[0]
    positions = account.get_positions(session)
@@ -74,7 +75,7 @@ Symbol search
 
 .. code-block:: python
 
-   from tastytrade.search import symbol_search
+   from tastytrade import symbol_search
 
    results = symbol_search(session, 'AAP')
    print(results)
@@ -87,9 +88,9 @@ Placing an order
 .. code-block:: python
 
    from decimal import Decimal
-   from tastytrade.account import Account
-   from tastytrade.instruments import Equity
-   from tastytrade.order import NewOrder, OrderAction, OrderTimeInForce, OrderType, PriceEffect
+   from tastytrade import Account
+   from tastytrade import Equity
+   from tastytrade import NewOrder, OrderAction, OrderTimeInForce, OrderType, PriceEffect
 
    account = Account.get_account(session, '5WV69754')
    symbol = Equity.get_equity(session, 'USO')
@@ -112,7 +113,7 @@ Options chain/streaming greeks
 
 .. code-block:: python
 
-   from tastytrade.instruments import get_option_chain
+   from tastytrade import get_option_chain
    from datetime import date
 
    chain = get_option_chain(session, 'SPLG')

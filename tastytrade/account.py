@@ -473,7 +473,9 @@ class Account(TastytradeJsonDataclass):
         )
         validate_response(response)  # throws exception if not 200
 
-        return response.json()['data']
+        data = response.json()['data']
+
+        return AccountBalance(**data)
 
     def get_balance_snapshots(
         self,

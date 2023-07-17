@@ -30,9 +30,9 @@ class Session:
     def __init__(
         self,
         login: str,
+        password: Optional[str] = None,
         remember_me: bool = False,
         is_certification: bool = False,
-        password: Optional[str] = None,
         remember_token: Optional[str] = None,
         two_factor_authentication: Optional[str] = None
     ):
@@ -200,6 +200,10 @@ class Session:
 
         :return: a list of events
         """
+        # this shouldn't be called with candle
+        if event_type == EventType.CANDLE:
+            raise TastytradeError('Invalid event type for `get_event`: Use '
+                                  '`get_candle` instead!')
         params: Dict[str, Any] = {
             'events': event_type,
             'symbols': ','.join(symbols)

@@ -261,7 +261,7 @@ class DataStreamer:
         subs = ['SPY', 'GLD']  # list of quotes to fetch
         await streamer.subscribe(EventType.QUOTE, subs)
         quotes = []
-        async for quote in streamer.listen():
+        async for quote in streamer.listen(EventType.QUOTE):
             quotes.append(quote)
             if len(quotes) >= len(subs):
                 break
