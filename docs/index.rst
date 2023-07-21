@@ -6,6 +6,7 @@
 
    installation
    sessions
+   data-streamer
 
 .. toctree::
    :maxdepth: 2

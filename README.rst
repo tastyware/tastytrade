@@ -30,8 +30,8 @@ You can create a real session using your normal login, or a certification (test)
 
 .. code-block:: python
 
-   from tastytrade import Session
-   session = Session('username', 'password')
+   from tastytrade import ProductionSession
+   session = ProductionSession('username', 'password')
 
 Using the streamer
 ------------------
@@ -89,8 +89,8 @@ Placing an order
 
    from decimal import Decimal
    from tastytrade import Account
-   from tastytrade import Equity
-   from tastytrade import NewOrder, OrderAction, OrderTimeInForce, OrderType, PriceEffect
+   from tastytrade.instruments import Equity
+   from tastytrade.order import NewOrder, OrderAction, OrderTimeInForce, OrderType, PriceEffect
 
    account = Account.get_account(session, '5WV69754')
    symbol = Equity.get_equity(session, 'USO')
@@ -113,7 +113,7 @@ Options chain/streaming greeks
 
 .. code-block:: python
 
-   from tastytrade import get_option_chain
+   from tastytrade.instruments import get_option_chain
    from datetime import date
 
    chain = get_option_chain(session, 'SPLG')

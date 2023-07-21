@@ -5,41 +5,42 @@ Creating a session
 ------------------
 
 A session object is required to authenticate your requests to the Tastytrade API.
-To create a real session (using your normal login):
+To create a production (real) session using your normal login:
 
 .. code-block:: python
 
-   from tastytrade.session import Session
-   session = Session('username', 'password')
+   from tastytrade import ProductionSession
+   session = ProductionSession('username', 'password')
 
 A certification (test) account can be created `here <https://developer.tastytrade.com/sandbox/>`_, then used to create a session:
 
 .. code-block:: python
 
-   session = Session('username', 'password', is_certification=True)
+   from tastytrade import CertificationSession
+   session = CertificationSession('username', 'password')
 
 You can make a session persistent by generating a remember token, which is valid for 24 hours:
 
 .. code-block:: python
 
-   session = Session('username', 'password', remember_me=True)
+   session = ProductionSession('username', 'password', remember_me=True)
    remember_token = session.remember_token
-   # ...
-   new_session = Session('username', remember_token=remember_token)
+   # remember token replaces the password for the next login
+   new_session = ProductionSession('username', remember_token=remember_token)
 
 Events
 ------
 
-Sessions can be used to make simple requests to the dxfeed REST API and pull quotes, greeks and more.
-These requests are slower than :class:`DataStreamer` and a separate request is required for each event fetched, so they're really more appropriate for a task that just needs to grab some information once. For recurring data feeds/streams or more time-sensitive tasks, the streamer is more appropriate.
+A ``ProductionSession`` can be used to make simple requests to the dxfeed REST API and pull quotes, greeks and more.
+These requests are slower than ``DataStreamer`` and a separate request is required for each event fetched, so they're really more appropriate for a task that just needs to grab some information once. For recurring data feeds/streams or more time-sensitive tasks, the streamer is more appropriate.
 
 Events are simply market data at a specific timestamp. There's a variety of different kinds of events supported, including:
 
-- Candle
+- ``Candle``
   Information about open, high, low, and closing prices for an instrument during a certain time range
-- Greeks
-  (Options only) Black-Scholes variables for an option, like delta, gamma, and theta
-- Quote
+- ``Greeks``
+  (options only) Black-Scholes variables for an option, like delta, gamma, and theta
+- ``Quote``
   Live bid and ask prices for an instrument
 
 Let's look at some examples for these three:
@@ -57,7 +58,7 @@ To fetch greeks, we need the option symbol in dxfeed format, which can be obtain
 
 .. code-block:: python
 
-   from tastytrade import get_option_chain
+   from tastytrade.instruments import get_option_chain
    from datetime import date
 
    chain = get_option_chain(session, 'SPLG')

@@ -16,7 +16,7 @@ from tastytrade.dxfeed import (Candle, Channel, Event, EventType, Greeks,
                                Trade, Underlying)
 from tastytrade.order import (InstrumentType, OrderChain, PlacedOrder,
                               PriceEffect)
-from tastytrade.session import Session
+from tastytrade.session import CertificationSession, ProductionSession, Session
 from tastytrade.utils import TastytradeError, TastytradeJsonDataclass
 from tastytrade.watchlists import Watchlist
 
@@ -82,7 +82,8 @@ class AlertStreamer:
 
     Example usage::
 
-        session = Session('user', 'pass')
+        from tastytrade import Account, AlertStreamer
+
         streamer = await AlertStreamer.create(session)
         accounts = Account.get_accounts(session)
 
@@ -98,8 +99,9 @@ class AlertStreamer:
         #: The active session used to initiate the streamer or make requests
         self.token: str = session.session_token
         #: The base url for the streamer websocket
+        is_certification = isinstance(session, CertificationSession)
         self.base_url: str = \
-            CERT_STREAMER_URL if session.is_certification else STREAMER_URL
+            CERT_STREAMER_URL if is_certification else STREAMER_URL
 
         self._queue: Queue = Queue()
         self._websocket = None
@@ -255,7 +257,10 @@ class DataStreamer:
 
     Example usage::
 
-        session = Session('user', 'pass')
+        from tastytrade import DataStreamer
+        from tastytrade.dxfeed import EventType
+
+        # must be a production session
         streamer = await DataStreamer.create(session)
 
         subs = ['SPY', 'GLD']  # list of quotes to fetch
@@ -267,7 +272,7 @@ class DataStreamer:
                 break
 
     """
-    def __init__(self, session: Session):
+    def __init__(self, session: ProductionSession):
         self._counter = 0
         self._lock: Lock = Lock()
         self._queues: Dict[str, Queue] = {
@@ -290,13 +295,11 @@ class DataStreamer:
         self._connect_task = asyncio.create_task(self._connect())
 
     @classmethod
-    async def create(cls, session: Session) -> 'DataStreamer':
+    async def create(cls, session: ProductionSession) -> 'DataStreamer':
         """
         Factory method for the :class:`DataStreamer` object.
         Simply calls the constructor and performs the asynchronous
         setup tasks. This should be used instead of the constructor.
-
-        Setup time is around 10-15 seconds.
 
         :param session: active user session to use
         """

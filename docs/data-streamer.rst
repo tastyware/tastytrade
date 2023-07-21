@@ -5,19 +5,18 @@ Basic usage
 -----------
 
 The streamer is a websocket connection to dxfeed (the Tastytrade data provider) that allows you to subscribe to real-time data for quotes, greeks, and more.
-You can create a streamer using an active session:
+You can create a streamer using an active production session:
 
 .. code-block:: python
 
    from tastytrade import DataStreamer
-   from tastytrade.dxfeed import EventType
-   # the initialization of the streamer takes ~5 seconds
    streamer = await DataStreamer.create(session)
 
 Once you've created the streamer, you can subscribe/unsubscribe to events, like ``Quote``:
 
 .. code-block:: python
 
+   from tastytrade.dxfeed import EventType
    subs_list = ['SPY', 'SPX']
 
    await streamer.subscribe(EventType.QUOTE, subs_list)
@@ -34,7 +33,7 @@ We can also use the streamer to stream greeks for options symbols:
 
 .. code-block:: python
 
-   from tastytrade import get_option_chain
+   from tastytrade.instruments import get_option_chain
    from datetime import date
 
    chain = get_option_chain(session, 'SPLG')
@@ -61,7 +60,7 @@ For example, we can use the streamer to create an option chain that will continu
    import asyncio
    from datetime import date
    from dataclasses import dataclass
-   from tastytrade import get_option_chain
+   from tastytrade.instruments import get_option_chain
    from tastytrade.dxfeed import Greeks, Quote
 
    @dataclass
@@ -75,7 +74,7 @@ For example, we can use the streamer to create an option chain that will continu
       @classmethod
       async def create(
          cls,
-         session: Session,
+         session: ProductionSession,
          symbol: str = 'SPY',
          expiration: date = date.today()
       ):
