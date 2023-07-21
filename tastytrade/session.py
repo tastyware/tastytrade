@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -14,9 +14,27 @@ from tastytrade.utils import TastytradeError, validate_response
 class Session(ABC):
     """
     An abstract class which contains the basic functionality of a session.
-
-    Inheriting classes must define `self.base_url` and `self.headers`.
     """
+    @property
+    @abstractmethod
+    def base_url(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def headers(self) -> Dict[str, str]:
+        pass
+
+    @property
+    @abstractmethod
+    def user(self) -> Dict[str, str]:
+        pass
+
+    @property
+    @abstractmethod
+    def session_token(self) -> str:
+        pass
+
     def validate(self) -> bool:
         """
         Validates the current session by sending a request to the API.
