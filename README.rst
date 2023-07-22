@@ -49,7 +49,7 @@ The streamer is a websocket connection to dxfeed (the Tastytrade data provider) 
    await streamer.subscribe(EventType.QUOTE, subs_list)
    # this example fetches quotes once, then exits
    quotes = []
-   async for quote in streamer.listen():
+   async for quote in streamer.listen(EventType.QUOTE):
       quotes.append(quote)
       if len(quotes) >= len(subs_list):
          break
@@ -121,7 +121,7 @@ Options chain/streaming greeks
 
    await streamer.subscribe(EventType.GREEKS, subs_list)
    greeks = []
-   async for greek in streamer.listen():
+   async for greek in streamer.listen(EventType.GREEKS):
       greeks.append(greek)
       if len(greeks) >= len(subs_list):
          break
