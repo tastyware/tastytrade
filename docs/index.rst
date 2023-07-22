@@ -1,12 +1,12 @@
-tastytrade: An unofficial Python SDK for Tastytrade!
-====================================================
-
 .. include:: ../README.rst
-   :start-after: inclusion-marker
 
 .. toctree::
    :maxdepth: 2
    :caption: Documentation:
+
+   installation
+   sessions
+   data-streamer
 
 .. toctree::
    :maxdepth: 2

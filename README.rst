@@ -13,14 +13,12 @@
 Tastytrade Python SDK
 =====================
 
-.. inclusion-marker
-
 A simple, reverse-engineered SDK for Tastytrade built on their (now mostly public) API. This will allow you to create trading algorithms for whatever strategies you may have quickly and painlessly in Python.
 
 Installation
 ------------
 
-.. code-block:: bash
+::
 
    $ pip install tastytrade
 
@@ -32,23 +30,24 @@ You can create a real session using your normal login, or a certification (test)
 
 .. code-block:: python
 
-   from tastytrade.session import Session
-   session = Session('username', 'password')
+   from tastytrade import ProductionSession
+   session = ProductionSession('username', 'password')
 
 Using the streamer
 ------------------
 
-The streamer is a websocket connection to the Tastytrade API that allows you to subscribe to real-time data for Quotes, Greeks, and more.
+The streamer is a websocket connection to dxfeed (the Tastytrade data provider) that allows you to subscribe to real-time data for quotes, greeks, and more.
 
 .. code-block:: python
 
-   from tastytrade.streamer import DataStreamer, EventType
+   from tastytrade import DataStreamer
+   from tastytrade.dxfeed import EventType
 
    streamer = await DataStreamer.create(session)
    subs_list = ['SPY', 'SPX']
 
-   # this function fetches quotes once, then closes the subscription
    await streamer.subscribe(EventType.QUOTE, subs_list)
+   # this example fetches quotes once, then exits
    quotes = []
    async for quote in streamer.listen():
       quotes.append(quote)
@@ -63,7 +62,7 @@ Getting current positions
 
 .. code-block:: python
    
-   from tastytrade.account import Account
+   from tastytrade import Account
 
    account = Account.get_accounts(session)[0]
    positions = account.get_positions(session)
@@ -76,7 +75,7 @@ Symbol search
 
 .. code-block:: python
 
-   from tastytrade.search import symbol_search
+   from tastytrade import symbol_search
 
    results = symbol_search(session, 'AAP')
    print(results)
@@ -89,7 +88,7 @@ Placing an order
 .. code-block:: python
 
    from decimal import Decimal
-   from tastytrade.account import Account
+   from tastytrade import Account
    from tastytrade.instruments import Equity
    from tastytrade.order import NewOrder, OrderAction, OrderTimeInForce, OrderType, PriceEffect
 

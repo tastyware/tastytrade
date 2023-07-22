@@ -5,11 +5,12 @@ from typing import List
 
 class EventType(str, Enum):
     """
-    This is an :class:`~enum.Enum` that contains the valid subscription types for
-    the quote streamer.
+    This is an :class:`~enum.Enum` that contains the valid subscription types
+    for the data streamer.
 
-    Information on different types of events, their uses and their properties can be
-    found at the `dxfeed Knowledge Base <https://kb.dxfeed.com/en/data-model/dxfeed-api-market-events.html>`_.  # noqa: E501
+    Information on different types of events, their uses and their properties
+    can be found at the `dxfeed Knowledge Base
+    <https://kb.dxfeed.com/en/data-model/dxfeed-api-market-events.html>`_.
     """
     CANDLE = 'Candle'
     GREEKS = 'Greeks'
@@ -19,6 +20,7 @@ class EventType(str, Enum):
     THEO_PRICE = 'TheoPrice'
     TIME_AND_SALE = 'TimeAndSale'
     TRADE = 'Trade'
+    UNDERLYING = 'Underlying'
 
 
 class Event(ABC):
