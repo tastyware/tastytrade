@@ -15,25 +15,10 @@ class Session(ABC):
     """
     An abstract class which contains the basic functionality of a session.
     """
-    @property
-    @abstractmethod
-    def base_url(self) -> str:
-        pass
-
-    @property
-    @abstractmethod
-    def headers(self) -> Dict[str, str]:
-        pass
-
-    @property
-    @abstractmethod
-    def user(self) -> Dict[str, str]:
-        pass
-
-    @property
-    @abstractmethod
-    def session_token(self) -> str:
-        pass
+    base_url: str
+    headers: Dict[str, str]
+    user: Dict[str, str]
+    session_token: str
 
     def validate(self) -> bool:
         """
