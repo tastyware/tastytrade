@@ -26,6 +26,13 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Linting...
       run: |
-        isort --check --diff tastytrade/
-        flake8 --count --show-source --statistics tastytrade/
+        isort --check --diff tastytrade/ tests/
+        flake8 --count --show-source --statistics tastytrade/ tests/
         mypy -p tastytrade
+        mypy -p tests
+    - name: Testing...
+      run: |
+        python -m pytest --cov=tastytrade --cov-report=term-missing tests/
+      env:
+        TT_USERNAME: ${{ secrets.TT_USERNAME }}
+        TT_PASSWORD: ${{ secrets.TT_PASSWORD }}
