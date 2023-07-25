@@ -11,6 +11,10 @@ lint:
 	isort --check --diff tastytrade/ tests/
 	flake8 --count --show-source --statistics tastytrade/ tests/
 	mypy -p tastytrade
+	mypy -p tests
+
+test:
+	python -m pytest --cov=tastytrade --cov-report=term-missing tests/
 
 test:
 	python -m pytest --cov=tastytrade --cov-report=term-missing tests/
