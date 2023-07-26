@@ -61,20 +61,20 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     implied_volatility_index_rank_source: str
     implied_volatility_percentile: Decimal
     implied_volatility_updated_at: datetime
-    liquidity_value: Optional[Decimal]
-    liquidity_rank: Optional[Decimal]
+    liquidity_value: Optional[Decimal] = None
+    liquidity_rank: Optional[Decimal] = None
     liquidity_rating: int
     updated_at: datetime
     option_expiration_implied_volatilities: list[OptionExpirationImpliedVolatility]
-    liquidity_running_state: Optional[Liquidity]
+    liquidity_running_state: Optional[Liquidity] = None
     beta: Decimal
-    beta_updated_at: Optional[datetime]
+    beta_updated_at: Optional[datetime] = None
     corr_spy_3month: Decimal
     dividend_rate_per_share: Decimal
-    dividend_yield: Optional[Decimal]
-    listed_market: Optional[str]
-    lendability: Optional[str]
-    borrow_rate: Optional[Decimal]
+    dividend_yield: Optional[Decimal] = None
+    listed_market: Optional[str] = None
+    lendability: Optional[str] = None
+    borrow_rate: Optional[Decimal] = None
     market_cap: Decimal
     implied_volatility_30_day: Decimal
     historical_volatility_30_day: Decimal
