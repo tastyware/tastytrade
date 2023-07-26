@@ -89,6 +89,7 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     lendability: Optional[str] = None
     borrow_rate: Optional[Decimal] = None
 
+
 def get_market_metrics(
     session: Session,
     symbols: List[str]
