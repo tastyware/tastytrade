@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 
@@ -61,20 +61,12 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     implied_volatility_index_rank_source: str
     implied_volatility_percentile: Decimal
     implied_volatility_updated_at: datetime
-    liquidity_value: Optional[Decimal] = None
-    liquidity_rank: Optional[Decimal] = None
     liquidity_rating: int
     updated_at: datetime
-    option_expiration_implied_volatilities: list[OptionExpirationImpliedVolatility]
-    liquidity_running_state: Optional[Liquidity] = None
+    option_expiration_implied_volatilities: List[OptionExpirationImpliedVolatility]  # noqa: E501
     beta: Decimal
-    beta_updated_at: Optional[datetime] = None
     corr_spy_3month: Decimal
     dividend_rate_per_share: Decimal
-    dividend_yield: Optional[Decimal] = None
-    listed_market: Optional[str] = None
-    lendability: Optional[str] = None
-    borrow_rate: Optional[Decimal] = None
     market_cap: Decimal
     implied_volatility_30_day: Decimal
     historical_volatility_30_day: Decimal
@@ -83,13 +75,24 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     iv_hv_30_day_difference: Decimal
     price_earnings_ratio: Decimal
     earnings_per_share: Decimal
+    created_at: Optional[datetime] = None
     dividend_ex_date: Optional[date] = None
     dividend_next_date: Optional[date] = None
     dividend_pay_date: Optional[date] = None
     dividend_updated_at: Optional[datetime] = None
+    liquidity_value: Optional[Decimal] = None
+    liquidity_rank: Optional[Decimal] = None
+    liquidity_running_state: Optional[Liquidity] = None
+    beta_updated_at: Optional[datetime] = None
+    dividend_yield: Optional[Decimal] = None
+    listed_market: Optional[str] = None
+    lendability: Optional[str] = None
+    borrow_rate: Optional[Decimal] = None
 
-
-def get_market_metrics(session: Session, symbols: list[str]) -> list[MarketMetricInfo]:
+def get_market_metrics(
+    session: Session,
+    symbols: List[str]
+) -> List[MarketMetricInfo]:
     """
     Retrieves market metrics for the given symbols.
 
@@ -110,7 +113,7 @@ def get_market_metrics(session: Session, symbols: list[str]) -> list[MarketMetri
     return [MarketMetricInfo(**entry) for entry in data]
 
 
-def get_dividends(session: Session, symbol: str) -> list[DividendInfo]:
+def get_dividends(session: Session, symbol: str) -> List[DividendInfo]:
     """
     Retrieves dividend information for the given symbol.
 
@@ -121,7 +124,7 @@ def get_dividends(session: Session, symbol: str) -> list[DividendInfo]:
     """
     symbol = symbol.replace('/', '%2F')
     response = requests.get(
-        f'{session.base_url}/market-metrics/historic-corporate-events/dividends/{symbol}',
+        f'{session.base_url}/market-metrics/historic-corporate-events/dividends/{symbol}',  # noqa: E501
         headers=session.headers
     )
     validate_response(response)
@@ -131,7 +134,11 @@ def get_dividends(session: Session, symbol: str) -> list[DividendInfo]:
     return [DividendInfo(**entry) for entry in data]
 
 
-def get_earnings(session: Session, symbol: str, start_date: date) -> list[EarningsInfo]:
+def get_earnings(
+    session: Session,
+    symbol: str,
+    start_date: date
+) -> List[EarningsInfo]:
     """
     Retrieves earnings information for the given symbol.
 
@@ -142,9 +149,9 @@ def get_earnings(session: Session, symbol: str, start_date: date) -> list[Earnin
     :return: a list of Tastytrade 'EarningsInfo' objects in JSON format.
     """
     symbol = symbol.replace('/', '%2F')
-    params: dict[str, Any] = {'start-date': start_date}
+    params: Dict[str, Any] = {'start-date': start_date}
     response = requests.get(
-        f'{session.base_url}/market-metrics/historic-corporate-events/earnings-reports/{symbol}',
+        f'{session.base_url}/market-metrics/historic-corporate-events/earnings-reports/{symbol}',  # noqa: E501
         headers=session.headers,
         params=params
     )
@@ -153,3 +160,21 @@ def get_earnings(session: Session, symbol: str, start_date: date) -> list[Earnin
     data = response.json()['data']['items']
 
     return [EarningsInfo(**entry) for entry in data]
+
+
+def get_risk_free_rate(session: Session) -> Decimal:
+    """
+    Retrieves the current risk-free rate.
+
+    :param session: active user session to use
+
+    :return: the current risk-free rate
+    """
+    response = requests.get(
+        f'{session.base_url}/margin-requirements-public-configuration',
+        headers=session.headers
+    )
+    validate_response(response)
+
+    data = response.json()['data']['risk-free-rate']
+    return Decimal(data)
