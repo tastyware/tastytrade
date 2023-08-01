@@ -1,12 +1,12 @@
 import asyncio
 import json
+import requests
 from asyncio import Lock, Queue
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Any, AsyncIterator, Dict, List, Optional, Union
 
-import requests
 import websockets
 
 from tastytrade import logger
