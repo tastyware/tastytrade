@@ -12,7 +12,7 @@ import websockets
 from tastytrade import logger
 from tastytrade.account import (Account, AccountBalance, CurrentPosition,
                                 TradingStatus)
-from tastytrade.dxfeed import (Candle, Channel, Event, EventType, Greeks,
+from tastytrade.dxfeed import (Candle, Event, EventType, Greeks,
                                Profile, Quote, Summary, TheoPrice, TimeAndSale,
                                Trade, Underlying)
 from tastytrade.order import (InstrumentType, OrderChain, PlacedOrder,
@@ -313,8 +313,6 @@ class DataStreamer:
         }
 
         #: The unique client identifier received from the server
-        self._user_id: Optional[str] = None
-
         self._session = session
         self._authenticated = False
         api_token = self.get_api_token()
@@ -365,7 +363,6 @@ class DataStreamer:
                 elif message['type'] == 'AUTH_STATE':
                     if message['state'] == 'AUTHORIZED':
                         self._authenticated = True
-                        self._user_id = message['userId']
                 elif message['type'] == 'CHANNEL_OPENED':
                     self._subscription_state[message['channel']] = message['type']
                 elif message['type'] == 'FEED_CONFIG':

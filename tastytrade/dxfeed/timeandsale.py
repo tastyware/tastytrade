@@ -13,6 +13,7 @@ class TimeAndSale(Event):
     TimeAndSale events have a unique index that can be used for later
     correction/cancellation processing.
     """
+
     #: eventType of this event
     eventType: str
     #: symbol of this event
