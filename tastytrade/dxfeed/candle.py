@@ -10,6 +10,8 @@ class Candle(Event):
     for a specific period. Candles are build with a specified period using a
     specified price type with data taken from a specified exchange.
     """
+    #: eventType of this event
+    eventType: str
     #: symbol of this event
     eventSymbol: str
     #: time of this event

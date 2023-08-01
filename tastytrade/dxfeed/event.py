@@ -42,6 +42,6 @@ class Event(ABC):
             raise Exception(msg)
         for i in range(int(multiples)):
             offset = i * size
-            local_values = data[offset:(i + 1) * size]
-            objs.append(cls(*local_values))
+            # local_values = data[offset:(i + 1) * size]
+            objs.append(cls(**data))
         return objs

@@ -6,6 +6,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any, AsyncIterator, Dict, List, Optional, Union
 
+import requests
 import websockets
 
 from tastytrade import logger
@@ -17,7 +18,7 @@ from tastytrade.dxfeed import (Candle, Channel, Event, EventType, Greeks,
 from tastytrade.order import (InstrumentType, OrderChain, PlacedOrder,
                               PriceEffect)
 from tastytrade.session import CertificationSession, ProductionSession, Session
-from tastytrade.utils import TastytradeError, TastytradeJsonDataclass
+from tastytrade.utils import TastytradeError, TastytradeJsonDataclass, validate_response
 from tastytrade.watchlists import Watchlist
 
 CERT_STREAMER_URL = 'wss://streamer.cert.tastyworks.com'
@@ -95,6 +96,7 @@ class AlertStreamer:
             print(data)
 
     """
+
     def __init__(self, session: Session):
         #: The active session used to initiate the streamer or make requests
         self.token: str = session.session_token
@@ -130,8 +132,8 @@ class AlertStreamer:
         """
         headers = {'Authorization': f'Bearer {self.token}'}
         async with websockets.connect(  # type: ignore
-            self.base_url,
-            extra_headers=headers
+                self.base_url,
+                extra_headers=headers
         ) as websocket:
             self._websocket = websocket
             self._heartbeat_task = asyncio.create_task(self._heartbeat())
@@ -155,9 +157,9 @@ class AlertStreamer:
                 logger.debug('subscription message: %s', data)
 
     def _map_message(
-        self,
-        type_str: str,
-        data: dict
+            self,
+            type_str: str,
+            data: dict
     ) -> TastytradeJsonDataclass:
         """
         I'm not sure what the user-status messages look like,
@@ -230,9 +232,9 @@ class AlertStreamer:
             await asyncio.sleep(10)
 
     async def _subscribe(
-        self,
-        subscription: SubscriptionType,
-        value: Union[Optional[str], List[str]] = ''
+            self,
+            subscription: SubscriptionType,
+            value: Union[Optional[str], List[str]] = ''
     ) -> None:
         """
         Subscribes to a :class:`SubscriptionType`. Depending on the kind of
@@ -272,6 +274,7 @@ class DataStreamer:
                 break
 
     """
+
     def __init__(self, session: ProductionSession):
         self._counter = 0
         self._lock: Lock = Lock()
@@ -286,13 +289,40 @@ class DataStreamer:
             EventType.TRADE: Queue(),
             EventType.UNDERLYING: Queue()
         }
-        #: The unique client identifier received from the server
-        self.client_id: Optional[str] = None
+        self._queue_channels: Dict[str, int] = {
+            EventType.CANDLE: 1,
+            EventType.GREEKS: 3,
+            EventType.PROFILE: 5,
+            EventType.QUOTE: 7,
+            EventType.SUMMARY: 9,
+            EventType.THEO_PRICE: 11,
+            EventType.TIME_AND_SALE: 13,
+            EventType.TRADE: 15,
+            EventType.UNDERLYING: 17
+        }
+        self._subscription_state: Dict[int, str] = {
+            self._queue_channels[EventType.CANDLE]: "CHANNEL_CLOSED",
+            self._queue_channels[EventType.GREEKS]: "CHANNEL_CLOSED",
+            self._queue_channels[EventType.PROFILE]: "CHANNEL_CLOSED",
+            self._queue_channels[EventType.QUOTE]: "CHANNEL_CLOSED",
+            self._queue_channels[EventType.SUMMARY]: "CHANNEL_CLOSED",
+            self._queue_channels[EventType.THEO_PRICE]: "CHANNEL_CLOSED",
+            self._queue_channels[EventType.TIME_AND_SALE]: "CHANNEL_CLOSED",
+            self._queue_channels[EventType.TRADE]: "CHANNEL_CLOSED",
+            self._queue_channels[EventType.UNDERLYING]: "CHANNEL_CLOSED"
+        }
 
-        self._auth_token = session.streamer_token
-        self._wss_url = session.streamer_url
+        #: The unique client identifier received from the server
+        self._user_id: Optional[str] = None
+
+        self._session = session
+        self._authenticated = False
+        api_token = self.get_api_token()
+        self._auth_token = api_token['token']
+        self._wss_url = api_token['dxlink-url']
 
         self._connect_task = asyncio.create_task(self._connect())
+        self._keepalive = asyncio.create_task(self._keepalive())
 
     @classmethod
     async def create(cls, session: ProductionSession) -> 'DataStreamer':
@@ -304,84 +334,78 @@ class DataStreamer:
         :param session: active user session to use
         """
         self = cls(session)
-        while not self.client_id:
-            await asyncio.sleep(0.1)
-
         return self
 
-    async def _next_id(self):
-        async with self._lock:
-            self._counter += 1
-        return self._counter
+    def get_api_token(self):
+        response = requests.get(f'{self._session.base_url}/api-quote-tokens', headers=self._session.headers)
+        validate_response(response)  # throws exception if not 200
+        data = response.json()
+        return data['data']
 
     async def _connect(self) -> None:
         """
         Connect to the websocket server using the URL and
         authorization token provided during initialization.
         """
-        headers = {'Authorization': f'Bearer {self._auth_token}'}
 
         async with websockets.connect(  # type: ignore
-            self._wss_url,
-            extra_headers=headers
+                self._wss_url
         ) as websocket:
             self._websocket = websocket
-            await self._handshake()
-
-            while not self.client_id:
-                raw_message = await self._websocket.recv()
-                message = json.loads(raw_message)[0]
-
-                logger.debug('received: %s', message)
-                if message['channel'] == Channel.HANDSHAKE:
-                    if message['successful']:
-                        self.client_id = message['clientId']
-                        self._heartbeat_task = \
-                            asyncio.create_task(self._heartbeat())
-                    else:
-                        raise TastytradeError('Handshake failed')
+            await self._setup_connection()
 
             # main loop
             while True:
                 raw_message = await self._websocket.recv()
-                message = json.loads(raw_message)[0]
+                message = json.loads(raw_message)
 
-                if (message['channel'] == Channel.DATA or
-                        message['channel'] == Channel.TIME_SERIES):
-                    logger.debug('data received: %s', message)
+                logger.debug('received: %s', message)
+                if message['type'] == 'SETUP':
+                    await self._authenticate_connection()
+                elif message['type'] == 'AUTH_STATE':
+                    if message['state'] == 'AUTHORIZED':
+                        self._authenticated = True
+                        self._user_id = message['userId']
+                elif message['type'] == 'CHANNEL_OPENED':
+                    self._subscription_state[message['channel']] = message['type']
+                elif message['type'] == 'FEED_CONFIG':
+                    print()
+                    pass
+                elif message['type'] == 'FEED_DATA':
                     await self._map_message(message['data'])
-                elif message['channel'] == Channel.SUBSCRIPTION:
-                    logger.debug('sub received: %s', message)
+                elif message['type'] == 'KEEPALIVE':
+                    pass
+                else:
+                    raise TastytradeError(message)
 
-    async def _handshake(self) -> None:
-        """
-        Sends a handshake message to the specified WebSocket
-        connection. The handshake message is sent as a JSON
-        encoded array with a single element, containing the
-        handshake message as its only element.
-        """
-        id = await self._next_id()
+    async def _setup_connection(self):
         message = {
-            'id': id,
-            'version': '1.0',
-            'minimumVersion': '1.0',
-            'channel': Channel.HANDSHAKE,
-            'supportedConnectionTypes': [
-                'websocket',
-                'long-polling',
-                'callback-polling'
-            ],
-            'ext': {'com.devexperts.auth.AuthToken': self._auth_token},
-            'advice': {
-                'timeout': 60000,
-                'interval': 0
-            }
+            'type': 'SETUP',
+            'channel': 0,
+            'keepaliveTimeout': 60,
+            'acceptKeepaliveTimeout': 60,
+            'version': '0.1-js/1.0.0'
         }
-        await self._websocket.send(json.dumps([message]))
+        await self._websocket.send(json.dumps(message))
+
+    async def _authenticate_connection(self):
+        message = {
+            'type': 'AUTH',
+            'channel': 0,
+            'token': self._auth_token,
+        }
+        await self._websocket.send(json.dumps(message))
+
+    async def _wait_for_authentiation(self, time_out=100):
+        while not self._authenticated:
+            await asyncio.sleep(0.1)
+            time_out -= 1
+            if time_out <= 0:
+                raise TastytradeError('Stream not authorized')
 
     async def listen(
-        self,
-        event_type: EventType
+            self,
+            event_type: EventType
     ) -> AsyncIterator[Event]:
         """
         Using the existing subscriptions, pulls events of the given type and
@@ -395,34 +419,33 @@ class DataStreamer:
 
     def close(self) -> None:
         """
-        Closes the websocket connection and cancels the heartbeat task.
+        Closes the websocket connection and cancels the keepalive task.
         """
-        self._connect_task.cancel()
-        self._heartbeat_task.cancel()
+        if not self._authenticated:
+            raise TastytradeError('Stream not authenticated')
+        self._keepalive.cancel()
 
-    async def _heartbeat(self) -> None:
+    async def _keepalive(self) -> None:
         """
-        Sends a heartbeat message every 10 seconds to keep the connection
+        Sends a keepalive message every 30 seconds to keep the connection
         alive.
         """
         while True:
-            id = await self._next_id()
-            message = {
-                'id': id,
-                'channel': Channel.HEARTBEAT,
-                'clientId': self.client_id,
-                'connectionType': 'websocket'
-            }
-            logger.debug('sending heartbeat: %s', message)
-            await self._websocket.send(json.dumps([message]))
-            # send the heartbeat every 10 seconds
-            await asyncio.sleep(10)
+            if self._authenticated:
+                message = {
+                    'type': 'KEEPALIVE',
+                    'channel': 0,
+                }
+                logger.debug('sending heartbeat: %s', message)
+                await self._websocket.send(json.dumps(message))
+                # send the heartbeat every 30 seconds
+            await asyncio.sleep(30)
 
     async def subscribe(
-        self,
-        event_type: EventType,
-        symbols: List[str],
-        reset: bool = False
+            self,
+            event_type: EventType,
+            symbols: List[str],
+            reset: bool = False
     ) -> None:
         """
         Subscribes to quotes for given list of symbols. Used for recurring data
@@ -435,23 +458,39 @@ class DataStreamer:
             whether to reset the subscription list (remove all other
             subscriptions of all types)
         """
-        id = await self._next_id()
+        await self._channel_request(event_type)
+        event_type_str = str(event_type).split('.')[1].capitalize()
         message = {
-            'id': id,
-            'channel': Channel.SUBSCRIPTION,
-            'data': {
-                'reset': reset,
-                'add': {event_type: symbols}
-            },
-            'clientId': self.client_id
+            'type': 'FEED_SUBSCRIPTION',
+            'channel': self._queue_channels[event_type],
+            'add': [{'symbol': symbol, "type": event_type_str} for symbol in symbols]
         }
         logger.debug('sending subscription: %s', message)
-        await self._websocket.send(json.dumps([message]))
+        await self._websocket.send(json.dumps(message))
+
+    async def _channel_request(self, event_type: EventType) -> None:
+        await self._wait_for_authentiation()
+        message = {
+            'type': 'CHANNEL_REQUEST',
+            'channel': self._queue_channels[event_type],
+            'service': 'FEED',
+            'parameters': {
+                'contract': 'AUTO',
+            },
+        }
+        logger.debug('sending subscription: %s', message)
+        await self._websocket.send(json.dumps(message))
+        time_out = 100
+        while not self._subscription_state[self._queue_channels[event_type]] == "CHANNEL_OPENED":
+            await asyncio.sleep(0.1)
+            time_out -= 1
+            if time_out <= 0:
+                raise TastytradeError('Subscription channel not opened')
 
     async def unsubscribe(
-        self,
-        event_type: EventType,
-        symbols: List[str]
+            self,
+            event_type: EventType,
+            symbols: List[str]
     ) -> None:
         """
         Removes existing subscription for given list of symbols.
@@ -460,24 +499,25 @@ class DataStreamer:
         :param event_type: type of subscription to remove
         :param symbols: list of symbols to unsubscribe from
         """
-        id = await self._next_id()
+        if not self._authenticated:
+            raise TastytradeError('Stream not authenticated')
+        event_type_str = str(event_type).split('.')[1].capitalize()
         message = {
-            'id': id,
-            'channel': Channel.SUBSCRIPTION,
-            'data': {'remove': {event_type: symbols}},
-            'clientId': self.client_id
+            'type': 'FEED_SUBSCRIPTION',
+            'channel': self._queue_channels[event_type],
+            'remove': [{'symbol': symbol, "type": event_type_str} for symbol in symbols]
         }
-        logger.debug('sending unsubscription: %s', message)
-        await self._websocket.send(json.dumps([message]))
+        logger.debug('sending subscription: %s', message)
+        await self._websocket.send(json.dumps(message))
 
     async def subscribe_candle(
-        self,
-        symbols: List[str],
-        interval: str,
-        start_time: datetime,
-        end_time: Optional[datetime] = None,
-        extended_trading_hours: bool = False,
-        reset: bool = False
+            self,
+            symbols: List[str],
+            interval: str,
+            start_time: datetime,
+            end_time: Optional[datetime] = None,
+            extended_trading_hours: bool = False,
+            reset: bool = False
     ) -> None:
         """
         Subscribes to time series data for the given symbol.
@@ -491,34 +531,27 @@ class DataStreamer:
         :param extended_trading_hours: whether to include extended trading
         :param reset: whether to reset the subscription list
         """
-        id = await self._next_id()
-        key = EventType.CANDLE
+        await self._channel_request(EventType.CANDLE)
         message = {
-            'id': id,
-            'channel': Channel.SUBSCRIPTION,
-            'data': {
-                'reset': reset,
-                'addTimeSeries': {
-                    key: [{
-                        'eventSymbol': f'{ticker}{{={interval},tho=true}}'
-                        if extended_trading_hours
-                        else f'{ticker}{{={interval}}}',
-                        'fromTime': int(start_time.timestamp() * 1000)
-                    } for ticker in symbols]
-                }
-            },
-            'clientId': self.client_id
+            'type': 'FEED_SUBSCRIPTION',
+            'channel': self._queue_channels[EventType.CANDLE],
+            'add': [{
+                'symbol': f'{ticker}{{={interval},tho=true}}'
+                if extended_trading_hours
+                else f'{ticker}{{={interval}}}',
+                'type': 'Candle',
+                'fromTime': int(start_time.timestamp() * 1000)
+            } for ticker in symbols]
         }
         if end_time is not None:
-            message['data']['addTimeSeries'][key][0]['toTime'] = \
-                int(end_time.timestamp() * 1000)
-        await self._websocket.send(json.dumps([message]))
+            raise 'End time no longer supported'
+        await self._websocket.send(json.dumps(message))
 
     async def unsubscribe_candle(
-        self,
-        ticker: str,
-        interval: Optional[str] = None,
-        extended_trading_hours: bool = False
+            self,
+            ticker: str,
+            interval: Optional[str] = None,
+            extended_trading_hours: bool = False
     ) -> None:
         """
         Removes existing subscription for a candle.
@@ -528,23 +561,18 @@ class DataStreamer:
         :param extended_trading_hours:
             whether candle to unsubscribe from contains extended trading hours
         """
-        id = await self._next_id()
+        await self._channel_request(EventType.CANDLE)
         message = {
-            'id': id,
-            'channel': Channel.SUBSCRIPTION,
-            'data': {
-                'removeTimeSeries': {
-                    EventType.CANDLE: [
-                        f'{ticker}{{={interval},tho=true}}'
-                        if extended_trading_hours
-                        else f'{ticker}{{={interval}}}'
-                    ]
-                }
-            },
-            'clientId': self.client_id
+            'type': 'FEED_SUBSCRIPTION',
+            'channel': self._queue_channels[EventType.CANDLE],
+            'remove': [{
+                'symbol': f'{ticker}{{={interval},tho=true}}'
+                if extended_trading_hours
+                else f'{ticker}{{={interval}}}',
+                'type': 'Candle',
+            }]
         }
-        logger.debug('sending unsubscription: %s', message)
-        await self._websocket.send(json.dumps([message]))
+        await self._websocket.send(json.dumps(message))
 
     async def _map_message(self, message) -> None:
         """
@@ -553,13 +581,9 @@ class DataStreamer:
 
         :param message: raw JSON data from the websocket
         """
-        # the first time around, types are shown
-        if isinstance(message[0], str):
-            msg_type = message[0]
-        else:
-            msg_type = message[0][0]
+        msg_type = message[0]['eventType']
         # regardless, the second element will be the raw data
-        data = message[1]
+        data = message[0]
 
         # parse type or warn for unknown type
         if msg_type == EventType.CANDLE:
