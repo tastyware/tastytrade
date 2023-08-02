@@ -42,7 +42,27 @@ class Event(ABC):
             msg = 'Mapper data input values are not a multiple of the key size'
             raise Exception(msg)
         for i in range(int(multiples)):
-            offset = i * size
-            # local_values = data[offset:(i + 1) * size]
             objs.append(cls(**data))
+        return objs
+
+    @classmethod
+    def from_stream_legacy(cls, data: list) -> List['Event']:
+        """
+        Makes a list of event objects from a list of raw trade data fetched by
+        a :class:`~tastyworks.streamer.DataStreamer`.
+
+        :param data: list of raw quote data from streamer
+
+        :return: list of event objects from data
+        """
+        objs = []
+        size = len(cls.__dataclass_fields__)  # type: ignore
+        multiples = len(data) / size
+        if not multiples.is_integer():
+            msg = 'Mapper data input values are not a multiple of the key size'
+            raise Exception(msg)
+        for i in range(int(multiples)):
+            offset = i * size
+            local_values = data[offset:(i + 1) * size]
+            objs.append(cls(*local_values))
         return objs

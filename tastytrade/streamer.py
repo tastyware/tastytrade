@@ -276,11 +276,13 @@ class DataStreamer:
                 break
 
     """
+
     @classmethod
     async def create(cls, session: ProductionSession, use_legacy: bool = True):
         """
         Factory method for the :class:`DataStreamer` object.
-        Because two API exist at current it returns a subclass based on the use_legacy parameter.
+        Because two API exist at current it returns a subclass based on the
+        use_legacy parameter.
         Simply calls the constructor and performs the asynchronous
         setup tasks. This should be used instead of the constructor.
 
@@ -586,39 +588,39 @@ class DataStreamerLegacy(DataStreamer):
 
         # parse type or warn for unknown type
         if msg_type == EventType.CANDLE:
-            candles = Candle.from_stream(data)
+            candles = Candle.from_stream_legacy(data)
             for candle in candles:
                 await self._queues[EventType.CANDLE].put(candle)
         elif msg_type == EventType.GREEKS:
-            greeks = Greeks.from_stream(data)
+            greeks = Greeks.from_stream_legacy(data)
             for greek in greeks:
                 await self._queues[EventType.GREEKS].put(greek)
         elif msg_type == EventType.PROFILE:
-            profiles = Profile.from_stream(data)
+            profiles = Profile.from_stream_legacy(data)
             for profile in profiles:
                 await self._queues[EventType.PROFILE].put(profile)
         elif msg_type == EventType.QUOTE:
-            quotes = Quote.from_stream(data)
+            quotes = Quote.from_stream_legacy(data)
             for quote in quotes:
                 await self._queues[EventType.QUOTE].put(quote)
         elif msg_type == EventType.SUMMARY:
-            summaries = Summary.from_stream(data)
+            summaries = Summary.from_stream_legacy(data)
             for summary in summaries:
                 await self._queues[EventType.SUMMARY].put(summary)
         elif msg_type == EventType.THEO_PRICE:
-            theo_prices = TheoPrice.from_stream(data)
+            theo_prices = TheoPrice.from_stream_legacy(data)
             for theo_price in theo_prices:
                 await self._queues[EventType.THEO_PRICE].put(theo_price)
         elif msg_type == EventType.TIME_AND_SALE:
-            time_and_sales = TimeAndSale.from_stream(data)
+            time_and_sales = TimeAndSale.from_stream_legacy(data)
             for tas in time_and_sales:
                 await self._queues[EventType.TIME_AND_SALE].put(tas)
         elif msg_type == EventType.TRADE:
-            trades = Trade.from_stream(data)
+            trades = Trade.from_stream_legacy(data)
             for trade in trades:
                 await self._queues[EventType.TRADE].put(trade)
         elif msg_type == EventType.UNDERLYING:
-            underlyings = Underlying.from_stream(data)
+            underlyings = Underlying.from_stream_legacy(data)
             for underlying in underlyings:
                 await self._queues[EventType.UNDERLYING].put(underlying)
         else:
@@ -710,7 +712,8 @@ class DataStreamerNew(DataStreamer):
         return self
 
     def get_api_token(self):
-        response = requests.get(f'{self._session.base_url}/api-quote-tokens', headers=self._session.headers)
+        response = requests.get(f'{self._session.base_url}/api-quote-tokens',
+                                headers=self._session.headers)
         validate_response(response)  # throws exception if not 200
         data = response.json()
         return data['data']
@@ -739,7 +742,8 @@ class DataStreamerNew(DataStreamer):
                     if message['state'] == 'AUTHORIZED':
                         self._authenticated = True
                 elif message['type'] == 'CHANNEL_OPENED':
-                    self._subscription_state[message['channel']] = message['type']
+                    self._subscription_state[message['channel']] \
+                        = message['type']
                 elif message['type'] == 'FEED_CONFIG':
                     print()
                     pass
@@ -835,7 +839,8 @@ class DataStreamerNew(DataStreamer):
         message = {
             'type': 'FEED_SUBSCRIPTION',
             'channel': self._queue_channels[event_type],
-            'add': [{'symbol': symbol, "type": event_type_str} for symbol in symbols]
+            'add': [{'symbol': symbol, "type": event_type_str}
+                    for symbol in symbols]
         }
         logger.debug('sending subscription: %s', message)
         await self._websocket.send(json.dumps(message))
@@ -853,7 +858,8 @@ class DataStreamerNew(DataStreamer):
         logger.debug('sending subscription: %s', message)
         await self._websocket.send(json.dumps(message))
         time_out = 100
-        while not self._subscription_state[self._queue_channels[event_type]] == "CHANNEL_OPENED":
+        while not self._subscription_state[self._queue_channels[event_type]] \
+                == "CHANNEL_OPENED":
             await asyncio.sleep(0.1)
             time_out -= 1
             if time_out <= 0:
@@ -877,7 +883,8 @@ class DataStreamerNew(DataStreamer):
         message = {
             'type': 'FEED_SUBSCRIPTION',
             'channel': self._queue_channels[event_type],
-            'remove': [{'symbol': symbol, "type": event_type_str} for symbol in symbols]
+            'remove': [{'symbol': symbol, "type": event_type_str} for symbol in
+                       symbols]
         }
         logger.debug('sending subscription: %s', message)
         await self._websocket.send(json.dumps(message))
