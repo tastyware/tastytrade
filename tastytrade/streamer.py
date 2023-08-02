@@ -696,7 +696,7 @@ class DataStreamerNew(DataStreamer):
         self._auth_token = api_token['token']
         self._wss_url = api_token['dxlink-url']
 
-        self._connect_task = asyncio.create_task(self._connect())
+        self._connect_task_new = asyncio.create_task(self._connect())
         self._keepalive = asyncio.create_task(self._keepalive())
 
     @classmethod
@@ -800,6 +800,7 @@ class DataStreamerNew(DataStreamer):
         if not self._authenticated:
             raise TastytradeError('Stream not authenticated')
         self._keepalive.cancel()
+        self._connect_task_new.cancel()
 
     async def _keepalive(self) -> None:
         """
@@ -923,7 +924,7 @@ class DataStreamerNew(DataStreamer):
             } for ticker in symbols]
         }
         if end_time is not None:
-            raise 'End time no longer supported'
+            raise TastytradeError('End time no longer supported')
         await self._websocket.send(json.dumps(message))
 
     async def unsubscribe_candle(
