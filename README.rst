@@ -129,40 +129,43 @@ Options chain/streaming greeks
 
 >>> [Greeks(eventSymbol='.SPLG230616C23', eventTime=0, eventFlags=0, index=7235129486797176832, time=1684559855338, sequence=0, price=26.3380972233688, volatility=0.396983376650804, delta=0.999999999996191, gamma=4.81989763184255e-12, theta=-2.5212017514875e-12, rho=0.01834504287973133, vega=3.7003015672215e-12)]
 
-For more examples, check out the `documentation <https://tastyworks-api.readthedocs.io/en/latest/>`_.
-
 Watchlist actions
 ------------------------------
 
 .. code-block:: python
-from tastytrade.watchlists import Watchlist
-from tastytrade import ProductionSession
 
-session = ProductionSession(user, password)
-watchlist = 'MyWatchlist'
+   from tastytrade.watchlists import Watchlist
+   from tastytrade import ProductionSession
+   
+   session = ProductionSession(user, password)
+   watchlist = 'MyWatchlist'
+   
+   #Get symbols as a list
+   temp_watchlist = Watchlist.get_private_watchlist(session, watchlist).watchlist_entries
+   watchlist_entries = [ sub['symbol'] for sub in temp_watchlist ]
+   
+   #Delete all symbols in 'MyWatchlist'
+   current_watchlist = Watchlist.get_private_watchlist(session, watchlist)
+   
+   for ticker in watchlist_entries:
+      Watchlist.remove_symbol(current_watchlist, ticker, 'Equity')
+   
+   Watchlist.update_private_watchlist(current_watchlist, session)
+   
+   #Add symbol to 'MyWatchlist'
+   ticker_list = ['AAPL', 'MSFT']
+   instrument_type= 'Equity'
+   
+   current_watchlist = Watchlist.get_private_watchlist(session, watchlist)
+   
+   for ticker in ticker_list:
+      Watchlist.add_symbol(current_watchlist, ticker, instrument_type)
+   
+   Watchlist.update_private_watchlist(current_watchlist, session)
 
-# Get symbols as a list
-temp_watchlist = Watchlist.get_private_watchlist(session, watchlist).watchlist_entries
-watchlist_entries = [ sub['symbol'] for sub in temp_watchlist ]
+>>> Watchlist actions completed
 
-#Delete all symbols in 'MyWatchlist'
-current_watchlist = Watchlist.get_private_watchlist(session, watchlist)
-
-for ticker in watchlist_entries:
-   Watchlist.remove_symbol(current_watchlist, ticker, 'Equity')
-
-Watchlist.update_private_watchlist(current_watchlist, session)
-
-#Add symbol to 'MyWatchlist'
-ticker_list = ['AAPL', 'MSFT']
-instrument_type= 'Equity'
-
-current_watchlist = Watchlist.get_private_watchlist(session, watchlist)
-
-for ticker in ticker_list:
-   Watchlist.add_symbol(current_watchlist, ticker, instrument_type)
-
-Watchlist.update_private_watchlist(current_watchlist, session)
+For more examples, check out the `documentation <https://tastyworks-api.readthedocs.io/en/latest/>`_.
         
 Disclaimer
 ----------
