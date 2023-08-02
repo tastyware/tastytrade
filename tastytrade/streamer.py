@@ -1,6 +1,5 @@
 import asyncio
 import json
-from abc import ABC, abstractmethod
 from asyncio import Lock, Queue
 from datetime import datetime
 from decimal import Decimal
@@ -13,9 +12,9 @@ import websockets
 from tastytrade import logger
 from tastytrade.account import (Account, AccountBalance, CurrentPosition,
                                 TradingStatus)
-from tastytrade.dxfeed import (Candle, Event, EventType, Greeks, Profile,
-                               Quote, Summary, TheoPrice, TimeAndSale, Trade,
-                               Underlying, Channel)
+from tastytrade.dxfeed import (Candle, Channel, Event, EventType, Greeks,
+                               Profile, Quote, Summary, TheoPrice, TimeAndSale,
+                               Trade, Underlying)
 from tastytrade.order import (InstrumentType, OrderChain, PlacedOrder,
                               PriceEffect)
 from tastytrade.session import CertificationSession, ProductionSession, Session
