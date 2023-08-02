@@ -14,8 +14,6 @@ class TimeAndSale(Event):
     correction/cancellation processing.
     """
 
-    #: eventType of this event
-    eventType: str
     #: symbol of this event
     eventSymbol: str
     #: time of this event

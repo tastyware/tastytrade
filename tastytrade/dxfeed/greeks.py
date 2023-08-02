@@ -14,8 +14,6 @@ class Greeks(Event):
     portfolio has a risky sensitivity in this parameter.
     """
 
-    #: eventType of this event
-    eventType: str
     #: symbol of this event
     eventSymbol: str
     #: time of this event

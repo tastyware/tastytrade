@@ -1,6 +1,5 @@
 from setuptools import find_packages, setup
 
-
 f = open('README.rst', 'r')
 LONG_DESCRIPTION = f.read()
 f.close()

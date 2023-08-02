@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from .event import Event
 
 
@@ -10,8 +11,6 @@ class Candle(Event):
     specified price type with data taken from a specified exchange.
     """
 
-    #: eventType of this event
-    eventType: str
     #: symbol of this event
     eventSymbol: str
     #: time of this event

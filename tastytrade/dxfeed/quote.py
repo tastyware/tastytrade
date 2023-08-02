@@ -10,8 +10,6 @@ class Quote(Event):
     fields that change with each quote.
     """
 
-    #: eventType of this event
-    eventType: str
     #: symbol of this event
     eventSymbol: str
     #: time of this event

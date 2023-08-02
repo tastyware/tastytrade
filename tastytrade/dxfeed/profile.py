@@ -11,8 +11,6 @@ class Profile(Event):
     traded security on the market at any given moment of time.
     """
 
-    #: eventType of this event
-    eventType: str
     #: symbol of this event
     eventSymbol: str
     #: time of this event

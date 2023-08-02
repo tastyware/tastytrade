@@ -12,8 +12,6 @@ class Underlying(Event):
     corresponding values on the market at any given moment of time.
     """
 
-    #: eventType of this event
-    eventType: str
     #: symbol of this event
     eventSymbol: str
     #: transactional event flags

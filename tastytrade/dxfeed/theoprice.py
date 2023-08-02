@@ -13,8 +13,6 @@ class TheoPrice(Event):
     this event.
     """
 
-    #: eventType of this event
-    eventType: str
     #: symbol of this event
     eventSymbol: str
     #: time of this event
