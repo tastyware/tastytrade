@@ -283,14 +283,14 @@ class DataStreamer:
         Factory method for the :class:`DataStreamer` object.
         Because two API exist at current it returns a subclass based on the
         use_legacy parameter.
-        Simply calls the constructor and performs the asynchronous
-        setup tasks. This should be used instead of the constructor.
+        Simply calls the create method of the appropriate streamer class as
+        indicated by the use_legacy parameter.
 
         :param session: active user session to use
         :param use_legacy: use the legacy streamer or the new streamer
         """
         if use_legacy:
-            return await DataStreamerLegacy.create_new(session)
+            return await DataStreamerLegacy.create_legacy(session)
         else:
             return await DataStreamerNew.create_new(session)
 
@@ -320,7 +320,7 @@ class DataStreamerLegacy(DataStreamer):
         self._connect_task = asyncio.create_task(self._connect())
 
     @classmethod
-    async def create_new(cls, session: ProductionSession) -> 'DataStreamer':
+    async def create_legacy(cls, session: ProductionSession) -> 'DataStreamer':
         """
         Factory method for the :class:`DataStreamer` object.
         Simply calls the constructor and performs the asynchronous
@@ -666,7 +666,7 @@ class DataStreamerNew(DataStreamer):
             EventType.TRADE: Queue(),
             EventType.UNDERLYING: Queue()
         }
-        self._queue_channels: Dict[str, int] = {
+        self._channels: Dict[str, int] = {
             EventType.CANDLE: 1,
             EventType.GREEKS: 3,
             EventType.PROFILE: 5,
@@ -678,26 +678,26 @@ class DataStreamerNew(DataStreamer):
             EventType.UNDERLYING: 17
         }
         self._subscription_state: Dict[int, str] = {
-            self._queue_channels[EventType.CANDLE]: "CHANNEL_CLOSED",
-            self._queue_channels[EventType.GREEKS]: "CHANNEL_CLOSED",
-            self._queue_channels[EventType.PROFILE]: "CHANNEL_CLOSED",
-            self._queue_channels[EventType.QUOTE]: "CHANNEL_CLOSED",
-            self._queue_channels[EventType.SUMMARY]: "CHANNEL_CLOSED",
-            self._queue_channels[EventType.THEO_PRICE]: "CHANNEL_CLOSED",
-            self._queue_channels[EventType.TIME_AND_SALE]: "CHANNEL_CLOSED",
-            self._queue_channels[EventType.TRADE]: "CHANNEL_CLOSED",
-            self._queue_channels[EventType.UNDERLYING]: "CHANNEL_CLOSED"
+            self._channels[EventType.CANDLE]: "CHANNEL_CLOSED",
+            self._channels[EventType.GREEKS]: "CHANNEL_CLOSED",
+            self._channels[EventType.PROFILE]: "CHANNEL_CLOSED",
+            self._channels[EventType.QUOTE]: "CHANNEL_CLOSED",
+            self._channels[EventType.SUMMARY]: "CHANNEL_CLOSED",
+            self._channels[EventType.THEO_PRICE]: "CHANNEL_CLOSED",
+            self._channels[EventType.TIME_AND_SALE]: "CHANNEL_CLOSED",
+            self._channels[EventType.TRADE]: "CHANNEL_CLOSED",
+            self._channels[EventType.UNDERLYING]: "CHANNEL_CLOSED"
         }
 
         #: The unique client identifier received from the server
         self._session = session
         self._authenticated = False
-        api_token = self.get_api_token()
-        self._auth_token = api_token['token']
-        self._wss_url = api_token['dxlink-url']
+        api_info = self.get_api_info()
+        self._auth_token = api_info['token']
+        self._wss_url = api_info['dxlink-url']
 
         self._connect_task_new = asyncio.create_task(self._connect())
-        self._keepalive = asyncio.create_task(self._keepalive())
+        self._keepalive_task = asyncio.create_task(self._keepalive())
 
     @classmethod
     async def create_new(cls, session: ProductionSession) -> 'DataStreamerNew':
@@ -711,7 +711,7 @@ class DataStreamerNew(DataStreamer):
         self = cls(session)
         return self
 
-    def get_api_token(self):
+    def get_api_info(self):
         response = requests.get(f'{self._session.base_url}/api-quote-tokens',
                                 headers=self._session.headers)
         validate_response(response)  # throws exception if not 200
@@ -745,7 +745,6 @@ class DataStreamerNew(DataStreamer):
                     self._subscription_state[message['channel']] \
                         = message['type']
                 elif message['type'] == 'FEED_CONFIG':
-                    print()
                     pass
                 elif message['type'] == 'FEED_DATA':
                     await self._map_message(message['data'])
@@ -772,7 +771,7 @@ class DataStreamerNew(DataStreamer):
         }
         await self._websocket.send(json.dumps(message))
 
-    async def _wait_for_authentiation(self, time_out=100):
+    async def _wait_for_authentication(self, time_out=100):
         while not self._authenticated:
             await asyncio.sleep(0.1)
             time_out -= 1
@@ -799,7 +798,7 @@ class DataStreamerNew(DataStreamer):
         """
         if not self._authenticated:
             raise TastytradeError('Stream not authenticated')
-        self._keepalive.cancel()
+        self._keepalive_task.cancel()
         self._connect_task_new.cancel()
 
     async def _keepalive(self) -> None:
@@ -813,7 +812,7 @@ class DataStreamerNew(DataStreamer):
                     'type': 'KEEPALIVE',
                     'channel': 0,
                 }
-                logger.debug('sending heartbeat: %s', message)
+                logger.debug('sending keepalive message: %s', message)
                 await self._websocket.send(json.dumps(message))
                 # send the heartbeat every 30 seconds
             await asyncio.sleep(30)
@@ -839,7 +838,7 @@ class DataStreamerNew(DataStreamer):
         event_type_str = str(event_type).split('.')[1].capitalize()
         message = {
             'type': 'FEED_SUBSCRIPTION',
-            'channel': self._queue_channels[event_type],
+            'channel': self._channels[event_type],
             'add': [{'symbol': symbol, "type": event_type_str}
                     for symbol in symbols]
         }
@@ -847,10 +846,10 @@ class DataStreamerNew(DataStreamer):
         await self._websocket.send(json.dumps(message))
 
     async def _channel_request(self, event_type: EventType) -> None:
-        await self._wait_for_authentiation()
+        await self._wait_for_authentication()
         message = {
             'type': 'CHANNEL_REQUEST',
-            'channel': self._queue_channels[event_type],
+            'channel': self._channels[event_type],
             'service': 'FEED',
             'parameters': {
                 'contract': 'AUTO',
@@ -859,8 +858,8 @@ class DataStreamerNew(DataStreamer):
         logger.debug('sending subscription: %s', message)
         await self._websocket.send(json.dumps(message))
         time_out = 100
-        while not self._subscription_state[self._queue_channels[event_type]] \
-                == "CHANNEL_OPENED":
+        while not self._subscription_state[self._channels[event_type]] \
+                  == "CHANNEL_OPENED":
             await asyncio.sleep(0.1)
             time_out -= 1
             if time_out <= 0:
@@ -883,7 +882,7 @@ class DataStreamerNew(DataStreamer):
         event_type_str = str(event_type).split('.')[1].capitalize()
         message = {
             'type': 'FEED_SUBSCRIPTION',
-            'channel': self._queue_channels[event_type],
+            'channel': self._channels[event_type],
             'remove': [{'symbol': symbol, "type": event_type_str} for symbol in
                        symbols]
         }
@@ -914,7 +913,7 @@ class DataStreamerNew(DataStreamer):
         await self._channel_request(EventType.CANDLE)
         message = {
             'type': 'FEED_SUBSCRIPTION',
-            'channel': self._queue_channels[EventType.CANDLE],
+            'channel': self._channels[EventType.CANDLE],
             'add': [{
                 'symbol': f'{ticker}{{={interval},tho=true}}'
                 if extended_trading_hours
@@ -944,7 +943,7 @@ class DataStreamerNew(DataStreamer):
         await self._channel_request(EventType.CANDLE)
         message = {
             'type': 'FEED_SUBSCRIPTION',
-            'channel': self._queue_channels[EventType.CANDLE],
+            'channel': self._channels[EventType.CANDLE],
             'remove': [{
                 'symbol': f'{ticker}{{={interval},tho=true}}'
                 if extended_trading_hours
