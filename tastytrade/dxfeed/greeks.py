@@ -13,7 +13,6 @@ class Greeks(Event):
     in different axes. If a derivative is very far from zero, then the
     portfolio has a risky sensitivity in this parameter.
     """
-
     #: symbol of this event
     eventSymbol: str
     #: time of this event

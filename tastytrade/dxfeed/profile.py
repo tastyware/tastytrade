@@ -10,7 +10,6 @@ class Profile(Event):
     represents the most recent information that is available about the
     traded security on the market at any given moment of time.
     """
-
     #: symbol of this event
     eventSymbol: str
     #: time of this event

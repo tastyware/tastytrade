@@ -9,7 +9,6 @@ class Quote(Event):
     A Quote event is a snapshot of the best bid and ask prices, and other
     fields that change with each quote.
     """
-
     #: symbol of this event
     eventSymbol: str
     #: time of this event

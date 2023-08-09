@@ -66,13 +66,13 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     option_expiration_implied_volatilities: List[OptionExpirationImpliedVolatility]  # noqa: E501
     beta: Decimal
     corr_spy_3month: Decimal
-    dividend_rate_per_share: Decimal
+    dividend_rate_per_share: Optional[Decimal] = None
     market_cap: Decimal
-    implied_volatility_30_day: Decimal
-    historical_volatility_30_day: Decimal
-    historical_volatility_60_day: Decimal
-    historical_volatility_90_day: Decimal
-    iv_hv_30_day_difference: Decimal
+    implied_volatility_30_day: Optional[Decimal] = None
+    historical_volatility_30_day: Optional[Decimal] = None
+    historical_volatility_60_day: Optional[Decimal] = None
+    historical_volatility_90_day: Optional[Decimal] = None
+    iv_hv_30_day_difference: Optional[Decimal] = None
     price_earnings_ratio: Decimal
     earnings_per_share: Decimal
     created_at: Optional[datetime] = None

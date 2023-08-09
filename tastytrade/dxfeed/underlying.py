@@ -11,7 +11,6 @@ class Underlying(Event):
     represents the most recent information that is available about the
     corresponding values on the market at any given moment of time.
     """
-
     #: symbol of this event
     eventSymbol: str
     #: transactional event flags
