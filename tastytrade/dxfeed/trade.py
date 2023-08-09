@@ -12,7 +12,6 @@ class Trade(Event):
     about all transactions, but only about the last transaction for a single
     instrument.
     """
-
     #: symbol of this event
     eventSymbol: str
     #: time of this event
