@@ -859,7 +859,7 @@ class DataStreamerNew(DataStreamer):
         await self._websocket.send(json.dumps(message))
         time_out = 100
         while not self._subscription_state[self._channels[event_type]] \
-                  == "CHANNEL_OPENED":
+                == "CHANNEL_OPENED":
             await asyncio.sleep(0.1)
             time_out -= 1
             if time_out <= 0:
