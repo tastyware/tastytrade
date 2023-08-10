@@ -4,7 +4,7 @@ Watchlists
 Watchlist actions
 ------------------------------
 In order to perform watchlist actions you need to create a watchlist in the Tastytrade platform. 
-In this example we will use 'MyWathlist' for the purpose of removing and adding symbols to the already exising watchlist.
+In this example we will use 'MyWatchlist' for the purpose of removing and adding symbols to the already exising watchlist.
 
 A session object is required to authenticate your requests to the Tastytrade API.
 
@@ -13,7 +13,7 @@ A session object is required to authenticate your requests to the Tastytrade API
    from tastytrade import ProductionSession
    session = ProductionSession(user, password)
 
-A watchlist object is requiret to perform watchlist actions
+A watchlist object is required to perform watchlist actions
 
 .. code-block:: python
 
