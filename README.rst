@@ -130,7 +130,7 @@ Options chain/streaming greeks
 >>> [Greeks(eventSymbol='.SPLG230616C23', eventTime=0, eventFlags=0, index=7235129486797176832, time=1684559855338, sequence=0, price=26.3380972233688, volatility=0.396983376650804, delta=0.999999999996191, gamma=4.81989763184255e-12, theta=-2.5212017514875e-12, rho=0.01834504287973133, vega=3.7003015672215e-12)]
 
 For more examples, check out the `documentation <https://tastyworks-api.readthedocs.io/en/latest/>`_.
-
+        
 Disclaimer
 ----------
 
