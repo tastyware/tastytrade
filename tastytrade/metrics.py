@@ -54,12 +54,12 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     symbol: str
     implied_volatility_index: Decimal
     implied_volatility_index_5_day_change: Decimal
-    implied_volatility_index_rank: Decimal
+    implied_volatility_index_rank: Optional[str] = None
     tos_implied_volatility_index_rank: Decimal
     tw_implied_volatility_index_rank: Decimal
     tos_implied_volatility_index_rank_updated_at: datetime
     implied_volatility_index_rank_source: str
-    implied_volatility_percentile: Decimal
+    implied_volatility_percentile: Optional[str] = None
     implied_volatility_updated_at: datetime
     liquidity_rating: int
     updated_at: datetime
