@@ -9,4 +9,4 @@ def test_session():
     password = os.environ.get('TT_PASSWORD', None)
     assert password is not None
 
-    session = CertificationSession(username, password)
+    session = CertificationSession(username, password)  # noqa: F841
