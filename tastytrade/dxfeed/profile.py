@@ -36,3 +36,17 @@ class Profile(Event):
     high52WeekPrice: float
     #: minimal (low) price in last 52 weeks
     low52WeekPrice: float
+    #: the correlation coefficient of the instrument to the S&P500 index
+    beta: float
+    #: earnings per share
+    earningsPerShare: float
+    #: frequency of cash dividends payments per year (calculated)
+    dividendFrequency: float
+    #: the amount of the last paid dividend
+    exDividendAmount: float
+    #: identifier of the ex-dividend date
+    exDividendDayId: int
+    #: shares outstanding
+    shares: float
+    #: the number of shares that are available to the public for trade
+    freeFloat: float
