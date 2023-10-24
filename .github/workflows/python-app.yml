@@ -29,10 +29,6 @@ jobs:
         isort --check --diff tastytrade/ tests/
         flake8 --count --show-source --statistics tastytrade/ tests/
         mypy -p tastytrade
-<<<<<<< HEAD
-=======
-        mypy -p tests
->>>>>>> eb81296 (add pytest)
     - name: Testing...
       run: |
         python -m pytest --cov=tastytrade --cov-report=term-missing tests/
