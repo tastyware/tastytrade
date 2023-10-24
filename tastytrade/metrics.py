@@ -54,37 +54,37 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     symbol: str
     implied_volatility_index: Decimal
     implied_volatility_index_5_day_change: Decimal
-    implied_volatility_index_rank: Decimal
+    implied_volatility_index_rank: Optional[str] = None
     tos_implied_volatility_index_rank: Decimal
     tw_implied_volatility_index_rank: Decimal
     tos_implied_volatility_index_rank_updated_at: datetime
     implied_volatility_index_rank_source: str
-    implied_volatility_percentile: Decimal
+    implied_volatility_percentile: Optional[str] = None
     implied_volatility_updated_at: datetime
     liquidity_rating: int
     updated_at: datetime
     option_expiration_implied_volatilities: List[OptionExpirationImpliedVolatility]  # noqa: E501
     beta: Decimal
     corr_spy_3month: Decimal
-    dividend_rate_per_share: Decimal
     market_cap: Decimal
-    implied_volatility_30_day: Decimal
-    historical_volatility_30_day: Decimal
-    historical_volatility_60_day: Decimal
-    historical_volatility_90_day: Decimal
-    iv_hv_30_day_difference: Decimal
     price_earnings_ratio: Decimal
     earnings_per_share: Decimal
+    dividend_rate_per_share: Optional[Decimal] = None
+    implied_volatility_30_day: Optional[Decimal] = None
+    historical_volatility_30_day: Optional[Decimal] = None
+    historical_volatility_60_day: Optional[Decimal] = None
+    historical_volatility_90_day: Optional[Decimal] = None
+    iv_hv_30_day_difference: Optional[Decimal] = None
     beta_updated_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     dividend_ex_date: Optional[date] = None
     dividend_next_date: Optional[date] = None
     dividend_pay_date: Optional[date] = None
     dividend_updated_at: Optional[datetime] = None
-    dividend_yield: Optional[Decimal] = None
     liquidity_value: Optional[Decimal] = None
     liquidity_rank: Optional[Decimal] = None
     liquidity_running_state: Optional[Liquidity] = None
+    dividend_yield: Optional[Decimal] = None
     listed_market: Optional[str] = None
     lendability: Optional[str] = None
     borrow_rate: Optional[Decimal] = None

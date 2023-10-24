@@ -298,7 +298,6 @@ class TradingStatus(TastytradeJsonDataclass):
     small_notional_futures_margin_rate_multiplier: Decimal
     is_equity_offering_enabled: bool
     is_equity_offering_closing_only: bool
-    enhanced_fraud_safeguards_enabled_at: datetime
     updated_at: datetime
     day_trade_count: Optional[int] = None
     autotrade_account_type: Optional[str] = None
@@ -307,6 +306,7 @@ class TradingStatus(TastytradeJsonDataclass):
     is_cryptocurrency_closing_only: Optional[bool] = None
     pdt_reset_on: Optional[date] = None
     cmta_override: Optional[int] = None
+    enhanced_fraud_safeguards_enabled_at: Optional[datetime] = None
 
 
 class Transaction(TastytradeJsonDataclass):
