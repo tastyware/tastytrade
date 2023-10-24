@@ -61,20 +61,12 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     implied_volatility_index_rank_source: str
     implied_volatility_percentile: Decimal
     implied_volatility_updated_at: datetime
-    liquidity_value: Decimal
-    liquidity_rank: Decimal
     liquidity_rating: int
     updated_at: datetime
     option_expiration_implied_volatilities: List[OptionExpirationImpliedVolatility]  # noqa: E501
-    liquidity_running_state: Liquidity
     beta: Decimal
-    beta_updated_at: datetime
     corr_spy_3month: Decimal
     dividend_rate_per_share: Decimal
-    dividend_yield: Decimal
-    listed_market: str
-    lendability: str
-    borrow_rate: Decimal
     market_cap: Decimal
     implied_volatility_30_day: Decimal
     historical_volatility_30_day: Decimal
@@ -83,11 +75,19 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     iv_hv_30_day_difference: Decimal
     price_earnings_ratio: Decimal
     earnings_per_share: Decimal
+    beta_updated_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     dividend_ex_date: Optional[date] = None
     dividend_next_date: Optional[date] = None
     dividend_pay_date: Optional[date] = None
     dividend_updated_at: Optional[datetime] = None
+    dividend_yield: Optional[Decimal] = None
+    liquidity_value: Optional[Decimal] = None
+    liquidity_rank: Optional[Decimal] = None
+    liquidity_running_state: Optional[Liquidity] = None
+    listed_market: Optional[str] = None
+    lendability: Optional[str] = None
+    borrow_rate: Optional[Decimal] = None
 
 
 def get_market_metrics(
