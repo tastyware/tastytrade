@@ -99,13 +99,13 @@ class FillInfo(TastytradeJsonDataclass):
     """
     Dataclass that contains information about an order fill.
     """
-    ext_group_fill_id: str
-    ext_exec_id: str
     fill_id: str
     quantity: Decimal
     fill_price: Decimal
     filled_at: datetime
     destination_venue: str
+    ext_group_fill_id: Optional[str] = None
+    ext_exec_id: Optional[str] = None
 
 
 class Leg(TastytradeJsonDataclass):
