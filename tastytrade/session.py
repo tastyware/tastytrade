@@ -325,7 +325,7 @@ class ProductionSession(Session):
 
 def _map_event(
     event_type: str,
-    event_dict: Dict[str, Any]
+    event_dict: Any  # Usually Dict[str, Any]; sometimes a list
 ) -> Event:
     """
     Parses the raw JSON data from the dxfeed REST API into event objects.
