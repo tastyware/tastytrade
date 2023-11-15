@@ -183,7 +183,8 @@ class ProductionSession(Session):  # pragma: no cover
         data = response.json()['data']
         self.streamer_token = data['token']
         url = data['websocket-url'] + '/cometd'
-        self.streamer_url = url.replace('https', 'wss')
+        self.dxfeed_url = url.replace('https', 'wss')
+        self.dxlink_url = data['dxlink-url']
         self.rest_url = data['websocket-url'] + '/rest/events.json'
         self.streamer_headers = {
             'Authorization': f'Bearer {self.streamer_token}'

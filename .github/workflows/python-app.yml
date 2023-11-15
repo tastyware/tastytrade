@@ -33,5 +33,5 @@ jobs:
       run: |
         python -m pytest --cov=tastytrade --cov-report=term-missing tests/ --cov-fail-under=95
       env:
-        TT_USERNAME: ${{ secrets.TT_USERNAME }}
-        TT_PASSWORD: ${{ secrets.TT_PASSWORD }}
+        TT_USERNAME: tastyware
+        TT_PASSWORD: :4s-S9/9L&Q~C]@v

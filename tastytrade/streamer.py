@@ -1,6 +1,7 @@
 import asyncio
 import json
 from asyncio import Lock, Queue
+from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
@@ -73,7 +74,7 @@ class SubscriptionType(str, Enum):
     USER_MESSAGE = 'user-message-subscribe'
 
 
-class AlertStreamer:
+class AccountStreamer:
     """
     Used to subscribe to account-level updates (balances, orders, positions),
     public watchlist updates, quote alerts, and user-level messages. It should
@@ -82,9 +83,9 @@ class AlertStreamer:
 
     Example usage::
 
-        from tastytrade import Account, AlertStreamer
+        from tastytrade import Account, AccountStreamer
 
-        streamer = await AlertStreamer.create(session)
+        streamer = await AccountStreamer.create(session)
         accounts = Account.get_accounts(session)
 
         await streamer.account_subscribe(accounts)
@@ -95,6 +96,7 @@ class AlertStreamer:
             print(data)
 
     """
+
     def __init__(self, session: Session):
         #: The active session used to initiate the streamer or make requests
         self.token: str = session.session_token
@@ -109,19 +111,24 @@ class AlertStreamer:
         self._connect_task = asyncio.create_task(self._connect())
 
     @classmethod
-    async def create(cls, session: Session) -> 'AlertStreamer':
+    async def create(cls, session: Session) -> 'AccountStreamer':
         """
-        Factory method for the :class:`DataStreamer` object. Simply calls the
-        constructor and performs the asynchronous setup tasks. This should be
-        used instead of the constructor.
+        Factory method for the :class:`AccountStreamer` object. Simply calls
+        the constructor and performs the asynchronous setup tasks. This should
+        be used instead of the constructor.
 
         :param session: active user session to use
         """
         self = cls(session)
+        await self._wait_for_authentication()
+        return self
+
+    async def _wait_for_authentication(self, time_out=100):
         while not self._websocket:
             await asyncio.sleep(0.1)
-
-        return self
+            time_out -= 1
+            if time_out < 0:
+                raise TastytradeError('Connection timed out')
 
     async def _connect(self) -> None:
         """
@@ -130,8 +137,8 @@ class AlertStreamer:
         """
         headers = {'Authorization': f'Bearer {self.token}'}
         async with websockets.connect(  # type: ignore
-            self.base_url,
-            extra_headers=headers
+                self.base_url,
+                extra_headers=headers
         ) as websocket:
             self._websocket = websocket
             self._heartbeat_task = asyncio.create_task(self._heartbeat())
@@ -155,9 +162,9 @@ class AlertStreamer:
                 logger.debug('subscription message: %s', data)
 
     def _map_message(
-        self,
-        type_str: str,
-        data: dict
+            self,
+            type_str: str,
+            data: dict
     ) -> TastytradeJsonDataclass:
         """
         I'm not sure what the user-status messages look like,
@@ -230,9 +237,9 @@ class AlertStreamer:
             await asyncio.sleep(10)
 
     async def _subscribe(
-        self,
-        subscription: SubscriptionType,
-        value: Union[Optional[str], List[str]] = ''
+            self,
+            subscription: SubscriptionType,
+            value: Union[Optional[str], List[str]] = ''
     ) -> None:
         """
         Subscribes to a :class:`SubscriptionType`. Depending on the kind of
@@ -248,20 +255,20 @@ class AlertStreamer:
         await self._websocket.send(json.dumps(message))  # type: ignore
 
 
-class DataStreamer:  # pragma: no cover
+class DXFeedStreamer:  # pragma: no cover
     """
-    A :class:`DataStreamer` object is used to fetch quotes or greeks
+    A :class:`DXFeedStreamer` object is used to fetch quotes or greeks
     for a given symbol or list of symbols. It should always be
     initialized using the :meth:`create` function, since the object
     cannot be fully instantiated without using async.
 
     Example usage::
 
-        from tastytrade import DataStreamer
+        from tastytrade import DXFeedStreamer
         from tastytrade.dxfeed import EventType
 
         # must be a production session
-        streamer = await DataStreamer.create(session)
+        streamer = await DXFeedStreamer.create(session)
 
         subs = ['SPY', 'GLD']  # list of quotes to fetch
         await streamer.subscribe(EventType.QUOTE, subs)
@@ -275,39 +282,34 @@ class DataStreamer:  # pragma: no cover
     def __init__(self, session: ProductionSession):
         self._counter = 0
         self._lock: Lock = Lock()
-        self._queues: Dict[str, Queue] = {
-            EventType.CANDLE: Queue(),
-            EventType.GREEKS: Queue(),
-            EventType.PROFILE: Queue(),
-            EventType.QUOTE: Queue(),
-            EventType.SUMMARY: Queue(),
-            EventType.THEO_PRICE: Queue(),
-            EventType.TIME_AND_SALE: Queue(),
-            EventType.TRADE: Queue(),
-            EventType.UNDERLYING: Queue()
-        }
+        self._queues: Dict[EventType, Queue] = defaultdict(Queue)
         #: The unique client identifier received from the server
         self.client_id: Optional[str] = None
 
         self._auth_token = session.streamer_token
-        self._wss_url = session.streamer_url
+        self._wss_url = session.dxfeed_url
 
         self._connect_task = asyncio.create_task(self._connect())
 
     @classmethod
-    async def create(cls, session: ProductionSession) -> 'DataStreamer':
+    async def create(cls, session: ProductionSession) -> 'DXFeedStreamer':
         """
-        Factory method for the :class:`DataStreamer` object.
+        Factory method for the :class:`DXFeedStreamer` object.
         Simply calls the constructor and performs the asynchronous
         setup tasks. This should be used instead of the constructor.
 
         :param session: active user session to use
         """
         self = cls(session)
+        await self._wait_for_authentication()
+        return self
+
+    async def _wait_for_authentication(self, time_out=100):
         while not self.client_id:
             await asyncio.sleep(0.1)
-
-        return self
+            time_out -= 1
+            if time_out < 0:
+                raise TastytradeError('Connection timed out')
 
     async def _next_id(self):
         async with self._lock:
@@ -322,8 +324,8 @@ class DataStreamer:  # pragma: no cover
         headers = {'Authorization': f'Bearer {self._auth_token}'}
 
         async with websockets.connect(  # type: ignore
-            self._wss_url,
-            extra_headers=headers
+                self._wss_url,
+                extra_headers=headers
         ) as websocket:
             self._websocket = websocket
             await self._handshake()
@@ -379,10 +381,7 @@ class DataStreamer:  # pragma: no cover
         }
         await self._websocket.send(json.dumps([message]))
 
-    async def listen(
-        self,
-        event_type: EventType
-    ) -> AsyncIterator[Event]:
+    async def listen(self, event_type: EventType) -> AsyncIterator[Event]:
         """
         Using the existing subscriptions, pulls events of the given type and
         yield returns them. Never exits unless there's an error or the channel
@@ -600,3 +599,325 @@ class DataStreamer:  # pragma: no cover
                 await self._queues[EventType.UNDERLYING].put(underlying)
         else:
             raise TastytradeError(f'Unknown message type received: {message}')
+
+
+class DXLinkStreamer:  # pragma: no cover
+    """
+    A :class:`DXLinkStreamer` object is used to fetch quotes or greeks
+    for a given symbol or list of symbols. It should always be
+    initialized using the :meth:`create` function, since the object
+    cannot be fully instantiated without using async.
+
+    Example usage::
+
+        from tastytrade import DXLinkStreamer
+        from tastytrade.dxfeed import EventType
+
+        # must be a production session
+        streamer = await DXLinkStreamer.create(session)
+
+        subs = ['SPY', 'GLD']  # list of quotes to fetch
+        await streamer.subscribe(EventType.QUOTE, subs)
+        quotes = []
+        async for quote in streamer.listen(EventType.QUOTE):
+            quotes.append(quote)
+            if len(quotes) >= len(subs):
+                break
+
+    """
+
+    def __init__(self, session: ProductionSession):
+        self._counter = 0
+        self._lock: Lock = Lock()
+        self._queues: Dict[EventType, Queue] = defaultdict(Queue)
+        self._channels: Dict[EventType, int] = {
+            EventType.CANDLE: 1,
+            EventType.GREEKS: 3,
+            EventType.PROFILE: 5,
+            EventType.QUOTE: 7,
+            EventType.SUMMARY: 9,
+            EventType.THEO_PRICE: 11,
+            EventType.TIME_AND_SALE: 13,
+            EventType.TRADE: 15,
+            EventType.UNDERLYING: 17
+        }
+        self._subscription_state: Dict[EventType, str] = \
+            defaultdict(lambda: 'CHANNEL_CLOSED')
+
+        #: The unique client identifier received from the server
+        self._session = session
+        self._authenticated = False
+        self._wss_url = session.dxlink_url
+        self._auth_token = session.streamer_token
+
+        self._connect_task = asyncio.create_task(self._connect())
+
+    @classmethod
+    async def create(cls, session: ProductionSession) -> 'DXLinkStreamer':
+        """
+        Factory method for the :class:`DXLinkStreamer` object.
+        Simply calls the constructor and performs the asynchronous
+        setup tasks. This should be used instead of the constructor.
+
+        :param session: active user session to use
+        """
+        self = cls(session)
+        await self._wait_for_authentication()
+        return self
+
+    async def _connect(self) -> None:
+        """
+        Connect to the websocket server using the URL and
+        authorization token provided during initialization.
+        """
+
+        async with websockets.connect(  # type: ignore
+            self._wss_url
+        ) as websocket:
+            self._websocket = websocket
+            await self._setup_connection()
+
+            # main loop
+            while True:
+                raw_message = await self._websocket.recv()
+                message = json.loads(raw_message)
+
+                logger.debug('received: %s', message)
+                if message['type'] == 'SETUP':
+                    await self._authenticate_connection()
+                elif message['type'] == 'AUTH_STATE':
+                    if message['state'] == 'AUTHORIZED':
+                        self._authenticated = True
+                        self._heartbeat_task = \
+                            asyncio.create_task(self._heartbeat())
+                elif message['type'] == 'CHANNEL_OPENED':
+                    self._subscription_state[message['channel']] \
+                        = message['type']
+                elif message['type'] == 'FEED_CONFIG':
+                    pass
+                elif message['type'] == 'FEED_DATA':
+                    await self._map_message(message['data'])
+                elif message['type'] == 'KEEPALIVE':
+                    pass
+                else:
+                    raise TastytradeError(message)
+
+    async def _setup_connection(self):
+        message = {
+            'type': 'SETUP',
+            'channel': 0,
+            'keepaliveTimeout': 60,
+            'acceptKeepaliveTimeout': 60,
+            'version': '0.1-js/1.0.0'
+        }
+        await self._websocket.send(json.dumps(message))
+
+    async def _authenticate_connection(self):
+        message = {
+            'type': 'AUTH',
+            'channel': 0,
+            'token': self._auth_token,
+        }
+        await self._websocket.send(json.dumps(message))
+
+    async def _wait_for_authentication(self, time_out=100):
+        while not self._authenticated:
+            await asyncio.sleep(0.1)
+            time_out -= 1
+            if time_out < 0:
+                raise TastytradeError('Connection timed out')
+
+    async def listen(self, event_type: EventType) -> AsyncIterator[Event]:
+        """
+        Using the existing subscriptions, pulls events of the given type and
+        yield returns them. Never exits unless there's an error or the channel
+        is closed.
+
+        :param event_type: the type of event to listen for
+        """
+        while True:
+            yield await self._queues[event_type].get()
+
+    def close(self) -> None:
+        """
+        Closes the websocket connection and cancels the keepalive task.
+        """
+        self._heartbeat_task.cancel()
+        self._connect_task.cancel()
+
+    async def _heartbeat(self) -> None:
+        """
+        Sends a keepalive message every 30 seconds to keep the connection
+        alive.
+        """
+        message = {
+            'type': 'KEEPALIVE',
+            'channel': 0
+        }
+
+        while True:
+            logger.debug('sending keepalive message: %s', message)
+            await self._websocket.send(json.dumps(message))
+            # send the heartbeat every 30 seconds
+            await asyncio.sleep(30)
+
+    async def subscribe(
+        self,
+        event_type: EventType,
+        symbols: List[str]
+    ) -> None:
+        """
+        Subscribes to quotes for given list of symbols. Used for recurring data
+        feeds.
+        For candles, use :meth:`subscribe_candle` instead.
+
+        :param event_type: type of subscription to add
+        :param symbols: list of symbols to subscribe for
+        """
+        await self._channel_request(event_type)
+        event_type_str = str(event_type).split('.')[1].capitalize()
+        message = {
+            'type': 'FEED_SUBSCRIPTION',
+            'channel': self._channels[event_type],
+            'add': [{'symbol': symbol, "type": event_type_str}
+                    for symbol in symbols]
+        }
+        logger.debug('sending subscription: %s', message)
+        await self._websocket.send(json.dumps(message))
+
+    async def _channel_request(self, event_type: EventType) -> None:
+        message = {
+            'type': 'CHANNEL_REQUEST',
+            'channel': self._channels[event_type],
+            'service': 'FEED',
+            'parameters': {
+                'contract': 'AUTO',
+            },
+        }
+        logger.debug('sending subscription: %s', message)
+        await self._websocket.send(json.dumps(message))
+        time_out = 100
+        while not self._subscription_state[event_type] == 'CHANNEL_OPENED':
+            await asyncio.sleep(0.1)
+            time_out -= 1
+            if time_out <= 0:
+                raise TastytradeError('Subscription channel not opened')
+
+    async def unsubscribe(
+        self,
+        event_type: EventType,
+        symbols: List[str]
+    ) -> None:
+        """
+        Removes existing subscription for given list of symbols.
+        For candles, use :meth:`unsubscribe_candle` instead.
+
+        :param event_type: type of subscription to remove
+        :param symbols: list of symbols to unsubscribe from
+        """
+        if not self._authenticated:
+            raise TastytradeError('Stream not authenticated')
+        event_type_str = str(event_type).split('.')[1].capitalize()
+        message = {
+            'type': 'FEED_SUBSCRIPTION',
+            'channel': self._channels[event_type],
+            'remove': [{'symbol': symbol, "type": event_type_str} for symbol in
+                       symbols]
+        }
+        logger.debug('sending subscription: %s', message)
+        await self._websocket.send(json.dumps(message))
+
+    async def subscribe_candle(
+        self,
+        symbols: List[str],
+        interval: str,
+        start_time: datetime,
+        end_time: Optional[datetime] = None,
+        extended_trading_hours: bool = False
+    ) -> None:
+        """
+        Subscribes to time series data for the given symbol.
+
+        :param symbols: list of symbols to get data for
+        :param interval:
+            the width of each candle in time, e.g. '15s', '5m', '1h', '3d',
+            '1w', '1mo'
+        :param start_time: starting time for the data range
+        :param end_time: ending time for the data range
+        :param extended_trading_hours: whether to include extended trading
+        """
+        await self._channel_request(EventType.CANDLE)
+        message = {
+            'type': 'FEED_SUBSCRIPTION',
+            'channel': self._channels[EventType.CANDLE],
+            'add': [{
+                'symbol': f'{ticker}{{={interval},tho=true}}'
+                if extended_trading_hours
+                else f'{ticker}{{={interval}}}',
+                'type': 'Candle',
+                'fromTime': int(start_time.timestamp() * 1000)
+            } for ticker in symbols]
+        }
+        if end_time is not None:
+            raise TastytradeError('End time no longer supported')
+        await self._websocket.send(json.dumps(message))
+
+    async def unsubscribe_candle(
+        self,
+        ticker: str,
+        interval: Optional[str] = None,
+        extended_trading_hours: bool = False
+    ) -> None:
+        """
+        Removes existing subscription for a candle.
+
+        :param ticker: symbol to unsubscribe from
+        :param interval: candle width to unsubscribe from
+        :param extended_trading_hours:
+            whether candle to unsubscribe from contains extended trading hours
+        """
+        await self._channel_request(EventType.CANDLE)
+        message = {
+            'type': 'FEED_SUBSCRIPTION',
+            'channel': self._channels[EventType.CANDLE],
+            'remove': [{
+                'symbol': f'{ticker}{{={interval},tho=true}}'
+                if extended_trading_hours
+                else f'{ticker}{{={interval}}}',
+                'type': 'Candle',
+            }]
+        }
+        await self._websocket.send(json.dumps(message))
+
+    async def _map_message(self, message) -> None:
+        """
+        Takes the raw JSON data, parses the events and places them into their
+        respective queues.
+
+        :param message: raw JSON data from the websocket
+        """
+        for item in message:
+            msg_type = item.pop('eventType')
+            # parse type or warn for unknown type
+            if msg_type == EventType.CANDLE:
+                await self._queues[EventType.CANDLE].put(Candle(**item))
+            elif msg_type == EventType.GREEKS:
+                await self._queues[EventType.GREEKS].put(Greeks(**item))
+            elif msg_type == EventType.PROFILE:
+                await self._queues[EventType.PROFILE].put(Profile(**item))
+            elif msg_type == EventType.QUOTE:
+                await self._queues[EventType.QUOTE].put(Quote(**item))
+            elif msg_type == EventType.SUMMARY:
+                await self._queues[EventType.SUMMARY].put(Summary(**item))
+            elif msg_type == EventType.THEO_PRICE:
+                await self._queues[EventType.THEO_PRICE].put(TheoPrice(**item))
+            elif msg_type == EventType.TIME_AND_SALE:
+                tas = TimeAndSale(**item)
+                await self._queues[EventType.TIME_AND_SALE].put(tas)
+            elif msg_type == EventType.TRADE:
+                await self._queues[EventType.TRADE].put(Trade(**item))
+            elif msg_type == EventType.UNDERLYING:
+                undl = Underlying(**item)
+                await self._queues[EventType.UNDERLYING].put(undl)
+            else:
+                raise TastytradeError(f'Unknown message type: {message}')

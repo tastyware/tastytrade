@@ -9,9 +9,10 @@ class EventType(str, Enum):
     for the data streamer.
 
     Information on different types of events, their uses and their properties
-    can be found at the `dxfeed Knowledge Base
+    can be found at the `dxfeed Knowledge Base.
     <https://kb.dxfeed.com/en/data-model/dxfeed-api-market-events.html>`_.
     """
+
     CANDLE = 'Candle'
     GREEKS = 'Greeks'
     PROFILE = 'Profile'
@@ -28,7 +29,7 @@ class Event(ABC):
     def from_stream(cls, data: list) -> List['Event']:  # pragma: no cover
         """
         Makes a list of event objects from a list of raw trade data fetched by
-        a :class:`~tastyworks.streamer.DataStreamer`.
+        a :class:`~tastyworks.streamer.DXFeedStreamer`.
 
         :param data: list of raw quote data from streamer
 
