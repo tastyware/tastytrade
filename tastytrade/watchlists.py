@@ -28,7 +28,10 @@ class PairsWatchlist(TastytradeJsonDataclass):  # pragma: no cover
     pairs_equations: List[Pair]
 
     @classmethod
-    def get_pairs_watchlists(cls, session: ProductionSession) -> List['PairsWatchlist']:
+    def get_pairs_watchlists(
+        cls,
+        session: ProductionSession
+    ) -> List['PairsWatchlist']:
         """
         Fetches a list of all Tastytrade public pairs watchlists.
 
@@ -106,7 +109,11 @@ class Watchlist(TastytradeJsonDataclass):  # pragma: no cover
         return [cls(**entry) for entry in data]
 
     @classmethod
-    def get_public_watchlist(cls, session: ProductionSession, name: str) -> 'Watchlist':
+    def get_public_watchlist(
+        cls,
+        session: ProductionSession,
+        name: str
+    ) -> 'Watchlist':
         """
         Fetches a Tastytrade public watchlist by name.
 
@@ -126,7 +133,10 @@ class Watchlist(TastytradeJsonDataclass):  # pragma: no cover
         return cls(**data)
 
     @classmethod
-    def get_private_watchlists(cls, session: ProductionSession) -> List['Watchlist']:
+    def get_private_watchlists(
+        cls,
+        session: ProductionSession
+    ) -> List['Watchlist']:
         """
         Fetches a the user's private watchlists.
 
@@ -145,7 +155,11 @@ class Watchlist(TastytradeJsonDataclass):  # pragma: no cover
         return [cls(**entry) for entry in data]
 
     @classmethod
-    def get_private_watchlist(cls, session: ProductionSession, name: str) -> 'Watchlist':
+    def get_private_watchlist(
+        cls,
+        session: ProductionSession,
+        name: str
+    ) -> 'Watchlist':
         """
         Fetches a user's watchlist by name.
 
@@ -165,7 +179,11 @@ class Watchlist(TastytradeJsonDataclass):  # pragma: no cover
         return cls(**data)
 
     @classmethod
-    def remove_private_watchlist(cls, session: ProductionSession, name: str) -> None:
+    def remove_private_watchlist(
+        cls,
+        session: ProductionSession,
+        name: str
+    ) -> None:
         """
         Deletes the named private watchlist.
 

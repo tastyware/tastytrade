@@ -1,4 +1,8 @@
-from tastytrade.instruments import Cryptocurrency, Equity, FutureProduct, FutureOptionProduct, Option, NestedOptionChain, Warrant, get_quantity_decimal_precisions, get_option_chain
+from tastytrade.instruments import (Cryptocurrency, Equity,
+                                    FutureOptionProduct, FutureProduct,
+                                    NestedOptionChain, Option, Warrant,
+                                    get_option_chain,
+                                    get_quantity_decimal_precisions)
 
 
 def test_get_cryptocurrency(session):

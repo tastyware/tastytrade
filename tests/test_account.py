@@ -1,9 +1,11 @@
 from decimal import Decimal
+
 import pytest
 
 from tastytrade import Account
 from tastytrade.instruments import Equity
-from tastytrade.order import NewOrder, OrderAction, OrderTimeInForce, OrderType, PriceEffect
+from tastytrade.order import (NewOrder, OrderAction, OrderTimeInForce,
+                              OrderType, PriceEffect)
 
 
 @pytest.fixture
