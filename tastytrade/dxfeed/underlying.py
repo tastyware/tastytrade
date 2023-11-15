@@ -13,6 +13,8 @@ class Underlying(Event):
     """
     #: symbol of this event
     eventSymbol: str
+    #: time of this event
+    eventTime: int
     #: transactional event flags
     eventFlags: int
     #: unique per-symbol index of this event

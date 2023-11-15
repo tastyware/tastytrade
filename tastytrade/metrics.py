@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from tastytrade.session import Session
+from tastytrade.session import ProductionSession, Session
 from tastytrade.utils import TastytradeJsonDataclass, validate_response
 
 
@@ -54,27 +54,28 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     symbol: str
     implied_volatility_index: Decimal
     implied_volatility_index_5_day_change: Decimal
-    implied_volatility_index_rank: Decimal
+    implied_volatility_index_rank: Optional[str] = None
     tos_implied_volatility_index_rank: Decimal
     tw_implied_volatility_index_rank: Decimal
     tos_implied_volatility_index_rank_updated_at: datetime
     implied_volatility_index_rank_source: str
-    implied_volatility_percentile: Decimal
+    implied_volatility_percentile: Optional[str] = None
     implied_volatility_updated_at: datetime
     liquidity_rating: int
     updated_at: datetime
     option_expiration_implied_volatilities: List[OptionExpirationImpliedVolatility]  # noqa: E501
     beta: Decimal
     corr_spy_3month: Decimal
-    dividend_rate_per_share: Optional[Decimal] = None
     market_cap: Decimal
+    price_earnings_ratio: Decimal
+    earnings_per_share: Decimal
+    dividend_rate_per_share: Optional[Decimal] = None
     implied_volatility_30_day: Optional[Decimal] = None
     historical_volatility_30_day: Optional[Decimal] = None
     historical_volatility_60_day: Optional[Decimal] = None
     historical_volatility_90_day: Optional[Decimal] = None
     iv_hv_30_day_difference: Optional[Decimal] = None
-    price_earnings_ratio: Decimal
-    earnings_per_share: Decimal
+    beta_updated_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     dividend_ex_date: Optional[date] = None
     dividend_next_date: Optional[date] = None
@@ -83,7 +84,6 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     liquidity_value: Optional[Decimal] = None
     liquidity_rank: Optional[Decimal] = None
     liquidity_running_state: Optional[Liquidity] = None
-    beta_updated_at: Optional[datetime] = None
     dividend_yield: Optional[Decimal] = None
     listed_market: Optional[str] = None
     lendability: Optional[str] = None
@@ -91,9 +91,9 @@ class MarketMetricInfo(TastytradeJsonDataclass):
 
 
 def get_market_metrics(
-    session: Session,
+    session: ProductionSession,
     symbols: List[str]
-) -> List[MarketMetricInfo]:
+) -> List[MarketMetricInfo]:  # pragma: no cover
     """
     Retrieves market metrics for the given symbols.
 
@@ -114,7 +114,10 @@ def get_market_metrics(
     return [MarketMetricInfo(**entry) for entry in data]
 
 
-def get_dividends(session: Session, symbol: str) -> List[DividendInfo]:
+def get_dividends(
+    session: ProductionSession,
+    symbol: str
+) -> List[DividendInfo]:  # pragma: no cover
     """
     Retrieves dividend information for the given symbol.
 
@@ -136,10 +139,10 @@ def get_dividends(session: Session, symbol: str) -> List[DividendInfo]:
 
 
 def get_earnings(
-    session: Session,
+    session: ProductionSession,
     symbol: str,
     start_date: date
-) -> List[EarningsInfo]:
+) -> List[EarningsInfo]:  # pragma: no cover
     """
     Retrieves earnings information for the given symbol.
 

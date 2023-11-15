@@ -113,7 +113,7 @@ class CertificationSession(Session):
         self.validate()
 
 
-class ProductionSession(Session):
+class ProductionSession(Session):  # pragma: no cover
     """
     Contains a local user login which can then be used to interact with the
     remote API.
@@ -326,8 +326,8 @@ class ProductionSession(Session):
 
 def _map_event(
     event_type: str,
-    event_dict: Dict[str, Any]
-) -> Event:
+    event_dict: Any  # Usually Dict[str, Any]; sometimes a list
+) -> Event:  # pragma: no cover
     """
     Parses the raw JSON data from the dxfeed REST API into event objects.
 
@@ -335,7 +335,7 @@ def _map_event(
     :param event_dict: the raw JSON data from the dxfeed REST API
     """
     if event_type == EventType.GREEKS:
-        return Greeks(**event_dict)
+        return Greeks(**event_dict[0])
     elif event_type == EventType.PROFILE:
         return Profile(**event_dict)
     elif event_type == EventType.QUOTE:
@@ -343,7 +343,7 @@ def _map_event(
     elif event_type == EventType.SUMMARY:
         return Summary(**event_dict)
     elif event_type == EventType.THEO_PRICE:
-        return TheoPrice(**event_dict)
+        return TheoPrice(**event_dict[0])
     elif event_type == EventType.TRADE:
         return Trade(**event_dict)
     elif event_type == EventType.UNDERLYING:

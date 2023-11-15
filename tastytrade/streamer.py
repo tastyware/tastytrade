@@ -256,7 +256,7 @@ class AccountStreamer:
         await self._websocket.send(json.dumps(message))  # type: ignore
 
 
-class DXFeedStreamer:
+class DXFeedStreamer:  # pragma: no cover
     """
     A :class:`DXFeedStreamer` object is used to fetch quotes or greeks
     for a given symbol or list of symbols. It should always be
@@ -602,7 +602,7 @@ class DXFeedStreamer:
             raise TastytradeError(f'Unknown message type received: {message}')
 
 
-class DXLinkStreamer:
+class DXLinkStreamer:  # pragma: no cover
     """
     A :class:`DXLinkStreamer` object is used to fetch quotes or greeks
     for a given symbol or list of symbols. It should always be
