@@ -8,7 +8,7 @@ from tastytrade.order import (NewOrder, OrderAction, OrderTimeInForce,
                               OrderType, PriceEffect)
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def account(session):
     return Account.get_accounts(session)[1]
 
@@ -55,7 +55,7 @@ def test_get_margin_requirements(session, account):
     account.get_margin_requirements(session)
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def new_order(session):
     symbol = Equity.get_equity(session, 'SPY')
     leg = symbol.build_leg(Decimal(1), OrderAction.BUY_TO_OPEN)
@@ -69,7 +69,7 @@ def new_order(session):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def placed_order(session, account, new_order):
     return account.place_order(session, new_order, dry_run=False).order
 
@@ -79,20 +79,17 @@ def test_place_and_delete_order(session, account, new_order):
     account.delete_order(session, order.id)
 
 
-def test_replace_order(session, account, new_order, placed_order):
-    account.replace_order(session, placed_order.id, new_order)
+def test_replace_and_delete_order(session, account, new_order, placed_order):
+    replaced = account.replace_order(session, placed_order.id, new_order)
+    account.delete_order(session, replaced.id)
 
 
 def test_get_order(session, account, placed_order):
     assert account.get_order(session, placed_order.id).id == placed_order.id
 
 
-def test_delete_order(session, account, placed_order):
-    account.delete_order(session, placed_order.id)
-
-
 def test_get_order_history(session, account):
-    account.get_order_history(session)
+    account.get_order_history(session, page_offset=0)
 
 
 def test_get_live_orders(session, account):
