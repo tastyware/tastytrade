@@ -2,7 +2,7 @@ from typing import List
 
 import requests
 
-from tastytrade.session import Session
+from tastytrade.session import ProductionSession
 from tastytrade.utils import TastytradeJsonDataclass
 
 
@@ -14,7 +14,10 @@ class SymbolData(TastytradeJsonDataclass):
     description: str
 
 
-def symbol_search(session: Session, symbol: str) -> List[SymbolData]:
+def symbol_search(
+    session: ProductionSession,
+    symbol: str
+) -> List[SymbolData]:  # pragma: no cover
     """
     Performs a symbol search using the Tastytrade API and returns a
     list of symbols that are similar to the given search phrase.

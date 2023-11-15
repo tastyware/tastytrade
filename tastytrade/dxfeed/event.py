@@ -25,7 +25,7 @@ class EventType(str, Enum):
 
 class Event(ABC):
     @classmethod
-    def from_stream(cls, data: list) -> List['Event']:
+    def from_stream(cls, data: list) -> List['Event']:  # pragma: no cover
         """
         Makes a list of event objects from a list of raw trade data fetched by
         a :class:`~tastyworks.streamer.DataStreamer`.

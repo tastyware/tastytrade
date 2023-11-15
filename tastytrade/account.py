@@ -1,14 +1,20 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import requests
+from pydantic import BaseModel
 
 from tastytrade.order import (InstrumentType, NewOrder, OrderStatus,
                               PlacedOrder, PlacedOrderResponse, PriceEffect)
-from tastytrade.session import Session
+from tastytrade.session import ProductionSession, Session
 from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
                               validate_response)
+
+
+class EmptyDict(BaseModel):
+    class Config:
+        extra = 'forbid'
 
 
 class AccountBalance(TastytradeJsonDataclass):
@@ -168,14 +174,9 @@ class MarginReportEntry(TastytradeJsonDataclass):
     code: str
     underlying_symbol: str
     underlying_type: str
-    expected_price_range_up_percent: Decimal
-    expected_price_range_down_percent: Decimal
-    point_of_no_return_percent: Decimal
     margin_calculation_type: str
     margin_requirement: Decimal
     margin_requirement_effect: PriceEffect
-    initial_requirement: Decimal
-    initial_requirement_effect: PriceEffect
     maintenance_requirement: Decimal
     maintenance_requirement_effect: PriceEffect
     buying_power: Decimal
@@ -183,6 +184,11 @@ class MarginReportEntry(TastytradeJsonDataclass):
     groups: List[Dict[str, Any]]
     price_increase_percent: Decimal
     price_decrease_percent: Decimal
+    expected_price_range_up_percent: Optional[Decimal] = None
+    expected_price_range_down_percent: Optional[Decimal] = None
+    point_of_no_return_percent: Optional[Decimal] = None
+    initial_requirement: Optional[Decimal] = None
+    initial_requirement_effect: Optional[PriceEffect] = None
 
 
 class MarginReport(TastytradeJsonDataclass):
@@ -207,8 +213,8 @@ class MarginReport(TastytradeJsonDataclass):
     reg_t_option_buying_power_effect: PriceEffect
     maintenance_excess: Decimal
     maintenance_excess_effect: PriceEffect
-    groups: List[MarginReportEntry]
     last_state_timestamp: int
+    groups: List[Union[MarginReportEntry, EmptyDict]]
     initial_requirement: Optional[Decimal] = None
     initial_requirement_effect: Optional[PriceEffect] = None
 
@@ -706,15 +712,16 @@ class Account(TastytradeJsonDataclass):
 
     def get_net_liquidating_value_history(
         self,
-        session: Session,
+        session: ProductionSession,
         time_back: Optional[str] = None,
         start_time: Optional[datetime] = None
-    ) -> List[NetLiqOhlc]:
+    ) -> List[NetLiqOhlc]:  # pragma: no cover
         """
         Returns a list of account net liquidating value snapshots over the
         specified time period.
 
-        :param session: the session to use for the request.
+        :param session:
+            the session to use for the request, can't be certification.
         :param time_back:
             the time period to get net liquidating value snapshots for. This
             param is required if start_time is not given. Possible values are:
@@ -766,13 +773,14 @@ class Account(TastytradeJsonDataclass):
 
     def get_effective_margin_requirements(
         self,
-        session: Session,
+        session: ProductionSession,
         symbol: str
-    ) -> MarginRequirement:
+    ) -> MarginRequirement:  # pragma: no cover
         """
         Get the effective margin requirements for a given symbol.
 
-        :param session: the session to use for the request.
+        :param session:
+            the session to use for the request, can't be certification
         :param symbol: the symbol to get margin requirements for.
 
         :return: a :class:`MarginRequirement` object.

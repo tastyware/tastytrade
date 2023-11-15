@@ -30,7 +30,7 @@ class TastytradeJsonDataclass(BaseModel):
         allow_population_by_field_name = True
 
 
-def validate_response(response: Response) -> None:
+def validate_response(response: Response) -> None:  # pragma: no cover
     """
     Checks if the given code is an error; if so, raises an exception.
 

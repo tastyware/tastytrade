@@ -14,10 +14,7 @@ lint:
 	mypy -p tests
 
 test:
-	python -m pytest --cov=tastytrade --cov-report=term-missing tests/
-
-test:
-	python -m pytest --cov=tastytrade --cov-report=term-missing tests/
+	python -m pytest --cov=tastytrade --cov-report=term-missing tests/ --cov-fail-under=95
 
 install:
 	env/bin/pip install -e .

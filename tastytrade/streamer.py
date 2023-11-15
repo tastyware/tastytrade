@@ -248,7 +248,7 @@ class AlertStreamer:
         await self._websocket.send(json.dumps(message))  # type: ignore
 
 
-class DataStreamer:
+class DataStreamer:  # pragma: no cover
     """
     A :class:`DataStreamer` object is used to fetch quotes or greeks
     for a given symbol or list of symbols. It should always be
