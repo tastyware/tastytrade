@@ -113,7 +113,7 @@ class CertificationSession(Session):
         self.validate()
 
 
-class ProductionSession(Session):
+class ProductionSession(Session):  # pragma: no cover
     """
     Contains a local user login which can then be used to interact with the
     remote API.
@@ -326,7 +326,7 @@ class ProductionSession(Session):
 def _map_event(
     event_type: str,
     event_dict: Any  # Usually Dict[str, Any]; sometimes a list
-) -> Event:
+) -> Event:  # pragma: no cover
     """
     Parses the raw JSON data from the dxfeed REST API into event objects.
 

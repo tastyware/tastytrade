@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 import requests
 
 from tastytrade.instruments import InstrumentType
-from tastytrade.session import Session
+from tastytrade.session import ProductionSession
 from tastytrade.utils import TastytradeJsonDataclass, validate_response
 
 
@@ -19,7 +19,7 @@ class Pair(TastytradeJsonDataclass):
     right_quantity: int
 
 
-class PairsWatchlist(TastytradeJsonDataclass):
+class PairsWatchlist(TastytradeJsonDataclass):  # pragma: no cover
     """
     Dataclass that represents a pairs watchlist object.
     """
@@ -28,7 +28,10 @@ class PairsWatchlist(TastytradeJsonDataclass):
     pairs_equations: List[Pair]
 
     @classmethod
-    def get_pairs_watchlists(cls, session: Session) -> List['PairsWatchlist']:
+    def get_pairs_watchlists(
+        cls,
+        session: ProductionSession
+    ) -> List['PairsWatchlist']:
         """
         Fetches a list of all Tastytrade public pairs watchlists.
 
@@ -48,7 +51,7 @@ class PairsWatchlist(TastytradeJsonDataclass):
     @classmethod
     def get_pairs_watchlist(
         cls,
-        session: Session,
+        session: ProductionSession,
         name: str
     ) -> 'PairsWatchlist':
         """
@@ -70,7 +73,7 @@ class PairsWatchlist(TastytradeJsonDataclass):
         return cls(**data)
 
 
-class Watchlist(TastytradeJsonDataclass):
+class Watchlist(TastytradeJsonDataclass):  # pragma: no cover
     """
     Dataclass that represents a watchlist object (public or private),
     with functions to update, publish, modify and remove watchlists.
@@ -83,7 +86,7 @@ class Watchlist(TastytradeJsonDataclass):
     @classmethod
     def get_public_watchlists(
         cls,
-        session: Session,
+        session: ProductionSession,
         counts_only: bool = False
     ) -> List['Watchlist']:
         """
@@ -106,7 +109,11 @@ class Watchlist(TastytradeJsonDataclass):
         return [cls(**entry) for entry in data]
 
     @classmethod
-    def get_public_watchlist(cls, session: Session, name: str) -> 'Watchlist':
+    def get_public_watchlist(
+        cls,
+        session: ProductionSession,
+        name: str
+    ) -> 'Watchlist':
         """
         Fetches a Tastytrade public watchlist by name.
 
@@ -126,7 +133,10 @@ class Watchlist(TastytradeJsonDataclass):
         return cls(**data)
 
     @classmethod
-    def get_private_watchlists(cls, session: Session) -> List['Watchlist']:
+    def get_private_watchlists(
+        cls,
+        session: ProductionSession
+    ) -> List['Watchlist']:
         """
         Fetches a the user's private watchlists.
 
@@ -145,7 +155,11 @@ class Watchlist(TastytradeJsonDataclass):
         return [cls(**entry) for entry in data]
 
     @classmethod
-    def get_private_watchlist(cls, session: Session, name: str) -> 'Watchlist':
+    def get_private_watchlist(
+        cls,
+        session: ProductionSession,
+        name: str
+    ) -> 'Watchlist':
         """
         Fetches a user's watchlist by name.
 
@@ -165,7 +179,11 @@ class Watchlist(TastytradeJsonDataclass):
         return cls(**data)
 
     @classmethod
-    def remove_private_watchlist(cls, session: Session, name: str) -> None:
+    def remove_private_watchlist(
+        cls,
+        session: ProductionSession,
+        name: str
+    ) -> None:
         """
         Deletes the named private watchlist.
 
@@ -178,7 +196,7 @@ class Watchlist(TastytradeJsonDataclass):
         )
         validate_response(response)
 
-    def upload_private_watchlist(self, session: Session) -> None:
+    def upload_private_watchlist(self, session: ProductionSession) -> None:
         """
         Creates a private remote watchlist identical to this local one.
 
@@ -191,7 +209,7 @@ class Watchlist(TastytradeJsonDataclass):
         )
         validate_response(response)
 
-    def update_private_watchlist(self, session: Session) -> None:
+    def update_private_watchlist(self, session: ProductionSession) -> None:
         """
         Updates the existing private remote watchlist.
 

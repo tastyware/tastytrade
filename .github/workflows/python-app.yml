@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v2
@@ -31,7 +31,7 @@ jobs:
         mypy -p tastytrade
     - name: Testing...
       run: |
-        python -m pytest --cov=tastytrade --cov-report=term-missing tests/
+        python -m pytest --cov=tastytrade --cov-report=term-missing tests/ --cov-fail-under=95
       env:
         TT_USERNAME: ${{ secrets.TT_USERNAME }}
         TT_PASSWORD: ${{ secrets.TT_PASSWORD }}

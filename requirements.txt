@@ -7,3 +7,4 @@ websockets==11.0.3
 pydantic==1.10.11
 pytest==7.4.0
 pytest_cov==4.1.0
+pytest-asyncio==0.21.1

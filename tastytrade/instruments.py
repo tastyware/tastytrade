@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 import requests
 
 from tastytrade.order import InstrumentType, TradeableTastytradeJsonDataclass
-from tastytrade.session import Session
+from tastytrade.session import ProductionSession, Session
 from tastytrade.utils import TastytradeJsonDataclass, validate_response
 
 
@@ -1060,9 +1060,9 @@ def get_option_chain(
 
 
 def get_future_option_chain(
-    session: Session,
+    session: ProductionSession,
     symbol: str
-) -> Dict[date, List[FutureOption]]:
+) -> Dict[date, List[FutureOption]]:  # pragma: no cover
     """
     Returns a mapping of expiration date to a list of futures options
     objects representing the options chain for the given symbol.
