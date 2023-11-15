@@ -9,8 +9,8 @@ You can create a streamer using an active production session:
 
 .. code-block:: python
 
-   from tastytrade import DataStreamer
-   streamer = await DataStreamer.create(session)
+   from tastytrade import DXFeedStreamer
+   streamer = await DXFeedStreamer.create(session)
 
 Once you've created the streamer, you can subscribe/unsubscribe to events, like ``Quote``:
 
@@ -67,7 +67,7 @@ For example, we can use the streamer to create an option chain that will continu
    class LivePrices:
       quotes: dict[str, Quote]
       greeks: dict[str, Greeks]
-      streamer: DataStreamer
+      streamer: DXFeedStreamer
       puts: list[Option]
       calls: list[Option]
 
@@ -83,7 +83,7 @@ For example, we can use the streamer to create an option chain that will continu
          # the `streamer_symbol` property is the symbol used by the streamer
          streamer_symbols = [o.streamer_symbol for o in options]
 
-         streamer = await DataStreamer.create(session)
+         streamer = await DXFeedStreamer.create(session)
          # subscribe to quotes and greeks for all options on that date
          await streamer.subscribe(EventType.QUOTE, [symbol] + streamer_symbols)
          await streamer.subscribe(EventType.GREEKS, streamer_symbols)

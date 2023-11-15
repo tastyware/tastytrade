@@ -32,7 +32,7 @@ Events
 ------
 
 A ``ProductionSession`` can be used to make simple requests to the dxfeed REST API and pull quotes, greeks and more.
-These requests are slower than ``DataStreamer`` and a separate request is required for each event fetched, so they're really more appropriate for a task that just needs to grab some information once. For recurring data feeds/streams or more time-sensitive tasks, the streamer is more appropriate.
+These requests are slower than ``DXFeedStreamer`` and a separate request is required for each event fetched, so they're really more appropriate for a task that just needs to grab some information once. For recurring data feeds/streams or more time-sensitive tasks, the streamer is more appropriate.
 
 Events are simply market data at a specific timestamp. There's a variety of different kinds of events supported, including:
 

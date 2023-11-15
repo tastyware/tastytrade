@@ -40,10 +40,10 @@ The streamer is a websocket connection to dxfeed (the Tastytrade data provider) 
 
 .. code-block:: python
 
-   from tastytrade import DataStreamer
+   from tastytrade import DXFeedStreamer
    from tastytrade.dxfeed import EventType
 
-   streamer = await DataStreamer.create(session)
+   streamer = await DXFeedStreamer.create(session)
    subs_list = ['SPY', 'SPX']
 
    await streamer.subscribe(EventType.QUOTE, subs_list)

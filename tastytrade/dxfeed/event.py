@@ -29,27 +29,7 @@ class Event(ABC):
     def from_stream(cls, data: list) -> List['Event']:
         """
         Makes a list of event objects from a list of raw trade data fetched by
-        a :class:`~tastyworks.streamer.DataStreamer`.
-
-        :param data: list of raw quote data from streamer
-
-        :return: list of event objects from data
-        """
-        objs = []
-        size = len(cls.__dataclass_fields__)  # type: ignore
-        multiples = len(data) / size
-        if not multiples.is_integer():
-            msg = 'Mapper data input values are not a multiple of the key size'
-            raise Exception(msg)
-        for i in range(int(multiples)):
-            objs.append(cls(**data))
-        return objs
-
-    @classmethod
-    def from_stream_legacy(cls, data: list) -> List['Event']:
-        """
-        Makes a list of event objects from a list of raw trade data fetched by
-        a :class:`~tastyworks.streamer.DataStreamer`.
+        a :class:`~tastyworks.streamer.DXFeedStreamer`.
 
         :param data: list of raw quote data from streamer
 
