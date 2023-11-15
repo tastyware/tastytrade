@@ -1,14 +1,14 @@
 import pytest
 import pytest_asyncio
 
-from tastytrade import Account, AlertStreamer
+from tastytrade import Account, AccountStreamer
 
 pytest_plugins = ('pytest_asyncio',)
 
 
 @pytest_asyncio.fixture
 async def streamer(session):
-    streamer = await AlertStreamer.create(session)
+    streamer = await AccountStreamer.create(session)
     yield streamer
     streamer.close()
 

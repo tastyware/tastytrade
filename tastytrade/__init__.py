@@ -10,7 +10,8 @@ logger.setLevel(logging.DEBUG)
 from .account import Account  # noqa: E402
 from .search import symbol_search  # noqa: E402
 from .session import CertificationSession, ProductionSession  # noqa: E402
-from .streamer import AccountStreamer, DXFeedStreamer, DXLinkStreamer  # noqa: E402
+from .streamer import (AccountStreamer, DXFeedStreamer,  # noqa: E402
+                       DXLinkStreamer)
 from .watchlists import PairsWatchlist, Watchlist  # noqa: E402
 
 __all__ = [

@@ -18,8 +18,7 @@ from tastytrade.dxfeed import (Candle, Channel, Event, EventType, Greeks,
 from tastytrade.order import (InstrumentType, OrderChain, PlacedOrder,
                               PriceEffect)
 from tastytrade.session import CertificationSession, ProductionSession, Session
-from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
-                              validate_response)
+from tastytrade.utils import TastytradeError, TastytradeJsonDataclass
 from tastytrade.watchlists import Watchlist
 
 CERT_STREAMER_URL = 'wss://streamer.cert.tastyworks.com'
@@ -114,9 +113,9 @@ class AccountStreamer:
     @classmethod
     async def create(cls, session: Session) -> 'AccountStreamer':
         """
-        Factory method for the :class:`AccountStreamer` object. Simply calls the
-        constructor and performs the asynchronous setup tasks. This should be
-        used instead of the constructor.
+        Factory method for the :class:`AccountStreamer` object. Simply calls
+        the constructor and performs the asynchronous setup tasks. This should
+        be used instead of the constructor.
 
         :param session: active user session to use
         """
@@ -642,7 +641,8 @@ class DXLinkStreamer:  # pragma: no cover
             EventType.TRADE: 15,
             EventType.UNDERLYING: 17
         }
-        self._subscription_state: Dict[EventType, str] = defaultdict(lambda:'CHANNEL_CLOSED')
+        self._subscription_state: Dict[EventType, str] = \
+            defaultdict(lambda: 'CHANNEL_CLOSED')
 
         #: The unique client identifier received from the server
         self._session = session
@@ -797,8 +797,7 @@ class DXLinkStreamer:  # pragma: no cover
         logger.debug('sending subscription: %s', message)
         await self._websocket.send(json.dumps(message))
         time_out = 100
-        while not self._subscription_state[self._channels[event_type]] \
-                == "CHANNEL_OPENED":
+        while not self._subscription_state[event_type] == 'CHANNEL_OPENED':
             await asyncio.sleep(0.1)
             time_out -= 1
             if time_out <= 0:
@@ -913,10 +912,12 @@ class DXLinkStreamer:  # pragma: no cover
             elif msg_type == EventType.THEO_PRICE:
                 await self._queues[EventType.THEO_PRICE].put(TheoPrice(**item))
             elif msg_type == EventType.TIME_AND_SALE:
-                await self._queues[EventType.TIME_AND_SALE].put(TimeAndSale(**item))
+                tas = TimeAndSale(**item)
+                await self._queues[EventType.TIME_AND_SALE].put(tas)
             elif msg_type == EventType.TRADE:
                 await self._queues[EventType.TRADE].put(Trade(**item))
             elif msg_type == EventType.UNDERLYING:
-                await self._queues[EventType.UNDERLYING].put(Underlying(**item))
+                undl = Underlying(**item)
+                await self._queues[EventType.UNDERLYING].put(undl)
             else:
-                raise TastytradeError(f'Unknown message type received: {message}')
+                raise TastytradeError(f'Unknown message type: {message}')
