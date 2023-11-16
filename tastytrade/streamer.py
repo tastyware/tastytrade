@@ -691,7 +691,9 @@ class DXLinkStreamer:  # pragma: no cover
                         self._heartbeat_task = \
                             asyncio.create_task(self._heartbeat())
                 elif message['type'] == 'CHANNEL_OPENED':
-                    self._subscription_state[message['channel']] \
+                    channel = next((k for k, v in self._channels.items()
+                                    if v == message['channel']), None)
+                    self._subscription_state[channel] \
                         = message['type']
                 elif message['type'] == 'FEED_CONFIG':
                     pass
