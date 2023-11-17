@@ -1,7 +1,6 @@
-import os
 from datetime import datetime, timedelta
 
-from tastytrade import CertificationSession, ProductionSession
+from tastytrade import CertificationSession
 from tastytrade.dxfeed import EventType
 
 

@@ -1,6 +1,7 @@
 from datetime import date
 
-from tastytrade.metrics import get_dividends, get_earnings, get_market_metrics, get_risk_free_rate
+from tastytrade.metrics import (get_dividends, get_earnings,
+                                get_market_metrics, get_risk_free_rate)
 
 
 def test_get_dividends(session):

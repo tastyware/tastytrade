@@ -1,9 +1,8 @@
 from tastytrade.instruments import (Cryptocurrency, Equity, Future,
                                     FutureOption, FutureOptionProduct,
-                                    FutureProduct, NestedOptionChain,
-                                    NestedFutureOptionChain, Option,
-                                    Warrant, get_option_chain,
-                                    get_future_option_chain,
+                                    FutureProduct, NestedFutureOptionChain,
+                                    NestedOptionChain, Option, Warrant,
+                                    get_future_option_chain, get_option_chain,
                                     get_quantity_decimal_precisions)
 
 

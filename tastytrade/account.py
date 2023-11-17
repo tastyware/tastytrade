@@ -668,7 +668,11 @@ class Account(TastytradeJsonDataclass):
 
         return [Transaction(**entry) for entry in results]
 
-    def get_transaction(self, session: Session, id: int) -> Transaction:  # pragma: no cover
+    def get_transaction(
+        self,
+        session: Session,
+        id: int
+    ) -> Transaction:  # pragma: no cover
         """
         Get a single transaction by ID.
 
