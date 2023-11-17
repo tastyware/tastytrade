@@ -93,7 +93,7 @@ class MarketMetricInfo(TastytradeJsonDataclass):
 def get_market_metrics(
     session: ProductionSession,
     symbols: List[str]
-) -> List[MarketMetricInfo]:  # pragma: no cover
+) -> List[MarketMetricInfo]:
     """
     Retrieves market metrics for the given symbols.
 
@@ -117,7 +117,7 @@ def get_market_metrics(
 def get_dividends(
     session: ProductionSession,
     symbol: str
-) -> List[DividendInfo]:  # pragma: no cover
+) -> List[DividendInfo]:
     """
     Retrieves dividend information for the given symbol.
 
@@ -142,7 +142,7 @@ def get_earnings(
     session: ProductionSession,
     symbol: str,
     start_date: date
-) -> List[EarningsInfo]:  # pragma: no cover
+) -> List[EarningsInfo]:
     """
     Retrieves earnings information for the given symbol.
 

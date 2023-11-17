@@ -113,7 +113,7 @@ class CertificationSession(Session):
         self.validate()
 
 
-class ProductionSession(Session):  # pragma: no cover
+class ProductionSession(Session):
     """
     Contains a local user login which can then be used to interact with the
     remote API.

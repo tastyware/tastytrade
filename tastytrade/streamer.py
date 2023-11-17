@@ -78,25 +78,24 @@ class AccountStreamer:
     """
     Used to subscribe to account-level updates (balances, orders, positions),
     public watchlist updates, quote alerts, and user-level messages. It should
-    always be initialized using the :meth:`create` function, since the object
-    cannot be fully instantiated without using async.
+    always be initialized as an async context manager, or with the `create`
+    function, since the object cannot be fully instantiated without async.
 
     Example usage::
 
         from tastytrade import Account, AccountStreamer
 
-        streamer = await AccountStreamer.create(session)
-        accounts = Account.get_accounts(session)
+        async with AccountStreamer(session) as streamer:
+            accounts = Account.get_accounts(session)
 
-        await streamer.account_subscribe(accounts)
-        await streamer.public_watchlists_subscribe()
-        await streamer.quote_alerts_subscribe()
+            await streamer.account_subscribe(accounts)
+            await streamer.public_watchlists_subscribe()
+            await streamer.quote_alerts_subscribe()
 
-        async for data in streamer.listen():
-            print(data)
+            async for data in streamer.listen():
+                print(data)
 
     """
-
     def __init__(self, session: Session):
         #: The active session used to initiate the streamer or make requests
         self.token: str = session.session_token
@@ -107,28 +106,32 @@ class AccountStreamer:
 
         self._queue: Queue = Queue()
         self._websocket = None
-
         self._connect_task = asyncio.create_task(self._connect())
 
-    @classmethod
-    async def create(cls, session: Session) -> 'AccountStreamer':
-        """
-        Factory method for the :class:`AccountStreamer` object. Simply calls
-        the constructor and performs the asynchronous setup tasks. This should
-        be used instead of the constructor.
-
-        :param session: active user session to use
-        """
-        self = cls(session)
-        await self._wait_for_authentication()
-        return self
-
-    async def _wait_for_authentication(self, time_out=100):
+    async def __aenter__(self):
+        time_out = 100
         while not self._websocket:
             await asyncio.sleep(0.1)
             time_out -= 1
             if time_out < 0:
                 raise TastytradeError('Connection timed out')
+
+        return self
+
+    @classmethod
+    async def create(cls, session: Session) -> 'AccountStreamer':
+        self = cls(session)
+        return await self.__aenter__()
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await self.close()
+
+    async def close(self):
+        """
+        Closes the websocket connection and cancels the heartbeat task.
+        """
+        self._connect_task.cancel()
+        self._heartbeat_task.cancel()
 
     async def _connect(self) -> None:
         """
@@ -137,8 +140,8 @@ class AccountStreamer:
         """
         headers = {'Authorization': f'Bearer {self.token}'}
         async with websockets.connect(  # type: ignore
-                self.base_url,
-                extra_headers=headers
+            self.base_url,
+            extra_headers=headers
         ) as websocket:
             self._websocket = websocket
             self._heartbeat_task = asyncio.create_task(self._heartbeat())
@@ -151,20 +154,18 @@ class AccountStreamer:
     async def listen(self) -> AsyncIterator[TastytradeJsonDataclass]:
         """
         Iterate over non-heartbeat messages received from the streamer,
-        mapping them to their appropriate data class.
+        mapping them to their appropriate data class and yielding them.
         """
         while True:
             data = await self._queue.get()
             type_str = data.get('type')
             if type_str is not None:
                 yield self._map_message(type_str, data['data'])
-            elif data.get('action') != 'heartbeat':
-                logger.debug('subscription message: %s', data)
 
     def _map_message(
-            self,
-            type_str: str,
-            data: dict
+        self,
+        type_str: str,
+        data: dict
     ) -> TastytradeJsonDataclass:
         """
         I'm not sure what the user-status messages look like,
@@ -197,7 +198,7 @@ class AccountStreamer:
         """
         await self._subscribe(
             SubscriptionType.ACCOUNT,
-            [acc.account_number for acc in accounts]
+            [a.account_number for a in accounts]
         )
 
     async def public_watchlists_subscribe(self) -> None:
@@ -219,13 +220,6 @@ class AccountStreamer:
         external_id = session.user['external-id']
         await self._subscribe(SubscriptionType.USER_MESSAGE, value=external_id)
 
-    def close(self) -> None:
-        """
-        Closes the websocket connection and cancels the heartbeat task.
-        """
-        self._connect_task.cancel()
-        self._heartbeat_task.cancel()
-
     async def _heartbeat(self) -> None:
         """
         Sends a heartbeat message every 10 seconds to keep the connection
@@ -237,9 +231,9 @@ class AccountStreamer:
             await asyncio.sleep(10)
 
     async def _subscribe(
-            self,
-            subscription: SubscriptionType,
-            value: Union[Optional[str], List[str]] = ''
+        self,
+        subscription: SubscriptionType,
+        value: Union[Optional[str], List[str]] = ''
     ) -> None:
         """
         Subscribes to a :class:`SubscriptionType`. Depending on the kind of
@@ -257,10 +251,10 @@ class AccountStreamer:
 
 class DXFeedStreamer:  # pragma: no cover
     """
-    A :class:`DXFeedStreamer` object is used to fetch quotes or greeks
-    for a given symbol or list of symbols. It should always be
-    initialized using the :meth:`create` function, since the object
-    cannot be fully instantiated without using async.
+    A :class:`DXFeedStreamer` object is used to fetch quotes or greeks for a
+    given symbol or list of symbols. It should always be initialized as an
+    async context manager, or with the `create` function, since the object
+    cannot be fully instantiated without async.
 
     Example usage::
 
@@ -268,15 +262,11 @@ class DXFeedStreamer:  # pragma: no cover
         from tastytrade.dxfeed import EventType
 
         # must be a production session
-        streamer = await DXFeedStreamer.create(session)
-
-        subs = ['SPY', 'GLD']  # list of quotes to fetch
-        await streamer.subscribe(EventType.QUOTE, subs)
-        quotes = []
-        async for quote in streamer.listen(EventType.QUOTE):
-            quotes.append(quote)
-            if len(quotes) >= len(subs):
-                break
+        async with DXFeedStreamer(session) as streamer:
+            subs = ['SPY', 'GLD']  # list of quotes to fetch
+            await streamer.subscribe(EventType.QUOTE, subs)
+            quote = await streamer.get_event(EventType.QUOTE)
+            print(quote)
 
     """
     def __init__(self, session: ProductionSession):
@@ -291,25 +281,30 @@ class DXFeedStreamer:  # pragma: no cover
 
         self._connect_task = asyncio.create_task(self._connect())
 
-    @classmethod
-    async def create(cls, session: ProductionSession) -> 'DXFeedStreamer':
-        """
-        Factory method for the :class:`DXFeedStreamer` object.
-        Simply calls the constructor and performs the asynchronous
-        setup tasks. This should be used instead of the constructor.
-
-        :param session: active user session to use
-        """
-        self = cls(session)
-        await self._wait_for_authentication()
-        return self
-
-    async def _wait_for_authentication(self, time_out=100):
+    async def __aenter__(self):
+        time_out = 100
         while not self.client_id:
             await asyncio.sleep(0.1)
             time_out -= 1
             if time_out < 0:
                 raise TastytradeError('Connection timed out')
+
+        return self
+
+    @classmethod
+    async def create(cls, session: ProductionSession) -> 'DXFeedStreamer':
+        self = cls(session)
+        return await self.__aenter__()
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await self.close()
+
+    async def close(self):
+        """
+        Closes the websocket connection and cancels the heartbeat task.
+        """
+        self._connect_task.cancel()
+        self._heartbeat_task.cancel()
 
     async def _next_id(self):
         async with self._lock:
@@ -324,8 +319,8 @@ class DXFeedStreamer:  # pragma: no cover
         headers = {'Authorization': f'Bearer {self._auth_token}'}
 
         async with websockets.connect(  # type: ignore
-                self._wss_url,
-                extra_headers=headers
+            self._wss_url,
+            extra_headers=headers
         ) as websocket:
             self._websocket = websocket
             await self._handshake()
@@ -392,12 +387,15 @@ class DXFeedStreamer:  # pragma: no cover
         while True:
             yield await self._queues[event_type].get()
 
-    def close(self) -> None:
+    async def get_event(self, event_type: EventType) -> Event:
         """
-        Closes the websocket connection and cancels the heartbeat task.
+        Using the existing subscription , pulls an event of the given type and
+        returns it.
+
+        :param event_type: the type of event to get
         """
-        self._connect_task.cancel()
-        self._heartbeat_task.cancel()
+        while True:
+            return await self._queues[event_type].get()
 
     async def _heartbeat(self) -> None:
         """
@@ -601,12 +599,12 @@ class DXFeedStreamer:  # pragma: no cover
             raise TastytradeError(f'Unknown message type received: {message}')
 
 
-class DXLinkStreamer:  # pragma: no cover
+class DXLinkStreamer:
     """
-    A :class:`DXLinkStreamer` object is used to fetch quotes or greeks
-    for a given symbol or list of symbols. It should always be
-    initialized using the :meth:`create` function, since the object
-    cannot be fully instantiated without using async.
+    A :class:`DXLinkStreamer` object is used to fetch quotes or greeks for a
+    given symbol or list of symbols. It should always be initialized as an
+    async context manager, or with the `create` function, since the object
+    cannot be fully instantiated without async.
 
     Example usage::
 
@@ -614,18 +612,13 @@ class DXLinkStreamer:  # pragma: no cover
         from tastytrade.dxfeed import EventType
 
         # must be a production session
-        streamer = await DXLinkStreamer.create(session)
-
-        subs = ['SPY', 'GLD']  # list of quotes to fetch
-        await streamer.subscribe(EventType.QUOTE, subs)
-        quotes = []
-        async for quote in streamer.listen(EventType.QUOTE):
-            quotes.append(quote)
-            if len(quotes) >= len(subs):
-                break
+        async with DXLinkStreamer(session) as streamer:
+            subs = ['SPY']  # list of quotes to subscribe to
+            await streamer.subscribe(EventType.QUOTE, subs)
+            quote = await streamer.get_event(EventType.QUOTE)
+            print(quote)
 
     """
-
     def __init__(self, session: ProductionSession):
         self._counter = 0
         self._lock: Lock = Lock()
@@ -652,18 +645,30 @@ class DXLinkStreamer:  # pragma: no cover
 
         self._connect_task = asyncio.create_task(self._connect())
 
+    async def __aenter__(self):
+        time_out = 100
+        while not self._authenticated:
+            await asyncio.sleep(0.1)
+            time_out -= 1
+            if time_out < 0:
+                raise TastytradeError('Connection timed out')
+
+        return self
+
     @classmethod
     async def create(cls, session: ProductionSession) -> 'DXLinkStreamer':
-        """
-        Factory method for the :class:`DXLinkStreamer` object.
-        Simply calls the constructor and performs the asynchronous
-        setup tasks. This should be used instead of the constructor.
-
-        :param session: active user session to use
-        """
         self = cls(session)
-        await self._wait_for_authentication()
-        return self
+        return await self.__aenter__()
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await self.close()
+
+    async def close(self):
+        """
+        Closes the websocket connection and cancels the heartbeat task.
+        """
+        self._connect_task.cancel()
+        self._heartbeat_task.cancel()
 
     async def _connect(self) -> None:
         """
@@ -722,13 +727,6 @@ class DXLinkStreamer:  # pragma: no cover
         }
         await self._websocket.send(json.dumps(message))
 
-    async def _wait_for_authentication(self, time_out=100):
-        while not self._authenticated:
-            await asyncio.sleep(0.1)
-            time_out -= 1
-            if time_out < 0:
-                raise TastytradeError('Connection timed out')
-
     async def listen(self, event_type: EventType) -> AsyncIterator[Event]:
         """
         Using the existing subscriptions, pulls events of the given type and
@@ -740,12 +738,15 @@ class DXLinkStreamer:  # pragma: no cover
         while True:
             yield await self._queues[event_type].get()
 
-    def close(self) -> None:
+    async def get_event(self, event_type: EventType) -> Event:
         """
-        Closes the websocket connection and cancels the keepalive task.
+        Using the existing subscription, pulls an event of the given type and
+        returns it.
+
+        :param event_type: the type of event to get
         """
-        self._heartbeat_task.cancel()
-        self._connect_task.cancel()
+        while True:
+            return await self._queues[event_type].get()
 
     async def _heartbeat(self) -> None:
         """

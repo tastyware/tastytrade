@@ -40,20 +40,19 @@ The streamer is a websocket connection to dxfeed (the Tastytrade data provider) 
 
 .. code-block:: python
 
-   from tastytrade import DXFeedStreamer
+   from tastytrade import DXLinkStreamer
    from tastytrade.dxfeed import EventType
 
-   streamer = await DXFeedStreamer.create(session)
-   subs_list = ['SPY', 'SPX']
-
-   await streamer.subscribe(EventType.QUOTE, subs_list)
-   # this example fetches quotes once, then exits
-   quotes = []
-   async for quote in streamer.listen(EventType.QUOTE):
-      quotes.append(quote)
-      if len(quotes) >= len(subs_list):
-         break
-   print(quotes)
+   async with DXLinkStreamer(session) as streamer:
+      subs_list = ['SPY', 'GLD']  # list of symbols to subscribe to
+      await streamer.subscribe(EventType.QUOTE, subs_list)
+      # this example fetches quotes once, then exits
+      quotes = []
+      async for quote in streamer.listen(EventType.QUOTE):
+         quotes.append(quote)
+         if len(quotes) >= len(subs_list):
+            break
+      print(quotes)
 
 >>> [Quote(eventSymbol='SPY', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='Q', bidPrice=411.58, bidSize=400.0, askTime=0, askExchangeCode='Q', askPrice=411.6, askSize=1313.0), Quote(eventSymbol='SPX', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='\x00', bidPrice=4122.49, bidSize='NaN', askTime=0, askExchangeCode='\x00', askPrice=4123.65, askSize='NaN')]
 
