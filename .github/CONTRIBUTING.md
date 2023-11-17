@@ -8,6 +8,7 @@ Secrets are protected by Github and are not visible to anyone. You can read more
 
 1. Fork the repository to your personal Github account, NOT to an organization where others may be able to indirectly access your secrets.
 2. Make your changes on the forked repository.
-3. Navigate to the forked repository's settings page and click on "Secrets and variables" > "Actions".
-4. Click on "New repository secret" to add your Tastytrade username named `TT_USERNAME`.
-5. Finally, do the same with your password, naming it `TT_PASSWORD`.
+3. Go to the "Actions" page on the forked repository and enable actions.
+4. Navigate to the forked repository's settings page and click on "Secrets and variables" > "Actions".
+5. Click on "New repository secret" to add your Tastytrade username named `TT_USERNAME`.
+6. Finally, do the same with your password, naming it `TT_PASSWORD`.
