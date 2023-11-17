@@ -9,9 +9,18 @@ You can create a streamer using an active production session:
 
 .. code-block:: python
 
-   from tastytrade import DXFeedStreamer
-   streamer = await DXFeedStreamer.create(session)
+   from tastytrade import DXLinkStreamer
+   streamer = await DXLinkStreamer.create(session)
 
+Or, you can create a streamer using an asynchronous context manager:
+
+.. code-block:: python
+
+   from tastytrade import DXLinkStreamer
+   async with DXLinkStreamer(session) as streamer:
+      pass
+
+There are two kinds of streamers: ``DXLinkStreamer`` and ``DXFeedStreamer``. ``DXFeedStreamer`` is older, but has been kept around for compatibility reasons. It supports more event types, but it's now deprecated as it will probably be moved to delayed quotes at some point.
 Once you've created the streamer, you can subscribe/unsubscribe to events, like ``Quote``:
 
 .. code-block:: python
@@ -19,13 +28,28 @@ Once you've created the streamer, you can subscribe/unsubscribe to events, like 
    from tastytrade.dxfeed import EventType
    subs_list = ['SPY', 'SPX']
 
-   await streamer.subscribe(EventType.QUOTE, subs_list)
-   quotes = []
-   async for quote in streamer.listen(EventType.QUOTE):
-      quotes.append(quote)
-      if len(quotes) >= len(subs_list):
-         break
-   print(quotes)
+   async with DXFeedStreamer(session) as streamer:
+      await streamer.subscribe(EventType.QUOTE, subs_list)
+      quotes = []
+      async for quote in streamer.listen(EventType.QUOTE):
+         quotes.append(quote)
+         if len(quotes) >= len(subs_list):
+            break
+      print(quotes)
+
+>>> [Quote(eventSymbol='SPY', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='Q', bidPrice=411.58, bidSize=400.0, askTime=0, askExchangeCode='Q', askPrice=411.6, askSize=1313.0), Quote(eventSymbol='SPX', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='\x00', bidPrice=4122.49, bidSize='NaN', askTime=0, askExchangeCode='\x00', askPrice=4123.65, askSize='NaN')]
+
+Note that these are ``asyncio`` calls, so you'll need to run this code asynchronously. Alternatively, you can do testing in a Jupyter notebook, which allows you to make async calls directly. Here's an example:
+
+.. code-block:: python
+
+   async def main():
+      async with DXLinkStreamer(session) as streamer:
+         await streamer.subscribe(EventType.QUOTE, subs_list)
+         quote = await streamer.get_event(EventType.QUOTE)
+         print(quote)
+   
+   asyncio.run(main())
 
 >>> [Quote(eventSymbol='SPY', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='Q', bidPrice=411.58, bidSize=400.0, askTime=0, askExchangeCode='Q', askPrice=411.6, askSize=1313.0), Quote(eventSymbol='SPX', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='\x00', bidPrice=4122.49, bidSize='NaN', askTime=0, askExchangeCode='\x00', askPrice=4123.65, askSize='NaN')]
 
@@ -39,13 +63,14 @@ We can also use the streamer to stream greeks for options symbols:
    chain = get_option_chain(session, 'SPLG')
    subs_list = [chain[date(2023, 6, 16)][0].streamer_symbol]
 
-   await streamer.subscribe(EventType.GREEKS, subs_list)
-   greeks = []
-   async for greek in streamer.listen(EventType.GREEKS):
-      greeks.append(greek)
-      if len(greeks) >= len(subs_list):
-         break
-   print(greeks)
+   async with DXFeedStreamer(session) as streamer:
+      await streamer.subscribe(EventType.GREEKS, subs_list)
+      greeks = []
+      async for greek in streamer.listen(EventType.GREEKS):
+         greeks.append(greek)
+         if len(greeks) >= len(subs_list):
+            break
+      print(greeks)
 
 >>> [Greeks(eventSymbol='.SPLG230616C23', eventTime=0, eventFlags=0, index=7235129486797176832, time=1684559855338, sequence=0, price=26.3380972233688, volatility=0.396983376650804, delta=0.999999999996191, gamma=4.81989763184255e-12, theta=-2.5212017514875e-12, rho=0.01834504287973133, vega=3.7003015672215e-12)]
 
@@ -60,6 +85,7 @@ For example, we can use the streamer to create an option chain that will continu
    import asyncio
    from datetime import date
    from dataclasses import dataclass
+   from tastytrade import DXFeedStreamer
    from tastytrade.instruments import get_option_chain
    from tastytrade.dxfeed import Greeks, Quote
 

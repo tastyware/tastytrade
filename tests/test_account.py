@@ -35,12 +35,7 @@ def test_get_positions(session, account):
 
 
 def test_get_history(session, account):
-    account.get_history(session)
-
-
-def test_get_transaction(session, account):
-    TX_ID = 42961  # opening deposit
-    account.get_transaction(session, TX_ID)
+    account.get_history(session, page_offset=0)
 
 
 def test_get_total_fees(session, account):
@@ -55,6 +50,14 @@ def test_get_margin_requirements(session, account):
     account.get_margin_requirements(session)
 
 
+def test_get_net_liquidating_value_history(session, account):
+    account.get_net_liquidating_value_history(session, time_back='1y')
+
+
+def test_get_effective_margin_requirements(session, account):
+    account.get_effective_margin_requirements(session, 'SPY')
+
+
 @pytest.fixture(scope='session')
 def new_order(session):
     symbol = Equity.get_equity(session, 'SPY')
@@ -64,7 +67,7 @@ def new_order(session):
         time_in_force=OrderTimeInForce.DAY,
         order_type=OrderType.LIMIT,
         legs=[leg],
-        price=Decimal(420),  # over $3 so will never fill
+        price=Decimal(42),  # if this fills the US has crumbled
         price_effect=PriceEffect.DEBIT
     )
 
@@ -79,13 +82,15 @@ def test_place_and_delete_order(session, account, new_order):
     account.delete_order(session, order.id)
 
 
-def test_replace_and_delete_order(session, account, new_order, placed_order):
-    replaced = account.replace_order(session, placed_order.id, new_order)
-    account.delete_order(session, replaced.id)
-
-
 def test_get_order(session, account, placed_order):
     assert account.get_order(session, placed_order.id).id == placed_order.id
+
+
+def test_replace_and_delete_order(session, account, new_order, placed_order):
+    modified_order = new_order.copy()
+    modified_order.price = Decimal(40)
+    replaced = account.replace_order(session, placed_order.id, modified_order)
+    account.delete_order(session, replaced.id)
 
 
 def test_get_order_history(session, account):

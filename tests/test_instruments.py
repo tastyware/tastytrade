@@ -1,7 +1,8 @@
-from tastytrade.instruments import (Cryptocurrency, Equity,
-                                    FutureOptionProduct, FutureProduct,
+from tastytrade.instruments import (Cryptocurrency, Equity, Future,
+                                    FutureOption, FutureOptionProduct,
+                                    FutureProduct, NestedFutureOptionChain,
                                     NestedOptionChain, Option, Warrant,
-                                    get_option_chain,
+                                    get_future_option_chain, get_option_chain,
                                     get_quantity_decimal_precisions)
 
 
@@ -25,6 +26,11 @@ def test_get_equity(session):
     Equity.get_equity(session, 'AAPL')
 
 
+def test_get_futures(session):
+    futures = Future.get_futures(session, product_codes=['ES'])
+    Future.get_future(session, futures[0].symbol)
+
+
 def test_get_future_product(session):
     FutureProduct.get_future_product(session, 'ZN')
 
@@ -45,8 +51,16 @@ def test_get_nested_option_chain(session):
     NestedOptionChain.get_chain(session, 'SPY')
 
 
+def test_get_nested_future_option_chain(session):
+    NestedFutureOptionChain.get_chain(session, 'ES')
+
+
 def test_get_warrants(session):
     Warrant.get_warrants(session)
+
+
+def test_get_warrant(session):
+    Warrant.get_warrant(session, 'NKLAW')
 
 
 def test_get_quantity_decimal_precisions(session):
@@ -55,9 +69,14 @@ def test_get_quantity_decimal_precisions(session):
 
 def test_get_option_chain(session):
     chain = get_option_chain(session, 'SPY')
-    symbols = []
     for options in chain.values():
-        symbols.extend([o.symbol for o in options])
+        Option.get_option(session, options[0].symbol)
         break
-    Option.get_option(session, symbols[0])
-    Option.get_options(session, symbols)
+
+
+def test_get_future_option_chain(session):
+    chain = get_future_option_chain(session, 'ES')
+    for options in chain.values():
+        FutureOption.get_future_option(session, options[0].symbol)
+        FutureOption.get_future_options(session, options[:4])
+        break

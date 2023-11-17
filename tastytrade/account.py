@@ -295,7 +295,6 @@ class TradingStatus(TastytradeJsonDataclass):
     is_in_margin_call: bool
     is_pattern_day_trader: bool
     is_portfolio_margin_enabled: bool
-    is_risk_reducing_only: bool
     is_small_notional_futures_intra_day_enabled: bool
     is_roll_the_day_forward_enabled: bool
     are_far_otm_net_options_restricted: bool
@@ -305,6 +304,7 @@ class TradingStatus(TastytradeJsonDataclass):
     is_equity_offering_enabled: bool
     is_equity_offering_closing_only: bool
     updated_at: datetime
+    is_risk_reducing_only: Optional[bool] = None
     day_trade_count: Optional[int] = None
     autotrade_account_type: Optional[str] = None
     clearing_account_number: Optional[str] = None
@@ -668,7 +668,11 @@ class Account(TastytradeJsonDataclass):
 
         return [Transaction(**entry) for entry in results]
 
-    def get_transaction(self, session: Session, id: int) -> Transaction:
+    def get_transaction(
+        self,
+        session: Session,
+        id: int
+    ) -> Transaction:  # pragma: no cover
         """
         Get a single transaction by ID.
 
@@ -715,7 +719,7 @@ class Account(TastytradeJsonDataclass):
         session: ProductionSession,
         time_back: Optional[str] = None,
         start_time: Optional[datetime] = None
-    ) -> List[NetLiqOhlc]:  # pragma: no cover
+    ) -> List[NetLiqOhlc]:
         """
         Returns a list of account net liquidating value snapshots over the
         specified time period.
@@ -775,7 +779,7 @@ class Account(TastytradeJsonDataclass):
         self,
         session: ProductionSession,
         symbol: str
-    ) -> MarginRequirement:  # pragma: no cover
+    ) -> MarginRequirement:
         """
         Get the effective margin requirements for a given symbol.
 

@@ -412,7 +412,7 @@ class Option(TradeableTastytradeJsonDataclass):
         symbols: Optional[List[str]] = None,
         active: Optional[bool] = None,
         with_expired: Optional[bool] = None
-    ) -> List['Option']:
+    ) -> List['Option']:  # pragma: no cover
         """
         Returns a list of :class:`Option` objects from the given symbols.
 
@@ -1062,7 +1062,7 @@ def get_option_chain(
 def get_future_option_chain(
     session: ProductionSession,
     symbol: str
-) -> Dict[date, List[FutureOption]]:  # pragma: no cover
+) -> Dict[date, List[FutureOption]]:
     """
     Returns a mapping of expiration date to a list of futures options
     objects representing the options chain for the given symbol.
