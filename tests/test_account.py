@@ -10,7 +10,7 @@ from tastytrade.order import (NewOrder, OrderAction, OrderTimeInForce,
 
 @pytest.fixture(scope='session')
 def account(session):
-    return Account.get_accounts(session)[1]
+    return Account.get_accounts(session)[0]
 
 
 def test_get_account(session, account):

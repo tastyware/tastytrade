@@ -1,6 +1,6 @@
 # Contributions
 
-Since Tastytrade certification sessions are severely limited in capabilities, the test suite for this SDK requires the usage of your own Tastytrade credentials. In order to run the tests, you'll need to set up your Tastytrade credentials as repository secrets on your local fork.
+Since Tastytrade certification sessions are severely limited in capabilities, the test suite for this SDK requires the usage of your own Tastytrade credentials. In order to pass the tests, you'll need to set up your Tastytrade credentials as repository secrets on your local fork.
 
 Secrets are protected by Github and are not visible to anyone. You can read more about repository secrets [here](https://docs.github.com/en/actions/reference/encrypted-secrets).
 
