@@ -39,7 +39,7 @@ Once you've created the streamer, you can subscribe/unsubscribe to events, like 
 
 >>> [Quote(eventSymbol='SPY', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='Q', bidPrice=411.58, bidSize=400.0, askTime=0, askExchangeCode='Q', askPrice=411.6, askSize=1313.0), Quote(eventSymbol='SPX', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='\x00', bidPrice=4122.49, bidSize='NaN', askTime=0, askExchangeCode='\x00', askPrice=4123.65, askSize='NaN')]
 
-Note that these are ``asyncio`` calls, so you'll need to run this code asynchronously. Alternatively, you can do testing in a Jupyter notebook, which allows you to make async calls directly. Here's an example:
+Note that these are ``asyncio`` calls, so you'll need to run this code asynchronously. Here's an example:
 
 .. code-block:: python
 
@@ -52,6 +52,8 @@ Note that these are ``asyncio`` calls, so you'll need to run this code asynchron
    asyncio.run(main())
 
 >>> [Quote(eventSymbol='SPY', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='Q', bidPrice=411.58, bidSize=400.0, askTime=0, askExchangeCode='Q', askPrice=411.6, askSize=1313.0), Quote(eventSymbol='SPX', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='\x00', bidPrice=4122.49, bidSize='NaN', askTime=0, askExchangeCode='\x00', askPrice=4123.65, askSize='NaN')]
+
+Alternatively, you can do testing in a Jupyter notebook, which allows you to make async calls directly.
 
 We can also use the streamer to stream greeks for options symbols:
 
