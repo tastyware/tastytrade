@@ -994,7 +994,8 @@ class Account(TastytradeJsonDataclass):
 
         :return: a :class:`PlacedOrderResponse` object for the placed order.
         """
-        url = f'{session.base_url}/accounts/{self.account_number}/complex-orders'
+        url = (f'{session.base_url}/accounts/{self.account_number}'
+               f'/complex-orders')
         if dry_run:
             url += '/dry-run'
         headers = session.headers
