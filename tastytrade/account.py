@@ -5,9 +5,9 @@ from typing import Any, Dict, List, Optional, Union
 import requests
 from pydantic import BaseModel
 
-from tastytrade.order import (InstrumentType, NewOrder, OrderStatus,
-                              NewOCOOrder,
-                              PlacedOrder, PlacedOrderResponse, PriceEffect)
+from tastytrade.order import (InstrumentType, NewOCOOrder, NewOrder,
+                              OrderStatus, PlacedOrder, PlacedOrderResponse,
+                              PriceEffect)
 from tastytrade.session import ProductionSession, Session
 from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
                               validate_response)
