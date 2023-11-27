@@ -3,12 +3,8 @@ name: Python application
 on:
   push:
     branches: [ master ]
-   
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: 'The branch to build'
-        required: true
+  pull_request:
+    branches: [ master ]
 
 jobs:
   build:
