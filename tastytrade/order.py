@@ -85,6 +85,14 @@ class OrderType(str, Enum):
     NOTIONAL_MARKET = 'Notional Market'
 
 
+class ComplexOrderType(str, Enum):
+    """
+    This is an :class:`~enum.Enum` that contains the valid complex order types.
+    """
+    OCO = 'OCO'
+    OTOCO = 'OTOCO'
+
+
 class PriceEffect(str, Enum):
     """
     This is an :class:`~enum.Enum` that shows the sign of a price effect, since
@@ -221,6 +229,24 @@ class NewOrder(TastytradeJsonDataclass):
     rules: Optional[OrderRule] = None
 
 
+class NewOCOOrder(TastytradeJsonDataclass):
+    """
+    Dataclass containing information about an OCO order.
+    Also used for modifying existing orders.
+    """
+    complex_order_type: ComplexOrderType
+    source: str = f'tastyware/tastytrade:v{VERSION}'
+    orders: List[NewOrder]
+
+
+class NewOTOCOOrder(NewOCOOrder):
+    """
+    Dataclass containing information about a new OTOCO order.
+    Also used for modifying existing orders.
+    """
+    trigger_order: NewOrder
+
+
 class PlacedOrder(TastytradeJsonDataclass):
     """
     Dataclass containing information about an existing order, whether it's
@@ -269,16 +295,10 @@ class ComplexOrder(TastytradeJsonDataclass):
     """
     Dataclass containing information about a complex order.
     """
-    id: str
     account_number: str
     type: str
-    terminal_at: str
-    ratio_price_threshold: Decimal
-    ratio_price_comparator: str
-    ratio_price_is_threshold_based_on_notional: bool
-    related_orders: List[Dict[str, str]]
     orders: List[PlacedOrder]
-    trigger_order: PlacedOrder
+    trigger_order: Optional[PlacedOrder] = None
 
 
 class BuyingPowerEffect(TastytradeJsonDataclass):

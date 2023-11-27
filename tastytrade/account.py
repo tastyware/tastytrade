@@ -6,6 +6,7 @@ import requests
 from pydantic import BaseModel
 
 from tastytrade.order import (InstrumentType, NewOrder, OrderStatus,
+                              NewOCOOrder,
                               PlacedOrder, PlacedOrderResponse, PriceEffect)
 from tastytrade.session import ProductionSession, Session
 from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
@@ -970,6 +971,37 @@ class Account(TastytradeJsonDataclass):
         # required because we're passing the JSON as a string
         headers['Content-Type'] = 'application/json'
         json = order.json(exclude_none=True, by_alias=True)
+
+        response = requests.post(url, headers=session.headers, data=json)
+        validate_response(response)
+
+        data = response.json()['data']
+
+        return PlacedOrderResponse(**data)
+
+    def place_complex_orders(
+        self,
+        session: Session,
+        order: NewOCOOrder,
+        dry_run=True
+    ) -> PlacedOrderResponse:
+        """
+        Place the given order.
+
+        :param session: the session to use for the request.
+        :param order: the order to place.
+        :param dry_run: whether this is a test order or not.
+
+        :return: a :class:`PlacedOrderResponse` object for the placed order.
+        """
+        url = f'{session.base_url}/accounts/{self.account_number}/complex-orders'
+        if dry_run:
+            url += '/dry-run'
+        headers = session.headers
+        # required because we're passing the JSON as a string
+        headers['Content-Type'] = 'application/json'
+        json = order.json(exclude_none=True, by_alias=True)
+        json = json.replace('complex-order-type', 'type')
 
         response = requests.post(url, headers=session.headers, data=json)
         validate_response(response)
