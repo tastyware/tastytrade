@@ -632,7 +632,7 @@ class DXLinkStreamer:
             EventType.THEO_PRICE: 11,
             EventType.TIME_AND_SALE: 13,
             EventType.TRADE: 15,
-            EventType.UNDERLYING: 17
+            EventType.UNDERLYING: 17,
         }
         self._subscription_state: Dict[EventType, str] = \
             defaultdict(lambda: 'CHANNEL_CLOSED')
@@ -700,6 +700,8 @@ class DXLinkStreamer:
                                     if v == message['channel']))
                     self._subscription_state[channel] \
                         = message['type']
+                elif message['type'] == 'CHANNEL_CLOSED':
+                    pass
                 elif message['type'] == 'FEED_CONFIG':
                     pass
                 elif message['type'] == 'FEED_DATA':
@@ -786,6 +788,19 @@ class DXLinkStreamer:
                     for symbol in symbols]
         }
         logger.debug('sending subscription: %s', message)
+        await self._websocket.send(json.dumps(message))
+
+    async def cancel_channel(self, event_type: EventType) -> None:
+        """
+        Cancels the channel for the belonging event_type
+
+        :param event_type: cancel the channel for this event
+        """
+        message = {
+            'type': 'CHANNEL_CANCEL',
+            'channel': self._channels[event_type],
+        }
+        logger.debug('sending channel cancel: %s', message)
         await self._websocket.send(json.dumps(message))
 
     async def _channel_request(self, event_type: EventType) -> None:

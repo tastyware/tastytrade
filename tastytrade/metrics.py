@@ -52,23 +52,23 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     Contains lots of useful information, like IV rank, IV percentile and beta.
     """
     symbol: str
-    implied_volatility_index: Decimal
-    implied_volatility_index_5_day_change: Decimal
+    implied_volatility_index: Optional[Decimal] = None
+    implied_volatility_index_5_day_change: Optional[Decimal] = None
     implied_volatility_index_rank: Optional[str] = None
-    tos_implied_volatility_index_rank: Decimal
-    tw_implied_volatility_index_rank: Decimal
-    tos_implied_volatility_index_rank_updated_at: datetime
-    implied_volatility_index_rank_source: str
+    tos_implied_volatility_index_rank: Optional[Decimal] = None
+    tw_implied_volatility_index_rank: Optional[Decimal] = None
+    tos_implied_volatility_index_rank_updated_at: Optional[datetime] = None
+    implied_volatility_index_rank_source: Optional[str] = None
     implied_volatility_percentile: Optional[str] = None
-    implied_volatility_updated_at: datetime
-    liquidity_rating: int
+    implied_volatility_updated_at: Optional[datetime] = None
+    liquidity_rating: Optional[int] = None
     updated_at: datetime
-    option_expiration_implied_volatilities: List[OptionExpirationImpliedVolatility]  # noqa: E501
-    beta: Decimal
-    corr_spy_3month: Decimal
+    option_expiration_implied_volatilities: Optional[List[OptionExpirationImpliedVolatility]] = None  # noqa: E501
+    beta: Optional[Decimal] = None
+    corr_spy_3month: Optional[Decimal] = None
     market_cap: Decimal
-    price_earnings_ratio: Decimal
-    earnings_per_share: Decimal
+    price_earnings_ratio: Optional[Decimal] = None
+    earnings_per_share: Optional[Decimal] = None
     dividend_rate_per_share: Optional[Decimal] = None
     implied_volatility_30_day: Optional[Decimal] = None
     historical_volatility_30_day: Optional[Decimal] = None
@@ -128,7 +128,8 @@ def get_dividends(
     """
     symbol = symbol.replace('/', '%2F')
     response = requests.get(
-        f'{session.base_url}/market-metrics/historic-corporate-events/dividends/{symbol}',  # noqa: E501
+        (f'{session.base_url}/market-metrics/historic-corporate-events/'
+         f'dividends/{symbol}'),
         headers=session.headers
     )
     validate_response(response)
@@ -155,7 +156,8 @@ def get_earnings(
     symbol = symbol.replace('/', '%2F')
     params: Dict[str, Any] = {'start-date': start_date}
     response = requests.get(
-        f'{session.base_url}/market-metrics/historic-corporate-events/earnings-reports/{symbol}',  # noqa: E501
+        (f'{session.base_url}/market-metrics/historic-corporate-events/'
+         f'earnings-reports/{symbol}'),
         headers=session.headers,
         params=params
     )
