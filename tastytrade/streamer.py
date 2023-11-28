@@ -88,9 +88,12 @@ class AccountStreamer:
         async with AccountStreamer(session) as streamer:
             accounts = Account.get_accounts(session)
 
-            await streamer.account_subscribe(accounts)
-            await streamer.public_watchlists_subscribe()
-            await streamer.quote_alerts_subscribe()
+            # updates to balances, orders, and positions
+            await streamer.subscribe_accounts(accounts)
+            # changes in public watchlists
+            await streamer.subscribe_public_watchlists()
+            # quote alerts configured by the user
+            await streamer.subscribe_quote_alerts()
 
             async for data in streamer.listen():
                 print(data)
@@ -190,7 +193,7 @@ class AccountStreamer:
         else:
             raise TastytradeError(f'Unknown message type: {type_str}\n{data}')
 
-    async def account_subscribe(self, accounts: List[Account]) -> None:
+    async def subscribe_accounts(self, accounts: List[Account]) -> None:
         """
         Subscribes to account-level updates (balances, orders, positions).
 
@@ -201,19 +204,19 @@ class AccountStreamer:
             [a.account_number for a in accounts]
         )
 
-    async def public_watchlists_subscribe(self) -> None:
+    async def subscribe_public_watchlists(self) -> None:
         """
         Subscribes to public watchlist updates.
         """
         await self._subscribe(SubscriptionType.PUBLIC_WATCHLISTS)
 
-    async def quote_alerts_subscribe(self) -> None:
+    async def subscribe_quote_alerts(self) -> None:
         """
         Subscribes to quote alerts (which are configured at a user level).
         """
         await self._subscribe(SubscriptionType.QUOTE_ALERTS)
 
-    async def user_message_subscribe(self, session: Session) -> None:
+    async def subscribe_user_messages(self, session: Session) -> None:
         """
         Subscribes to user-level messages, e.g. new account creation.
         """
