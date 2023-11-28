@@ -11,11 +11,11 @@ pytest_plugins = ('pytest_asyncio',)
 @pytest.mark.asyncio
 async def test_account_streamer(session):
     async with AccountStreamer(session) as streamer:
-        await streamer.public_watchlists_subscribe()
-        await streamer.quote_alerts_subscribe()
-        await streamer.user_message_subscribe(session)
+        await streamer.subscribe_public_watchlists()
+        await streamer.subscribe_quote_alerts()
+        await streamer.subscribe_user_messages(session)
         accounts = Account.get_accounts(session)
-        await streamer.account_subscribe(accounts)
+        await streamer.subscribe_accounts(accounts)
 
 
 @pytest.mark.asyncio

@@ -6,6 +6,10 @@
 
    installation
    sessions
+   accounts
+   instruments
+   orders
+   account-streamer
    data-streamer
    watchlists
 

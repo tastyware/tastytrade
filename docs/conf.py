@@ -9,7 +9,7 @@
 project = 'tastytrade'
 copyright = '2023, Graeme Holliday'
 author = 'Graeme Holliday'
-release = '6.2'
+release = '6.3'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -50,4 +50,3 @@ autodoc_pydantic_show_field_summary = True
 autodoc_pydantic_model_undoc_members = False
 autodoc_pydantic_model_hide_paramlist = False
 autodoc_pydantic_model_show_config_summary = False
-
