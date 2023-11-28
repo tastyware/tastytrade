@@ -85,6 +85,14 @@ class OrderType(str, Enum):
     NOTIONAL_MARKET = 'Notional Market'
 
 
+class ComplexOrderType(str, Enum):
+    """
+    This is an :class:`~enum.Enum` that contains the valid complex order types.
+    """
+    OCO = 'OCO'
+    OTOCO = 'OTOCO'
+
+
 class PriceEffect(str, Enum):
     """
     This is an :class:`~enum.Enum` that shows the sign of a price effect, since
@@ -103,7 +111,7 @@ class FillInfo(TastytradeJsonDataclass):
     quantity: Decimal
     fill_price: Decimal
     filled_at: datetime
-    destination_venue: str
+    destination_venue: Optional[str] = None
     ext_group_fill_id: Optional[str] = None
     ext_exec_id: Optional[str] = None
 
@@ -118,7 +126,7 @@ class Leg(TastytradeJsonDataclass):
     instrument_type: InstrumentType
     symbol: str
     action: OrderAction
-    quantity: Decimal
+    quantity: Optional[Decimal] = None
     remaining_quantity: Optional[Decimal] = None
     fills: Optional[List[FillInfo]] = None
 
@@ -221,6 +229,22 @@ class NewOrder(TastytradeJsonDataclass):
     rules: Optional[OrderRule] = None
 
 
+class NewComplexOrder(TastytradeJsonDataclass):
+    """
+    Dataclass containing information about a new OTOCO order.
+    Also used for modifying existing orders.
+    """
+    orders: List[NewOrder]
+    source: str = f'tastyware/tastytrade:v{VERSION}'
+    trigger_order: Optional[NewOrder] = None
+    type: ComplexOrderType = ComplexOrderType.OCO
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.trigger_order is not None:
+            self.type = ComplexOrderType.OTOCO
+
+
 class PlacedOrder(TastytradeJsonDataclass):
     """
     Dataclass containing information about an existing order, whether it's
@@ -229,7 +253,6 @@ class PlacedOrder(TastytradeJsonDataclass):
     account_number: str
     time_in_force: OrderTimeInForce
     order_type: OrderType
-    size: str
     underlying_symbol: str
     underlying_instrument_type: InstrumentType
     status: OrderStatus
@@ -238,6 +261,7 @@ class PlacedOrder(TastytradeJsonDataclass):
     edited: bool
     updated_at: datetime
     legs: List[Leg]
+    size: Optional[str] = None
     id: Optional[str] = None
     price: Optional[Decimal] = None
     price_effect: Optional[PriceEffect] = None
@@ -265,20 +289,20 @@ class PlacedOrder(TastytradeJsonDataclass):
     order_rule: Optional[OrderRule] = None
 
 
-class ComplexOrder(TastytradeJsonDataclass):
+class PlacedComplexOrder(TastytradeJsonDataclass):
     """
-    Dataclass containing information about a complex order.
+    Dataclass containing information about an already placed complex order.
     """
-    id: str
     account_number: str
     type: str
-    terminal_at: str
-    ratio_price_threshold: Decimal
-    ratio_price_comparator: str
-    ratio_price_is_threshold_based_on_notional: bool
-    related_orders: List[Dict[str, str]]
     orders: List[PlacedOrder]
-    trigger_order: PlacedOrder
+    id: Optional[str] = None
+    trigger_order: Optional[PlacedOrder] = None
+    terminal_at: Optional[str] = None
+    ratio_price_threshold: Optional[Decimal] = None
+    ratio_price_comparator: Optional[str] = None
+    ratio_price_is_threshold_based_on_notional: Optional[bool] = None
+    related_orders: Optional[List[Dict[str, str]]] = None
 
 
 class BuyingPowerEffect(TastytradeJsonDataclass):
@@ -324,7 +348,7 @@ class PlacedOrderResponse(TastytradeJsonDataclass):
     buying_power_effect: BuyingPowerEffect
     fee_calculation: FeeCalculation
     order: Optional[PlacedOrder] = None
-    complex_order: Optional[ComplexOrder] = None
+    complex_order: Optional[PlacedComplexOrder] = None
     warnings: Optional[List[Message]] = None
     errors: Optional[List[Message]] = None
 
