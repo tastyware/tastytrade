@@ -22,6 +22,7 @@ def test_get_candle(session):
     session.get_candle(['SPY', 'AAPL'], '1d', start_date)
 
 
-def test_destroy():
-    session = CertificationSession('tastyware', ':4s-S9/9L&Q~C]@v')
+def test_destroy(get_cert_credentials):
+    usr, pwd = get_cert_credentials
+    session = CertificationSession(usr, pwd)
     assert session.destroy()

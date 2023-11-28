@@ -5,9 +5,9 @@ from typing import Any, Dict, List, Optional, Union
 import requests
 from pydantic import BaseModel
 
-from tastytrade.order import (InstrumentType, NewOCOOrder, NewOrder,
-                              OrderStatus, PlacedOrder, PlacedOrderResponse,
-                              PriceEffect)
+from tastytrade.order import (InstrumentType, NewComplexOrder, NewOrder,
+                              OrderStatus, PlacedComplexOrder, PlacedOrder,
+                              PlacedOrderResponse, PriceEffect)
 from tastytrade.session import ProductionSession, Session
 from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
                               validate_response)
@@ -457,7 +457,8 @@ class Account(TastytradeJsonDataclass):
         :return: a Tastytrade 'TradingStatus' object in JSON format.
         """
         response = requests.get(
-            f'{session.base_url}/accounts/{self.account_number}/trading-status',  # noqa: E501
+            (f'{session.base_url}/accounts/{self.account_number}/'
+             'trading-status'),
             headers=session.headers
         )
         validate_response(response)  # throws exception if not 200
@@ -512,7 +513,8 @@ class Account(TastytradeJsonDataclass):
         }
 
         response = requests.get(
-            f'{session.base_url}/accounts/{self.account_number}/balance-snapshots',  # noqa: E501
+            (f'{session.base_url}/accounts/{self.account_number}/balance-'
+             'snapshots'),
             headers=session.headers,
             params={k: v for k, v in params.items() if v is not None}
         )
@@ -651,7 +653,8 @@ class Account(TastytradeJsonDataclass):
         results = []
         while True:
             response = requests.get(
-                f'{session.base_url}/accounts/{self.account_number}/transactions',  # noqa: E501
+                (f'{session.base_url}/accounts/{self.account_number}/'
+                 'transactions'),
                 headers=session.headers,
                 params={k: v for k, v in params.items() if v is not None}
             )
@@ -683,7 +686,8 @@ class Account(TastytradeJsonDataclass):
         :return: a Tastytrade 'Transaction' object in JSON format.
         """
         response = requests.get(
-            f'{session.base_url}/accounts/{self.account_number}/transactions/{id}',  # noqa: E501
+            (f'{session.base_url}/accounts/{self.account_number}/transactions'
+             f'/{id}'),
             headers=session.headers
         )
         validate_response(response)
@@ -707,7 +711,8 @@ class Account(TastytradeJsonDataclass):
         """
         params: Dict[str, Any] = {'date': date}
         response = requests.get(
-            f'{session.base_url}/accounts/{self.account_number}/transactions/total-fees',  # noqa: E501
+            (f'{session.base_url}/accounts/{self.account_number}/transactions/'
+             'total-fees'),
             headers=session.headers,
             params=params
         )
@@ -748,7 +753,8 @@ class Account(TastytradeJsonDataclass):
             params = {'time-back': time_back}
 
         response = requests.get(
-            f'{session.base_url}/accounts/{self.account_number}/net-liq/history',  # noqa: E501
+            (f'{session.base_url}/accounts/{self.account_number}/net-liq/'
+             'history'),
             headers=session.headers,
             params=params
         )
@@ -767,7 +773,8 @@ class Account(TastytradeJsonDataclass):
         :return: a Tastytrade 'PositionLimit' object in JSON format.
         """
         response = requests.get(
-            f'{session.base_url}/accounts/{self.account_number}/position-limit',  # noqa: E501
+            (f'{session.base_url}/accounts/{self.account_number}/position-'
+             'limit'),
             headers=session.headers
         )
         validate_response(response)
@@ -793,7 +800,8 @@ class Account(TastytradeJsonDataclass):
         if symbol:
             symbol = symbol.replace('/', '%2F')
         response = requests.get(
-            f'{session.base_url}/accounts/{self.account_number}/margin-requirements/{symbol}/effective',  # noqa: E501
+            (f'{session.base_url}/accounts/{self.account_number}/margin-'
+             f'requirements/{symbol}/effective'),
             headers=session.headers
         )
         validate_response(response)
@@ -812,7 +820,8 @@ class Account(TastytradeJsonDataclass):
         :return: a :class:`MarginReport` object.
         """
         response = requests.get(
-            f'{session.base_url}/margin/accounts/{self.account_number}/requirements',  # noqa: E501
+            (f'{session.base_url}/margin/accounts/{self.account_number}/'
+             'requirements'),
             headers=session.headers
         )
         validate_response(response)
@@ -839,16 +848,41 @@ class Account(TastytradeJsonDataclass):
 
         return [PlacedOrder(**entry) for entry in data]
 
+    def get_complex_order(
+        self,
+        session: Session,
+        order_id: str
+    ) -> PlacedComplexOrder:
+        """
+        Gets a complex order with the given ID.
+
+        :param session: the session to use for the request.
+
+        :return:
+            a :class:`PlacedComplexOrder` object corresponding to the given ID
+        """
+        response = requests.get(
+            (f'{session.base_url}/accounts/{self.account_number}/complex-'
+             f'orders/{order_id}'),
+            headers=session.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']
+
+        return PlacedComplexOrder(**data)
+
     def get_order(self, session: Session, order_id: str) -> PlacedOrder:
         """
         Gets an order with the given ID.
 
         :param session: the session to use for the request.
 
-        :return: an :class:`Order` object corresponding to the given ID.
+        :return: a :class:`PlacedOrder` object corresponding to the given ID
         """
         response = requests.get(
-            f'{session.base_url}/accounts/{self.account_number}/orders/{order_id}',  # noqa: E501
+            (f'{session.base_url}/accounts/{self.account_number}/orders'
+             f'/{order_id}'),
             headers=session.headers
         )
         validate_response(response)
@@ -856,6 +890,20 @@ class Account(TastytradeJsonDataclass):
         data = response.json()['data']
 
         return PlacedOrder(**data)
+
+    def delete_complex_order(self, session: Session, order_id: str) -> None:
+        """
+        Delete a complex order by ID.
+
+        :param session: the session to use for the request.
+        :param order_id: the ID of the order to delete.
+        """
+        response = requests.delete(
+            (f'{session.base_url}/accounts/{self.account_number}/complex-'
+             f'orders/{order_id}'),
+            headers=session.headers
+        )
+        validate_response(response)
 
     def delete_order(self, session: Session, order_id: str) -> None:
         """
@@ -865,7 +913,8 @@ class Account(TastytradeJsonDataclass):
         :param order_id: the ID of the order to delete.
         """
         response = requests.delete(
-            f'{session.base_url}/accounts/{self.account_number}/orders/{order_id}',  # noqa: E501
+            (f'{session.base_url}/accounts/{self.account_number}/orders'
+             f'/{order_id}'),
             headers=session.headers
         )
         validate_response(response)
@@ -979,10 +1028,10 @@ class Account(TastytradeJsonDataclass):
 
         return PlacedOrderResponse(**data)
 
-    def place_complex_orders(
+    def place_complex_order(
         self,
         session: Session,
-        order: NewOCOOrder,
+        order: NewComplexOrder,
         dry_run=True
     ) -> PlacedOrderResponse:
         """
@@ -995,14 +1044,13 @@ class Account(TastytradeJsonDataclass):
         :return: a :class:`PlacedOrderResponse` object for the placed order.
         """
         url = (f'{session.base_url}/accounts/{self.account_number}'
-               f'/complex-orders')
+               '/complex-orders')
         if dry_run:
             url += '/dry-run'
         headers = session.headers
         # required because we're passing the JSON as a string
         headers['Content-Type'] = 'application/json'
         json = order.json(exclude_none=True, by_alias=True)
-        json = json.replace('complex-order-type', 'type')
 
         response = requests.post(url, headers=session.headers, data=json)
         validate_response(response)
@@ -1031,7 +1079,8 @@ class Account(TastytradeJsonDataclass):
         # required because we're passing the JSON as a string
         headers['Content-Type'] = 'application/json'
         response = requests.put(
-            f'{session.base_url}/accounts/{self.account_number}/orders/{old_order_id}',  # noqa: E501
+            (f'{session.base_url}/accounts/{self.account_number}/orders'
+             f'/{old_order_id}'),
             headers=headers,
             data=new_order.json(
                 exclude={'legs'},

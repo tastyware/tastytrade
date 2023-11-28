@@ -128,7 +128,8 @@ def get_dividends(
     """
     symbol = symbol.replace('/', '%2F')
     response = requests.get(
-        f'{session.base_url}/market-metrics/historic-corporate-events/dividends/{symbol}',  # noqa: E501
+        (f'{session.base_url}/market-metrics/historic-corporate-events/'
+         f'dividends/{symbol}'),
         headers=session.headers
     )
     validate_response(response)
@@ -155,7 +156,8 @@ def get_earnings(
     symbol = symbol.replace('/', '%2F')
     params: Dict[str, Any] = {'start-date': start_date}
     response = requests.get(
-        f'{session.base_url}/market-metrics/historic-corporate-events/earnings-reports/{symbol}',  # noqa: E501
+        (f'{session.base_url}/market-metrics/historic-corporate-events/'
+         f'earnings-reports/{symbol}'),
         headers=session.headers,
         params=params
     )

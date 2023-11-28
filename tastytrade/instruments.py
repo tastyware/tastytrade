@@ -600,7 +600,8 @@ class FutureProduct(TastytradeJsonDataclass):
         """
         code = code.replace('/', '')
         response = requests.get(
-            f'{session.base_url}/instruments/future-products/{exchange}/{code}',  # noqa: E501
+            (f'{session.base_url}/instruments/future-products/{exchange}/'
+             f'{code}'),
             headers=session.headers
         )
         validate_response(response)
@@ -768,7 +769,8 @@ class FutureOptionProduct(TastytradeJsonDataclass):
         """
         root_symbol = root_symbol.replace('/', '')
         response = requests.get(
-            f'{session.base_url}/instruments/future-option-products/{exchange}/{root_symbol}',  # noqa: E501
+            (f'{session.base_url}/instruments/future-option-products/'
+             f'{exchange}/{root_symbol}'),
             headers=session.headers
         )
         validate_response(response)
