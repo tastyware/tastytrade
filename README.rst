@@ -50,15 +50,11 @@ The streamer is a websocket connection to dxfeed (the Tastytrade data provider) 
    from tastytrade.dxfeed import EventType
 
    async with DXLinkStreamer(session) as streamer:
-      subs_list = ['SPY', 'GLD']  # list of symbols to subscribe to
-      await streamer.subscribe(EventType.QUOTE, subs_list)
-      # this example fetches quotes once, then exits
-      quotes = []
-      async for quote in streamer.listen(EventType.QUOTE):
-         quotes.append(quote)
-         if len(quotes) >= len(subs_list):
-            break
-      print(quotes)
+       subs_list = ['SPY']  # list of symbols to subscribe to
+       await streamer.subscribe(EventType.QUOTE, subs_list)
+       # this example fetches quotes once, then exits
+       quote = await streamer.get_event(EventType.QUOTE)
+       print(quote)
 
 >>> [Quote(eventSymbol='SPY', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='Q', bidPrice=411.58, bidSize=400.0, askTime=0, askExchangeCode='Q', askPrice=411.6, askSize=1313.0), Quote(eventSymbol='SPX', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='\x00', bidPrice=4122.49, bidSize='NaN', askTime=0, askExchangeCode='\x00', askPrice=4123.65, askSize='NaN')]
 
@@ -75,18 +71,6 @@ Getting current positions
 
 >>> CurrentPosition(account_number='5WV69754', symbol='IAU', instrument_type=<InstrumentType.EQUITY: 'Equity'>, underlying_symbol='IAU', quantity=Decimal('20'), quantity_direction='Long', close_price=Decimal('37.09'), average_open_price=Decimal('37.51'), average_yearly_market_close_price=Decimal('37.51'), average_daily_market_close_price=Decimal('37.51'), multiplier=1, cost_effect='Credit', is_suppressed=False, is_frozen=False, realized_day_gain=Decimal('7.888'), realized_day_gain_effect='Credit', realized_day_gain_date=datetime.date(2023, 5, 19), realized_today=Decimal('0.512'), realized_today_effect='Debit', realized_today_date=datetime.date(2023, 5, 19), created_at=datetime.datetime(2023, 3, 31, 14, 38, 32, 58000, tzinfo=datetime.timezone.utc), updated_at=datetime.datetime(2023, 5, 19, 16, 56, 51, 920000, tzinfo=datetime.timezone.utc), mark=None, mark_price=None, restricted_quantity=Decimal('0'), expires_at=None, fixing_price=None, deliverable_type=None)
 
-Symbol search
--------------
-
-.. code-block:: python
-
-   from tastytrade import symbol_search
-
-   results = symbol_search(session, 'AAP')
-   print(results)
-
->>> [SymbolData(symbol='AAP', description='Advance Auto Parts Inc.'), SymbolData(symbol='AAPD', description='Direxion Daily AAPL Bear 1X Shares'), SymbolData(symbol='AAPL', description='Apple Inc. - Common Stock'), SymbolData(symbol='AAPB', description='GraniteShares 1.75x Long AAPL Daily ETF'), SymbolData(symbol='AAPU', description='Direxion Daily AAPL Bull 1.5X Shares')]
-
 Placing an order
 ----------------
 
@@ -102,11 +86,11 @@ Placing an order
    leg = symbol.build_leg(Decimal('5'), OrderAction.BUY_TO_OPEN)  # buy to open 5 shares
 
    order = NewOrder(
-      time_in_force=OrderTimeInForce.DAY,
-      order_type=OrderType.LIMIT,
-      legs=[leg],  # you can have multiple legs in an order
-      price=Decimal('50'),  # limit price, here $50 for 5 shares = $10/share
-      price_effect=PriceEffect.DEBIT
+       time_in_force=OrderTimeInForce.DAY,
+       order_type=OrderType.LIMIT,
+       legs=[leg],  # you can have multiple legs in an order
+       price=Decimal('50'),  # limit price, here $50 for 5 shares = $10/share
+       price_effect=PriceEffect.DEBIT
    )
    response = account.place_order(session, order, dry_run=True)  # a test order
    print(response)
@@ -125,11 +109,7 @@ Options chain/streaming greeks
    subs_list = [chain[date(2023, 6, 16)][0].streamer_symbol]
 
    await streamer.subscribe(EventType.GREEKS, subs_list)
-   greeks = []
-   async for greek in streamer.listen(EventType.GREEKS):
-      greeks.append(greek)
-      if len(greeks) >= len(subs_list):
-         break
+   greeks = await streamer.get_event(EventType.GREEKS)
    print(greeks)
 
 >>> [Greeks(eventSymbol='.SPLG230616C23', eventTime=0, eventFlags=0, index=7235129486797176832, time=1684559855338, sequence=0, price=26.3380972233688, volatility=0.396983376650804, delta=0.999999999996191, gamma=4.81989763184255e-12, theta=-2.5212017514875e-12, rho=0.01834504287973133, vega=3.7003015672215e-12)]

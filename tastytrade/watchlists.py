@@ -19,7 +19,7 @@ class Pair(TastytradeJsonDataclass):
     right_quantity: int
 
 
-class PairsWatchlist(TastytradeJsonDataclass):  # pragma: no cover
+class PairsWatchlist(TastytradeJsonDataclass):
     """
     Dataclass that represents a pairs watchlist object.
     """
@@ -73,7 +73,7 @@ class PairsWatchlist(TastytradeJsonDataclass):  # pragma: no cover
         return cls(**data)
 
 
-class Watchlist(TastytradeJsonDataclass):  # pragma: no cover
+class Watchlist(TastytradeJsonDataclass):
     """
     Dataclass that represents a watchlist object (public or private),
     with functions to update, publish, modify and remove watchlists.
