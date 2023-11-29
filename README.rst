@@ -15,6 +15,12 @@ Tastytrade Python SDK
 
 A simple, reverse-engineered SDK for Tastytrade built on their (now mostly public) API. This will allow you to create trading algorithms for whatever strategies you may have quickly and painlessly in Python.
 
+Programming assistant (GPT)
+---------------------------
+An assistant that will help answering questions about the API and the SDK is
+available at https://chat.openai.com/g/g-K5eGmcJcl-tastytrade-api-assistant.
+
+
 Installation
 ------------
 
