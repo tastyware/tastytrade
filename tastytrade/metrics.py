@@ -31,7 +31,7 @@ class Liquidity(TastytradeJsonDataclass):
     sum: Decimal
     count: int
     started_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
 
 class OptionExpirationImpliedVolatility(TastytradeJsonDataclass):
