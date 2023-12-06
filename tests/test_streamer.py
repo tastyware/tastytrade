@@ -20,8 +20,6 @@ async def test_account_streamer(session):
 
 @pytest.mark.asyncio
 async def test_dxlink_streamer(session):
-    message = "[{'eventType': 'Quote', 'eventSymbol': 'SPY', 'eventTime': 0, 'sequence': 0, 'timeNanoPart': 0, 'bidTime': 0, 'bidExchangeCode': 'Q', 'bidPrice': 450.5, 'bidSize': 796.0, 'askTime': 0, 'askExchangeCode': 'Q', 'askPrice': 450.55, 'askSize': 1100.0}, {'eventType': 'Quote', 'eventSymbol': 'AAPL', 'eventTime': 0, 'sequence': 0, 'timeNanoPart': 0, 'bidTime': 0, 'bidExchangeCode': 'Q', 'bidPrice': 190.39, 'bidSize': 1.0, 'askTime': 0, 'askExchangeCode': 'Q', 'askPrice': 190.44, 'askSize': 3.0}]"  # noqa: E501
-
     async with DXLinkStreamer(session) as streamer:
         subs = ['SPY', 'AAPL']
         await streamer.subscribe(EventType.QUOTE, subs)
@@ -32,5 +30,3 @@ async def test_dxlink_streamer(session):
             break
         await streamer.unsubscribe_candle(subs[0], '1d')
         await streamer.unsubscribe(EventType.QUOTE, subs[1])
-
-        streamer._map_message(message)

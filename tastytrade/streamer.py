@@ -678,7 +678,6 @@ class DXLinkStreamer:
         Connect to the websocket server using the URL and
         authorization token provided during initialization.
         """
-
         async with websockets.connect(  # type: ignore
             self._wss_url
         ) as websocket:
@@ -701,8 +700,7 @@ class DXLinkStreamer:
                 elif message['type'] == 'CHANNEL_OPENED':
                     channel = next((k for k, v in self._channels.items()
                                     if v == message['channel']))
-                    self._subscription_state[channel] \
-                        = message['type']
+                    self._subscription_state[channel] = message['type']
                 elif message['type'] == 'CHANNEL_CLOSED':
                     pass
                 elif message['type'] == 'FEED_CONFIG':
@@ -712,7 +710,7 @@ class DXLinkStreamer:
                 elif message['type'] == 'KEEPALIVE':
                     pass
                 else:
-                    raise TastytradeError(message)
+                    raise TastytradeError('Unknown message type:', message)
 
     async def _setup_connection(self):
         message = {
@@ -782,12 +780,12 @@ class DXLinkStreamer:
         :param event_type: type of subscription to add
         :param symbols: list of symbols to subscribe for
         """
-        await self._channel_request(event_type)
-        event_type_str = str(event_type).split('.')[1].capitalize()
+        if self._subscription_state[event_type] != 'CHANNEL_OPENED':
+            await self._channel_request(event_type)
         message = {
             'type': 'FEED_SUBSCRIPTION',
             'channel': self._channels[event_type],
-            'add': [{'symbol': symbol, "type": event_type_str}
+            'add': [{'symbol': symbol, 'type': event_type}
                     for symbol in symbols]
         }
         logger.debug('sending subscription: %s', message)
