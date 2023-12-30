@@ -295,7 +295,6 @@ class TradingStatus(TastytradeJsonDataclass):
     is_in_day_trade_equity_maintenance_call: bool
     is_in_margin_call: bool
     is_pattern_day_trader: bool
-    is_portfolio_margin_enabled: bool
     is_small_notional_futures_intra_day_enabled: bool
     is_roll_the_day_forward_enabled: bool
     are_far_otm_net_options_restricted: bool
@@ -305,6 +304,7 @@ class TradingStatus(TastytradeJsonDataclass):
     is_equity_offering_enabled: bool
     is_equity_offering_closing_only: bool
     updated_at: datetime
+    is_portfolio_margin_enabled: Optional[bool] = None
     is_risk_reducing_only: Optional[bool] = None
     day_trade_count: Optional[int] = None
     autotrade_account_type: Optional[str] = None
