@@ -622,7 +622,7 @@ class DXLinkStreamer:
             print(quote)
 
     """
-    def __init__(self, session: ProductionSession):
+    def __init__(self, session: ProductionSession, ssl_context=None):
         self._counter = 0
         self._lock: Lock = Lock()
         self._queues: Dict[EventType, Queue] = defaultdict(Queue)
@@ -645,6 +645,7 @@ class DXLinkStreamer:
         self._authenticated = False
         self._wss_url = session.dxlink_url
         self._auth_token = session.streamer_token
+        self.ssl_context = ssl_context
 
         self._connect_task = asyncio.create_task(self._connect())
 
@@ -678,9 +679,12 @@ class DXLinkStreamer:
         Connect to the websocket server using the URL and
         authorization token provided during initialization.
         """
-        async with websockets.connect(  # type: ignore
-            self._wss_url
-        ) as websocket:
+
+        connect_args = {'uri': self._wss_url}
+        if self.ssl_context is not None:
+            connect_args['ssl'] = self.ssl_context
+
+        async with websockets.connect(**connect_args) as websocket:
             self._websocket = websocket
             await self._setup_connection()
 
