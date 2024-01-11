@@ -680,42 +680,37 @@ class DXLinkStreamer:
         authorization token provided during initialization.
         """
 
-        if self.ssl_context:
-            async with websockets.connect(self._wss_url, ssl=self.ssl_context) as websocket:
-                self._websocket = websocket
-                await self._setup_connection()
-        else:
-            async with websockets.connect(self._wss_url) as websocket:
-                self._websocket = websocket
-                await self._setup_connection()
+        async with websockets.connect(self._wss_url, ssl=self.ssl_context) as websocket:
+            self._websocket = websocket
+            await self._setup_connection()
 
-                # main loop
-                while True:
-                    raw_message = await self._websocket.recv()
-                    message = json.loads(raw_message)
+            # main loop
+            while True:
+                raw_message = await self._websocket.recv()
+                message = json.loads(raw_message)
 
-                    logger.debug('received: %s', message)
-                    if message['type'] == 'SETUP':
-                        await self._authenticate_connection()
-                    elif message['type'] == 'AUTH_STATE':
-                        if message['state'] == 'AUTHORIZED':
-                            self._authenticated = True
-                            self._heartbeat_task = \
-                                asyncio.create_task(self._heartbeat())
-                    elif message['type'] == 'CHANNEL_OPENED':
-                        channel = next((k for k, v in self._channels.items()
-                                        if v == message['channel']))
-                        self._subscription_state[channel] = message['type']
-                    elif message['type'] == 'CHANNEL_CLOSED':
-                        pass
-                    elif message['type'] == 'FEED_CONFIG':
-                        pass
-                    elif message['type'] == 'FEED_DATA':
-                        await self._map_message(message['data'])
-                    elif message['type'] == 'KEEPALIVE':
-                        pass
-                    else:
-                        raise TastytradeError('Unknown message type:', message)
+                logger.debug('received: %s', message)
+                if message['type'] == 'SETUP':
+                    await self._authenticate_connection()
+                elif message['type'] == 'AUTH_STATE':
+                    if message['state'] == 'AUTHORIZED':
+                        self._authenticated = True
+                        self._heartbeat_task = \
+                            asyncio.create_task(self._heartbeat())
+                elif message['type'] == 'CHANNEL_OPENED':
+                    channel = next((k for k, v in self._channels.items()
+                                    if v == message['channel']))
+                    self._subscription_state[channel] = message['type']
+                elif message['type'] == 'CHANNEL_CLOSED':
+                    pass
+                elif message['type'] == 'FEED_CONFIG':
+                    pass
+                elif message['type'] == 'FEED_DATA':
+                    await self._map_message(message['data'])
+                elif message['type'] == 'KEEPALIVE':
+                    pass
+                else:
+                    raise TastytradeError('Unknown message type:', message)
 
     async def _setup_connection(self):
         message = {
