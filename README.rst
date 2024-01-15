@@ -10,10 +10,6 @@
    :target: https://pepy.tech/project/tastytrade
    :alt: PyPI Downloads
 
-.. image:: https://static.pepy.tech/badge/tastyworks-api
-   :target: https://pepy.tech/project/tastyworks-api
-   :alt: PyPI Downloads (Old)
-
 Tastytrade Python SDK
 =====================
 
