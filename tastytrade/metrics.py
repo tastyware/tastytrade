@@ -24,6 +24,22 @@ class EarningsInfo(TastytradeJsonDataclass):
     eps: Decimal
 
 
+class EarningsReport(TastytradeJsonDataclass):
+    """
+    Dataclass containing information about a recent earnings report, or the
+    expected date of the next one.
+    """
+    estimated: bool
+    late_flag: int
+    visible: bool
+    actual_eps: Optional[Decimal] = None
+    consensus_estimate: Optional[Decimal] = None
+    expected_report_date: Optional[date] = None
+    quarter_end_date: Optional[date] = None
+    time_of_day: Optional[str] = None
+    updated_at: Optional[datetime] = None
+
+
 class Liquidity(TastytradeJsonDataclass):
     """
     Dataclass representing liquidity information for a given symbol.
@@ -67,6 +83,7 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     beta: Optional[Decimal] = None
     corr_spy_3month: Optional[Decimal] = None
     market_cap: Decimal
+    earnings: Optional[EarningsReport] = None
     price_earnings_ratio: Optional[Decimal] = None
     earnings_per_share: Optional[Decimal] = None
     dividend_rate_per_share: Optional[Decimal] = None
