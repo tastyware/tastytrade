@@ -80,3 +80,9 @@ def test_get_future_option_chain(session):
         FutureOption.get_future_option(session, options[0].symbol)
         FutureOption.get_future_options(session, options[:4])
         break
+
+
+def test_streamer_symbol_to_occ():
+    dxf = '.SPY240324P480.5'
+    occ = 'SPY   20240324P00480500'
+    assert Option.streamer_symbol_to_occ(dxf) == occ

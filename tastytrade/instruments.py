@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
@@ -477,7 +478,33 @@ class Option(TradeableTastytradeJsonDataclass):
 
         exp = self.expiration_date.strftime('%y%m%d')
         self.streamer_symbol = \
-            f".{self.underlying_symbol}{exp}{self.option_type.value}{strike}"
+            f'.{self.underlying_symbol}{exp}{self.option_type.value}{strike}'
+
+    @classmethod
+    def streamer_symbol_to_occ(cls, streamer_symbol) -> str:
+        """
+        Returns the OCC 2010 symbol equivalent to the given streamer symbol.
+
+        :param streamer_symbol: the streamer symbol to convert
+
+        :return: the equivalent OCC 2010 symbol
+        """
+        match = re.match(
+            r'\.([A-Z]+)(\d{6})([CP])(\d+)(\.(\d+))?',
+            streamer_symbol
+        )
+        if match is None:
+            return ''
+        symbol = match.group(1)[:6].ljust(6)
+        exp = datetime.strptime(match.group(2), '%y%m%d').strftime('%Y%m%d')
+        option_type = match.group(3)
+        strike = match.group(4).zfill(5)
+        if match.group(6) is not None:
+            decimal = str(100 * int(match.group(6))).zfill(3)
+        else:
+            decimal = '000'
+
+        return f'{symbol}{exp}{option_type}{strike}{decimal}'
 
 
 class NestedOptionChain(TastytradeJsonDataclass):
