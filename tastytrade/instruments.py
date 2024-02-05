@@ -496,7 +496,7 @@ class Option(TradeableTastytradeJsonDataclass):
         if match is None:
             return ''
         symbol = match.group(1)[:6].ljust(6)
-        exp = datetime.strptime(match.group(2), '%y%m%d').strftime('%Y%m%d')
+        exp = match.group(2)
         option_type = match.group(3)
         strike = match.group(4).zfill(5)
         if match.group(6) is not None:
