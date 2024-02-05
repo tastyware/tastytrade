@@ -19,7 +19,7 @@ Placing an order
        time_in_force=OrderTimeInForce.DAY,
        order_type=OrderType.LIMIT,
        legs=[leg],  # you can have multiple legs in an order
-       price=Decimal('50'),  # limit price, here $50 for 5 shares = $10/share
+       price=Decimal('10'),  # limit price, $10/share for a total value for $50
        price_effect=PriceEffect.DEBIT
    )
    response = account.place_order(session, order, dry_run=True)  # a test order
