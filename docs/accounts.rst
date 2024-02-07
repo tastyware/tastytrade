@@ -34,11 +34,28 @@ To obtain information about current positions:
 
 >>> CurrentPosition(account_number='5WX01234', symbol='BRK/B', instrument_type=<InstrumentType.EQUITY: 'Equity'>, underlying_symbol='BRK/B', quantity=Decimal('10'), quantity_direction='Long', close_price=Decimal('361.34'), average_open_price=Decimal('339.63'), multiplier=1, cost_effect='Credit', is_suppressed=False, is_frozen=False, realized_day_gain=Decimal('18.5'), realized_today=Decimal('279.15'), created_at=datetime.datetime(2023, 3, 31, 14, 35, 40, 138000, tzinfo=datetime.timezone.utc), updated_at=datetime.datetime(2023, 8, 10, 15, 42, 7, 482000, tzinfo=datetime.timezone.utc), mark=None, mark_price=None, restricted_quantity=Decimal('0'), expires_at=None, fixing_price=None, deliverable_type=None, average_yearly_market_close_price=Decimal('339.63'), average_daily_market_close_price=Decimal('361.34'), realized_day_gain_effect=<PriceEffect.CREDIT: 'Credit'>, realized_day_gain_date=datetime.date(2023, 8, 10), realized_today_effect=<PriceEffect.CREDIT: 'Credit'>, realized_today_date=datetime.date(2023, 8, 10))
 
-TODO:
-get_history
-get_net_liquidating_value_history
-get_live_orders
-delete_order(and place and replace)
-get_order_history
+To fetch a list of past transactions:
+
+.. code-block:: python
+
+   history = account.get_history(session, start_date=date(2024, 1, 1))
+   print(history[-1])
+
+>>> Transaction(id=280070508, account_number='5WX01234', transaction_type='Trade', transaction_sub_type='Sell to Close', description='Sold 10 BRK/B @ 384.04', executed_at=datetime.datetime(2024, 1, 26, 15, 51, 53, 685000, tzinfo=datetime.timezone.utc), transaction_date=datetime.date(2024, 1, 26), value=Decimal('3840.4'), value_effect=<PriceEffect.CREDIT: 'Credit'>, net_value=Decimal('3840.35'), net_value_effect=<PriceEffect.CREDIT: 'Credit'>, is_estimated_fee=True, symbol='BRK/B', instrument_type=<InstrumentType.EQUITY: 'Equity'>, underlying_symbol='BRK/B', action='Sell to Close', quantity=Decimal('10.0'), price=Decimal('384.04'), regulatory_fees=Decimal('0.042'), regulatory_fees_effect=<PriceEffect.DEBIT: 'Debit'>, clearing_fees=Decimal('0.008'), clearing_fees_effect=<PriceEffect.DEBIT: 'Debit'>, commission=Decimal('0.0'), commission_effect=<PriceEffect.NONE: 'None'>, proprietary_index_option_fees=Decimal('0.0'), proprietary_index_option_fees_effect=<PriceEffect.NONE: 'None'>, ext_exchange_order_number='12271026815307', ext_global_order_number=2857, ext_group_id='0', ext_group_fill_id='0', ext_exec_id='0', exec_id='123_40126000126350300000', exchange='JNS', order_id=305250635, exchange_affiliation_identifier='', leg_count=1, destination_venue='JANE_STREET_EQUITIES_A', other_charge=None, other_charge_effect=None, other_charge_description=None, reverses_id=None, cost_basis_reconciliation_date=None, lots=None, agency_price=None, principal_price=None)
+
+We can also view portfolio P/L over time (and even plot it!):
+
+.. code-block:: python
+
+   import matplotlib.pyplot as plt
+   nl = account.get_net_liquidating_value_history(session, time_back='1m')  # past 1 month
+   plt.plot([n.time for n in nl], [n.close for n in nl])
+   plt.show()
+
+.. image:: img/netliq.png
+  :width: 640
+  :alt: P/L graph
+
+Accounts are needed to place, replace, and delete orders. See more in :doc:`Orders <orders>`.
 
 There are many more things you can do with an ``Account`` object--check out the SDK Reference section!

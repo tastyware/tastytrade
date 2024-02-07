@@ -30,26 +30,27 @@ Once you've created the streamer, you can subscribe/unsubscribe to events, like 
 
    async with DXFeedStreamer(session) as streamer:
        await streamer.subscribe(EventType.QUOTE, subs_list)
-       quotes = []
+       quotes = {}
        async for quote in streamer.listen(EventType.QUOTE):
-           quotes.append(quote)
+           quotes[quote.eventSymbol] = quote
            if len(quotes) >= len(subs_list):
                break
        print(quotes)
 
->>> [Quote(eventSymbol='SPY', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='Q', bidPrice=411.58, bidSize=400.0, askTime=0, askExchangeCode='Q', askPrice=411.6, askSize=1313.0), Quote(eventSymbol='SPX', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='\x00', bidPrice=4122.49, bidSize='NaN', askTime=0, askExchangeCode='\x00', askPrice=4123.65, askSize='NaN')]
+>>> {'SPY': Quote(eventSymbol='SPY', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='Q', bidPrice=411.58, bidSize=400.0, askTime=0, askExchangeCode='Q', askPrice=411.6, askSize=1313.0), 'SPX': Quote(eventSymbol='SPX', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='\x00', bidPrice=4122.49, bidSize='NaN', askTime=0, askExchangeCode='\x00', askPrice=4123.65, askSize='NaN')}
 
 Note that these are ``asyncio`` calls, so you'll need to run this code asynchronously. Here's an example:
 
 .. code-block:: python
 
-   async def main():
+   import asyncio
+   async def main(session):
        async with DXLinkStreamer(session) as streamer:
            await streamer.subscribe(EventType.QUOTE, subs_list)
            quote = await streamer.get_event(EventType.QUOTE)
            print(quote)
-   
-   asyncio.run(main())
+
+   asyncio.run(main(session))
 
 >>> [Quote(eventSymbol='SPY', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='Q', bidPrice=411.58, bidSize=400.0, askTime=0, askExchangeCode='Q', askPrice=411.6, askSize=1313.0), Quote(eventSymbol='SPX', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='\x00', bidPrice=4122.49, bidSize='NaN', askTime=0, askExchangeCode='\x00', askPrice=4123.65, askSize='NaN')]
 
@@ -60,10 +61,11 @@ We can also use the streamer to stream greeks for options symbols:
 .. code-block:: python
 
    from tastytrade.instruments import get_option_chain
-   from datetime import date
+   from tastytrade.utils import get_tasty_monthly
 
    chain = get_option_chain(session, 'SPLG')
-   subs_list = [chain[date(2023, 6, 16)][0].streamer_symbol]
+   exp = get_tasty_monthly()  # 45 DTE expiration!
+   subs_list = [chain[exp][0].streamer_symbol]
 
    async with DXFeedStreamer(session) as streamer:
        await streamer.subscribe(EventType.GREEKS, subs_list)
