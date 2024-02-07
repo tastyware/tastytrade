@@ -346,7 +346,7 @@ class PlacedOrderResponse(TastytradeJsonDataclass):
     Dataclass grouping together information about a placed order.
     """
     buying_power_effect: BuyingPowerEffect
-    fee_calculation: FeeCalculation
+    fee_calculation: Optional[FeeCalculation] = None
     order: Optional[PlacedOrder] = None
     complex_order: Optional[PlacedComplexOrder] = None
     warnings: Optional[List[Message]] = None

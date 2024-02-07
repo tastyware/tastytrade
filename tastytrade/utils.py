@@ -1,5 +1,128 @@
+from datetime import date, timedelta
+
+import pandas_market_calendars as mcal  # type: ignore
 from pydantic import BaseModel
 from requests import Response
+
+NYSE = mcal.get_calendar('NYSE')
+
+
+def get_third_friday(day: date = date.today()) -> date:
+    """
+    Gets the monthly expiration associated with the month of the given date,
+    or the monthly expiration associated with today's month.
+
+    :param day: the date to check, defaults to today
+
+    :return: the associated monthly
+    """
+    day = day.replace(day=1)
+    day += timedelta(weeks=2)
+    while day.weekday() != 4:  # Friday
+        day += timedelta(days=1)
+    return day
+
+
+def get_tasty_monthly() -> date:
+    """
+    Gets the monthly expiration closest to 45 days from the current date.
+
+    :return: the closest to 45 DTE monthly expiration
+    """
+    day = date.today()
+    exp1 = get_third_friday(day + timedelta(weeks=4))
+    exp2 = get_third_friday(day + timedelta(weeks=8))
+    day45 = day + timedelta(days=45)
+    return exp1 if day45 - exp2 < exp2 - day45 else exp2
+
+
+def _get_last_day_of_month(day: date) -> date:
+    if day.month == 12:
+        last = day.replace(day=1, month=1, year=day.year + 1)
+    else:
+        last = day.replace(day=1, month=day.month + 1)
+    return last - timedelta(days=1)
+
+
+def get_future_fx_monthly(day: date = date.today()) -> date:
+    """
+    Gets the monthly expiration associated with the FX futures: /6E, /6A, etc.
+    As far as I can tell, these expire on the first Friday prior to the second
+    Wednesday.
+
+    :param day: the date to check, defaults to today
+
+    :return: the associated monthly
+    """
+    day = day.replace(day=1)
+    day += timedelta(weeks=1)
+    while day.weekday() != 2:  # Wednesday
+        day += timedelta(days=1)
+    while day.weekday() != 4:  # Friday
+        day -= timedelta(days=1)
+    return day
+
+
+def get_future_treasury_monthly(day: date = date.today()) -> date:
+    """
+    Gets the monthly expiration associated with the treasury futures: /ZN,
+    /ZB, etc. According to CME, these expire the Friday before the 2nd last
+    business day of the month. If this is not a business day, they expire 1
+    business day prior.
+
+    :param day: the date to check, defaults to today
+
+    :return: the associated monthly
+    """
+    last_day = _get_last_day_of_month(day)
+    first_day = last_day.replace(day=1)
+    valid_range = [d.date() for d in NYSE.valid_days(first_day, last_day)]
+    itr = valid_range[-2] - timedelta(days=1)
+    while itr.weekday() != 4:  # Friday
+        itr -= timedelta(days=1)
+    if itr in valid_range:
+        return itr
+    return itr - timedelta(days=1)
+
+
+def get_future_metal_monthly(day: date = date.today()) -> date:
+    """
+    Gets the monthly expiration associated with the metals futures: /GC, /SI,
+    etc. According to CME, these expire on the 4th last business day of the
+    month, unless that day occurs on a Friday or the day before a holiday, in
+    which case they expire on the prior business day.
+
+    :param day: the date to check, defaults to today
+
+    :return: the associated monthly
+    """
+    last_day = _get_last_day_of_month(day)
+    first_day = last_day.replace(day=1)
+    valid_range = [d.date() for d in NYSE.valid_days(first_day, last_day)]
+    itr = valid_range[-4]
+    next_day = itr + timedelta(days=1)
+    if itr.weekday() == 4 or next_day not in valid_range:
+        return valid_range[-5]
+    return itr
+
+
+def get_future_grain_monthly(day: date = date.today()) -> date:
+    """
+    Gets the monthly expiration associated with the grain futures: /ZC, /ZW,
+    etc. According to CME, these expire on the Friday which precedes, by at
+    least 2 business days, the last business day of the month.
+
+    :param day: the date to check, defaults to today
+
+    :return: the associated monthly
+    """
+    last_day = _get_last_day_of_month(day)
+    first_day = last_day.replace(day=1)
+    valid_range = [d.date() for d in NYSE.valid_days(first_day, last_day)]
+    itr = valid_range[-3]
+    while itr.weekday() != 4:  # Friday
+        itr -= timedelta(days=1)
+    return itr
 
 
 class TastytradeError(Exception):
@@ -30,7 +153,7 @@ class TastytradeJsonDataclass(BaseModel):
         allow_population_by_field_name = True
 
 
-def validate_response(response: Response) -> None:  # pragma: no cover
+def validate_response(response: Response) -> None:
     """
     Checks if the given code is an error; if so, raises an exception.
 

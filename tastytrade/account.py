@@ -1002,7 +1002,7 @@ class Account(TastytradeJsonDataclass):
         self,
         session: Session,
         order: NewOrder,
-        dry_run=True
+        dry_run: bool = True
     ) -> PlacedOrderResponse:
         """
         Place the given order.
@@ -1032,7 +1032,7 @@ class Account(TastytradeJsonDataclass):
         self,
         session: Session,
         order: NewComplexOrder,
-        dry_run=True
+        dry_run: bool = True
     ) -> PlacedOrderResponse:
         """
         Place the given order.

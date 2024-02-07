@@ -4,6 +4,7 @@ flake8==5.0.4
 isort==5.11.5
 types-requests==2.31.0.1
 websockets==11.0.3
+pandas_market_calendars==4.3.3
 pydantic==1.10.11
 pytest==7.4.0
 pytest_cov==4.1.0
