@@ -86,3 +86,9 @@ def test_streamer_symbol_to_occ():
     dxf = '.SPY240324P480.5'
     occ = 'SPY   240324P00480500'
     assert Option.streamer_symbol_to_occ(dxf) == occ
+
+
+def test_occ_to_streamer_symbol():
+    dxf = '.SPY240324P480.5'
+    occ = 'SPY   240324P00480500'
+    assert Option.occ_to_streamer_symbol(occ) == dxf

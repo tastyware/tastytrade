@@ -506,6 +506,34 @@ class Option(TradeableTastytradeJsonDataclass):
 
         return f'{symbol}{exp}{option_type}{strike}{decimal}'
 
+    @classmethod
+    def occ_to_streamer_symbol(cls, occ) -> str:
+        """
+        Returns the dxfeed symbol for use in the streamer from the given OCC
+        2010 symbol.
+
+        :param occ: the OCC symbol to convert
+
+        :return: the equivalent streamer symbol
+        """
+        match = re.match(
+            r'([A-Z]+)\s+(\d{6})([CP])(\d{5})(\d{3})',
+            occ
+        )
+        if match is None:
+            return ''
+        symbol = match.group(1)
+        exp = match.group(2)
+        option_type = match.group(3)
+        strike = int(match.group(4))
+        decimal = int(match.group(5))
+
+        res = f'.{symbol}{exp}{option_type}{strike}'
+        if decimal != 0:
+            decimal_str = str(decimal / 1000.0)
+            res += decimal_str[1:]
+        return res
+
 
 class NestedOptionChain(TastytradeJsonDataclass):
     """
