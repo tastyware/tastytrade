@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Union
 import requests
 from pydantic import BaseModel
 
+from tastytrade import logger
 from tastytrade.order import (InstrumentType, NewComplexOrder, NewOrder,
                               OrderStatus, PlacedComplexOrder, PlacedOrder,
                               PlacedOrderResponse, PriceEffect)
@@ -1022,7 +1023,11 @@ class Account(TastytradeJsonDataclass):
         json = order.json(exclude_none=True, by_alias=True)
 
         response = requests.post(url, headers=session.headers, data=json)
-        validate_response(response)
+        # sometimes we just want to see BP usage for an invalid trade
+        try:
+            validate_response(response)
+        except TastytradeError as error:
+            logger.error(error)
 
         data = response.json()['data']
 

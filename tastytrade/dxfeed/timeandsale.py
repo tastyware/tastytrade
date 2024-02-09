@@ -1,9 +1,8 @@
-from dataclasses import dataclass
+from decimal import Decimal
 
 from .event import Event
 
 
-@dataclass
 class TimeAndSale(Event):
     """
     TimeAndSale event represents a trade or other market event with a price,
@@ -30,13 +29,13 @@ class TimeAndSale(Event):
     #: exchange code of this time and sale event
     exchangeCode: str
     #: price of this time and sale event
-    price: float
+    price: Decimal
     #: size of this time and sale event as integer number (rounded toward zero)
     size: int
     #: the bid price on the market when this time and sale event occured
-    bidPrice: float
+    bidPrice: Decimal
     #: the ask price on the market when this time and sale event occured
-    askPrice: float
+    askPrice: Decimal
     #: sale conditions provided for this event by data feed
     exchangeSaleConditions: str
     #: transaction is concluded by exempting from compliance with some rule

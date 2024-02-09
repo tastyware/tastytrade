@@ -1,9 +1,8 @@
-from dataclasses import dataclass
+from decimal import Decimal
 
 from .event import Event
 
 
-@dataclass
 class Greeks(Event):
     """
     Greek ratios, or simply Greeks, are differential values that show how the
@@ -26,16 +25,16 @@ class Greeks(Event):
     #: sequence number to distinguish events that have the same time
     sequence: int
     #: option market price
-    price: float
+    price: Decimal
     #: Black-Scholes implied volatility of the option
-    volatility: float
+    volatility: Decimal
     #: option delta
-    delta: float
+    delta: Decimal
     #: option gamma
-    gamma: float
+    gamma: Decimal
     #: option theta
-    theta: float
+    theta: Decimal
     #: option rho
-    rho: float
+    rho: Decimal
     #: option vega
-    vega: float
+    vega: Decimal
