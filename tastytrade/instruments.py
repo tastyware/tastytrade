@@ -50,9 +50,9 @@ class Deliverable(TastytradeJsonDataclass):
     deliverable_type: str
     description: str
     amount: Decimal
-    symbol: str
-    instrument_type: InstrumentType
     percent: str
+    symbol: Optional[str] = None
+    instrument_type: Optional[InstrumentType] = None
 
 
 class DestinationVenueSymbol(TastytradeJsonDataclass):

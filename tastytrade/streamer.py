@@ -698,8 +698,8 @@ class DXLinkStreamer:
                         self._heartbeat_task = \
                             asyncio.create_task(self._heartbeat())
                 elif message['type'] == 'CHANNEL_OPENED':
-                    channel = next((k for k, v in self._channels.items()
-                                    if v == message['channel']))
+                    channel = next(k for k, v in self._channels.items()
+                                   if v == message['channel'])
                     self._subscription_state[channel] = message['type']
                 elif message['type'] == 'CHANNEL_CLOSED':
                     pass
@@ -748,8 +748,7 @@ class DXLinkStreamer:
 
         :param event_type: the type of event to get
         """
-        while True:
-            return await self._queues[event_type].get()
+        return await self._queues[event_type].get()
 
     async def _heartbeat(self) -> None:
         """

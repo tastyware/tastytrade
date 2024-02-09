@@ -1,9 +1,9 @@
-from dataclasses import dataclass
+from decimal import Decimal
+from typing import Optional
 
 from .event import Event
 
 
-@dataclass
 class Trade(Event):
     """
     A Trade event provides prices and the volume of the last transaction in
@@ -24,20 +24,20 @@ class Trade(Event):
     sequence: int
     #: exchange code of the last trade
     exchangeCode: str
-    #: price of the last trade
-    price: float
-    #: change of the last trade
-    change: float
-    #: size of the last trade as integer number (rounded toward zero)
-    size: int
     #: identifier of the current trading day
     dayId: int
-    #: total vlume traded for a day as integer number (rounded toward zero)
-    dayVolume: int
-    #: total turnover traded for a day
-    dayTurnover: float
     #: tick direction of the last trade
     #: possible values are DOWN | UNDEFINED | UP | ZERO | ZERO_DOWN | ZERO_UP
     tickDirection: str
     #: whether the last trade was in extended trading hours
     extendedTradingHours: bool
+    #: price of the last trade
+    price: Optional[Decimal] = None
+    #: change of the last trade
+    change: Optional[Decimal] = None
+    #: size of the last trade as integer number (rounded toward zero)
+    size: Optional[int] = None
+    #: total vlume traded for a day as integer number (rounded toward zero)
+    dayVolume: Optional[int] = None
+    #: total turnover traded for a day
+    dayTurnover: Optional[Decimal] = None

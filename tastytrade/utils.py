@@ -125,6 +125,39 @@ def get_future_grain_monthly(day: date = date.today()) -> date:
     return itr
 
 
+def get_future_oil_monthly(day: date = date.today()) -> date:
+    """
+    Gets the monthly expiration associated with the WTI oil futures: /CL and
+    /MCL. According to CME, these expire 6 business days before the 25th day
+    of the month, unless the 25th day is not a business day, in which case
+    they expire 7 business days prior to the 25th day of the month.
+
+    :param day: the date to check, defaults to today
+
+    :return: the associated monthly
+    """
+    last_day = day.replace(day=25)
+    first_day = last_day.replace(day=1)
+    valid_range = [d.date() for d in NYSE.valid_days(first_day, last_day)]
+    return valid_range[-7]
+
+
+def get_future_index_monthly(day: date = date.today()) -> date:
+    """
+    Gets the monthly expiration associated with the index futures: /ES, /RTY,
+    /NQ, etc. According to CME, these expire on the last business day of the
+    month.
+
+    :param day: the date to check, defaults to today
+
+    :return: the associated monthly
+    """
+    last_day = _get_last_day_of_month(day)
+    first_day = last_day.replace(day=1)
+    valid_range = [d.date() for d in NYSE.valid_days(first_day, last_day)]
+    return valid_range[-1]
+
+
 class TastytradeError(Exception):
     """
     An internal error raised by the Tastytrade API.

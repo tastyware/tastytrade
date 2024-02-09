@@ -1,6 +1,9 @@
-from abc import ABC
 from enum import Enum
 from typing import List
+
+from pydantic import BaseModel, validator
+
+from tastytrade.utils import TastytradeError
 
 
 class EventType(str, Enum):
@@ -24,7 +27,13 @@ class EventType(str, Enum):
     UNDERLYING = 'Underlying'
 
 
-class Event(ABC):
+class Event(BaseModel):
+    @validator('*', pre=True)
+    def change_nan_to_none(cls, v):
+        if v == 'NaN':
+            return None
+        return v
+
     @classmethod
     def from_stream(cls, data: list) -> List['Event']:  # pragma: no cover
         """
@@ -36,11 +45,11 @@ class Event(ABC):
         :return: list of event objects from data
         """
         objs = []
-        size = len(cls.__dataclass_fields__)  # type: ignore
+        size = len(cls.__fields__)
         multiples = len(data) / size
         if not multiples.is_integer():
             msg = 'Mapper data input values are not a multiple of the key size'
-            raise Exception(msg)
+            raise TastytradeError(msg)
         for i in range(int(multiples)):
             offset = i * size
             local_values = data[offset:(i + 1) * size]

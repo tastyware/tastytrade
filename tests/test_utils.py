@@ -1,9 +1,9 @@
 from datetime import date
 
 from tastytrade.utils import (get_future_fx_monthly, get_future_grain_monthly,
-                              get_future_metal_monthly,
+                              get_future_metal_monthly, get_future_index_monthly,
                               get_future_treasury_monthly, get_tasty_monthly,
-                              get_third_friday)
+                              get_third_friday, get_future_oil_monthly)
 
 
 def test_get_third_friday():
@@ -106,3 +106,48 @@ def test_get_future_metal_monthly():
     ]
     for exp in exps:
         assert get_future_metal_monthly(exp) == exp
+
+
+def test_get_future_oil_monthly():
+    exps = [
+        date(2024, 2, 14),
+        date(2024, 3, 15),
+        date(2024, 4, 17),
+        date(2024, 5, 16),
+        date(2024, 6, 14),
+        date(2024, 7, 17),
+        date(2024, 8, 15),
+        date(2024, 9, 17),
+        date(2024, 10, 17),
+        date(2024, 11, 15),
+        date(2024, 12, 16),
+        date(2025, 10, 16),
+        date(2026, 4, 16),
+        date(2027, 7, 15),
+        date(2028, 1, 14),
+        date(2029, 5, 17),
+        date(2030, 11, 15),
+        date(2031, 8, 15),
+        date(2032, 2, 17),
+        date(2033, 4, 14),
+        date(2034, 1, 17)
+    ]
+    for exp in exps:
+        assert get_future_oil_monthly(exp) == exp
+
+
+def test_get_future_index_monthly():
+    exps = [
+        date(2024, 2, 29),
+        date(2024, 3, 28),
+        date(2024, 4, 30),
+        date(2024, 5, 31),
+        date(2024, 6, 28),
+        date(2024, 7, 31),
+        date(2024, 9, 30),
+        date(2024, 12, 31),
+        date(2025, 3, 31),
+        date(2025, 6, 30)
+    ]
+    for exp in exps:
+        assert get_future_index_monthly(exp) == exp

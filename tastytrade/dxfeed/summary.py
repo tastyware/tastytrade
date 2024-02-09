@@ -1,9 +1,9 @@
-from dataclasses import dataclass
+from decimal import Decimal
+from typing import Optional
 
 from .event import Event
 
 
-@dataclass
 class Summary(Event):
     """
     Summary is an information snapshot about the trading session including
@@ -22,25 +22,25 @@ class Summary(Event):
     eventTime: int
     #: identifier of the day that this summary represents
     dayId: int
-    #: the first (open) price for the day
-    dayOpenPrice: float
-    #: the maximal (high) price for the day
-    dayHighPrice: float
-    #: the minimal (low) price for the day
-    dayLowPrice: float
-    #: the last (close) price for the day
-    dayClosePrice: float
     #: the price type of the last (close) price for the day
     #: possible values are FINAL | INDICATIVE | PRELIMINARY | REGULAR
     dayClosePriceType: str
     #: identifier of the previous day that this summary represents
     prevDayId: int
-    #: the last (close) price for the previous day
-    prevDayClosePrice: float
     #: the price type of the last (close) price for the previous day
     #: possible values are FINAL | INDICATIVE | PRELIMINARY | REGULAR
     prevDayClosePriceType: str
-    #: total volume traded for the previous day
-    prevDayVolume: float
     #: open interest of the symbol as the number of open contracts
     openInterest: int
+    #: the first (open) price for the day
+    dayOpenPrice: Optional[Decimal] = None
+    #: the maximal (high) price for the day
+    dayHighPrice: Optional[Decimal] = None
+    #: the minimal (low) price for the day
+    dayLowPrice: Optional[Decimal] = None
+    #: the last (close) price for the day
+    dayClosePrice: Optional[Decimal] = None
+    #: the last (close) price for the previous day
+    prevDayClosePrice: Optional[Decimal] = None
+    #: total volume traded for the previous day
+    prevDayVolume: Optional[Decimal] = None
