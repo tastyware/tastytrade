@@ -1,8 +1,8 @@
 from datetime import date, datetime, timedelta
 
 import pandas_market_calendars as mcal  # type: ignore
-from pydantic import BaseModel
 import pytz
+from pydantic import BaseModel
 from requests import Response
 
 NYSE = mcal.get_calendar('NYSE')
