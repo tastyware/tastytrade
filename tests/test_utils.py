@@ -4,7 +4,7 @@ from tastytrade.utils import (get_future_fx_monthly, get_future_grain_monthly,
                               get_future_index_monthly,
                               get_future_metal_monthly, get_future_oil_monthly,
                               get_future_treasury_monthly, get_tasty_monthly,
-                              get_third_friday)
+                              get_third_friday, today_in_new_york)
 
 
 def test_get_third_friday():
@@ -12,7 +12,7 @@ def test_get_third_friday():
 
 
 def test_get_tasty_monthly():
-    delta = (get_tasty_monthly() - date.today()).days
+    delta = (get_tasty_monthly() - today_in_new_york()).days
     assert abs(45 - delta) <= 17
 
 

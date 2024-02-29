@@ -88,6 +88,7 @@ For example, we can use the streamer to create an option chain that will continu
    from tastytrade import DXFeedStreamer
    from tastytrade.instruments import get_option_chain
    from tastytrade.dxfeed import Greeks, Quote
+   from tastytrade.utils import today_in_new_york
 
    @dataclass
    class LivePrices:
@@ -102,7 +103,7 @@ For example, we can use the streamer to create an option chain that will continu
            cls,
            session: ProductionSession,
            symbol: str = 'SPY',
-           expiration: date = date.today()
+           expiration: date = today_in_new_york()
        ):
            chain = get_option_chain(session, symbol)
            options = [o for o in chain[expiration]]
