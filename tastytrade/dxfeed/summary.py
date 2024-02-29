@@ -7,11 +7,9 @@ from .event import Event
 class Summary(Event):
     """
     Summary is an information snapshot about the trading session including
-    session highs, lows, etc. This record has two goals:
-
-    1. Transmit OHLC values.
-    2. Provide data for charting. OHLC is required for a daily chart, and
-    if an exchange does not provide it, the charting services refer to the
+    session highs, lows, etc. This record has two goals: Transmit OHLC
+    values, and provide data for charting. OHLC is required for a daily chart,
+    and if an exchange does not provide it, the charting services refer to the
     Summary event.
 
     Before opening the bidding, the values are reset to N/A or NaN.
