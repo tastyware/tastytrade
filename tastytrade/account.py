@@ -11,7 +11,7 @@ from tastytrade.order import (InstrumentType, NewComplexOrder, NewOrder,
                               PlacedOrderResponse, PriceEffect)
 from tastytrade.session import ProductionSession, Session
 from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
-                              validate_response)
+                              today_in_new_york, validate_response)
 
 
 class EmptyDict(BaseModel):
@@ -254,7 +254,7 @@ class NetLiqOhlc(TastytradeJsonDataclass):
     total_high: Decimal
     total_low: Decimal
     total_close: Decimal
-    time: datetime
+    time: str
 
 
 class PositionLimit(TastytradeJsonDataclass):
@@ -379,7 +379,7 @@ class Account(TastytradeJsonDataclass):
     nickname: str
     account_type_name: str
     is_closed: bool
-    day_trader_status: str
+    day_trader_status: Union[str, bool]
     is_firm_error: bool
     is_firm_proprietary: bool
     is_futures_approved: bool
@@ -587,7 +587,7 @@ class Account(TastytradeJsonDataclass):
         types: Optional[List[str]] = None,
         sub_types: Optional[List[str]] = None,
         start_date: Optional[date] = None,
-        end_date: date = date.today(),
+        end_date: date = today_in_new_york(),
         instrument_type: Optional[InstrumentType] = None,
         symbol: Optional[str] = None,
         underlying_symbol: Optional[str] = None,
@@ -700,7 +700,7 @@ class Account(TastytradeJsonDataclass):
     def get_total_fees(
         self,
         session: Session,
-        date: date = date.today()
+        date: date = today_in_new_york()
     ) -> Dict[str, Any]:
         """
         Get the total fees for a given date.

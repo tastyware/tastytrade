@@ -103,7 +103,7 @@ def test_get_order(session, account, placed_order):
 
 
 def test_replace_and_delete_order(session, account, new_order, placed_order):
-    modified_order = new_order.copy()
+    modified_order = new_order.model_copy()
     modified_order.price = Decimal(40)
     replaced = account.replace_order(session, placed_order.id, modified_order)
     sleep(3)

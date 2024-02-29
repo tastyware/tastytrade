@@ -261,8 +261,8 @@ class PlacedOrder(TastytradeJsonDataclass):
     edited: bool
     updated_at: datetime
     legs: List[Leg]
-    size: Optional[str] = None
-    id: Optional[str] = None
+    size: Optional[int] = None
+    id: Optional[int] = None
     price: Optional[Decimal] = None
     price_effect: Optional[PriceEffect] = None
     gtc_date: Optional[date] = None

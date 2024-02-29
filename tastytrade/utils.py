@@ -1,13 +1,33 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pandas_market_calendars as mcal  # type: ignore
 from pydantic import BaseModel
+import pytz
 from requests import Response
 
 NYSE = mcal.get_calendar('NYSE')
+TZ = pytz.timezone('US/Eastern')
 
 
-def get_third_friday(day: date = date.today()) -> date:
+def now_in_new_york() -> datetime:
+    """
+    Gets the current time in the New York timezone.
+
+    :return: current time as datetime
+    """
+    return datetime.now(TZ)
+
+
+def today_in_new_york() -> date:
+    """
+    Gets the current date in the New York timezone.
+
+    :return: current date
+    """
+    return now_in_new_york().date()
+
+
+def get_third_friday(day: date = today_in_new_york()) -> date:
     """
     Gets the monthly expiration associated with the month of the given date,
     or the monthly expiration associated with today's month.
@@ -29,11 +49,11 @@ def get_tasty_monthly() -> date:
 
     :return: the closest to 45 DTE monthly expiration
     """
-    day = date.today()
+    day = today_in_new_york()
     exp1 = get_third_friday(day + timedelta(weeks=4))
     exp2 = get_third_friday(day + timedelta(weeks=8))
     day45 = day + timedelta(days=45)
-    return exp1 if day45 - exp2 < exp2 - day45 else exp2
+    return exp1 if day45 - exp1 < exp2 - day45 else exp2
 
 
 def _get_last_day_of_month(day: date) -> date:
@@ -44,7 +64,7 @@ def _get_last_day_of_month(day: date) -> date:
     return last - timedelta(days=1)
 
 
-def get_future_fx_monthly(day: date = date.today()) -> date:
+def get_future_fx_monthly(day: date = today_in_new_york()) -> date:
     """
     Gets the monthly expiration associated with the FX futures: /6E, /6A, etc.
     As far as I can tell, these expire on the first Friday prior to the second
@@ -63,7 +83,7 @@ def get_future_fx_monthly(day: date = date.today()) -> date:
     return day
 
 
-def get_future_treasury_monthly(day: date = date.today()) -> date:
+def get_future_treasury_monthly(day: date = today_in_new_york()) -> date:
     """
     Gets the monthly expiration associated with the treasury futures: /ZN,
     /ZB, etc. According to CME, these expire the Friday before the 2nd last
@@ -85,7 +105,7 @@ def get_future_treasury_monthly(day: date = date.today()) -> date:
     return itr - timedelta(days=1)
 
 
-def get_future_metal_monthly(day: date = date.today()) -> date:
+def get_future_metal_monthly(day: date = today_in_new_york()) -> date:
     """
     Gets the monthly expiration associated with the metals futures: /GC, /SI,
     etc. According to CME, these expire on the 4th last business day of the
@@ -106,7 +126,7 @@ def get_future_metal_monthly(day: date = date.today()) -> date:
     return itr
 
 
-def get_future_grain_monthly(day: date = date.today()) -> date:
+def get_future_grain_monthly(day: date = today_in_new_york()) -> date:
     """
     Gets the monthly expiration associated with the grain futures: /ZC, /ZW,
     etc. According to CME, these expire on the Friday which precedes, by at
@@ -125,7 +145,7 @@ def get_future_grain_monthly(day: date = date.today()) -> date:
     return itr
 
 
-def get_future_oil_monthly(day: date = date.today()) -> date:
+def get_future_oil_monthly(day: date = today_in_new_york()) -> date:
     """
     Gets the monthly expiration associated with the WTI oil futures: /CL and
     /MCL. According to CME, these expire 6 business days before the 25th day
@@ -142,7 +162,7 @@ def get_future_oil_monthly(day: date = date.today()) -> date:
     return valid_range[-7]
 
 
-def get_future_index_monthly(day: date = date.today()) -> date:
+def get_future_index_monthly(day: date = today_in_new_york()) -> date:
     """
     Gets the monthly expiration associated with the index futures: /ES, /RTY,
     /NQ, etc. According to CME, these expire on the last business day of the
@@ -183,7 +203,7 @@ class TastytradeJsonDataclass(BaseModel):
     """
     class Config:
         alias_generator = _dasherize
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 def validate_response(response: Response) -> None:

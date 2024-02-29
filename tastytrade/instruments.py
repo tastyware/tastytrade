@@ -1090,7 +1090,7 @@ def get_option_chain(
     In the case that there are two expiries on the same day (e.g. SPXW
     and SPX AM options), both will be returned in the same list. If you
     just want one expiry, you'll need to filter the list yourself, or use
-    ~:class:`NestedOptionChain` instead.
+    :class:`NestedOptionChain` instead.
 
     :param session: the session to use for the request.
     :param symbol: the symbol to get the option chain for.
