@@ -218,6 +218,6 @@ def validate_response(response: Response) -> None:
         errors = content.get('errors')
         if errors is not None:
             for error in errors:
-                error_message += f"\n{error['code']}: {error['message']}"
+                error_message += f"\n{error['domain']}: {error['reason']}"
 
         raise TastytradeError(error_message)
