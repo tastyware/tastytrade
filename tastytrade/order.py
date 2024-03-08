@@ -296,7 +296,7 @@ class PlacedComplexOrder(TastytradeJsonDataclass):
     account_number: str
     type: str
     orders: List[PlacedOrder]
-    id: Optional[str] = None
+    id: Optional[str|int] = None
     trigger_order: Optional[PlacedOrder] = None
     terminal_at: Optional[str] = None
     ratio_price_threshold: Optional[Decimal] = None
