@@ -283,9 +283,9 @@ class PlacedOrder(TastytradeJsonDataclass):
     user_id: Optional[str] = None
     username: Optional[str] = None
     terminal_at: Optional[datetime] = None
-    complex_order_id: Optional[str] = None
+    complex_order_id: Optional[str|int] = None
     complex_order_tag: Optional[str] = None
-    preflight_id: Optional[str] = None
+    preflight_id: Optional[str|int] = None
     order_rule: Optional[OrderRule] = None
 
 
