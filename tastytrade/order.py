@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from tastytrade import VERSION
 from tastytrade.utils import TastytradeJsonDataclass
@@ -283,9 +283,9 @@ class PlacedOrder(TastytradeJsonDataclass):
     user_id: Optional[str] = None
     username: Optional[str] = None
     terminal_at: Optional[datetime] = None
-    complex_order_id: Optional[str] = None
+    complex_order_id: Optional[Union[str, int]] = None
     complex_order_tag: Optional[str] = None
-    preflight_id: Optional[str] = None
+    preflight_id: Optional[Union[str, int]] = None
     order_rule: Optional[OrderRule] = None
 
 
@@ -296,7 +296,7 @@ class PlacedComplexOrder(TastytradeJsonDataclass):
     account_number: str
     type: str
     orders: List[PlacedOrder]
-    id: Optional[str] = None
+    id: Optional[Union[str, int]] = None
     trigger_order: Optional[PlacedOrder] = None
     terminal_at: Optional[str] = None
     ratio_price_threshold: Optional[Decimal] = None
