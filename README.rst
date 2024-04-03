@@ -1,14 +1,8 @@
-.. image:: https://readthedocs.org/projects/tastyworks-api/badge/?version=latest
-   :target: https://tastyworks-api.readthedocs.io/en/latest/?badge=latest
-   :alt: Documentation Status
-
-.. image:: https://img.shields.io/pypi/v/tastytrade
-   :target: https://pypi.org/project/tastytrade
-   :alt: PyPI Package
-
-.. image:: https://static.pepy.tech/badge/tastytrade
-   :target: https://pepy.tech/project/tastytrade
-   :alt: PyPI Downloads
+<p align="center">
+  <a href="https://tastyworks-api.readthedocs.io/en/latest/?badge=latest"><img src="https://readthedocs.org/projects/tastyworks-api/badge/?version=latest" alt="Documentation"/></a>
+  <a href="https://pypi.org/project/tastytrade"><img src="https://img.shields.io/pypi/v/tastytrade" alt="PyPI Package"/></a>
+  <a href="https://pepy.tech/project/tastytrade"><img src="https://static.pepy.tech/badge/tastytrade" alt="PyPI Downloads"/></a>
+</p>
 
 Tastytrade Python SDK
 =====================
