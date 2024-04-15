@@ -87,6 +87,8 @@ class Strike(TastytradeJsonDataclass):
     strike_price: Decimal
     call: str
     put: str
+    call_streamer_symbol: str
+    put_streamer_symbol: str
 
 
 class TickSize(TastytradeJsonDataclass):
