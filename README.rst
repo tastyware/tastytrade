@@ -31,8 +31,8 @@ You can create a real session using your normal login, or a certification (test)
 
 .. code-block:: python
 
-   from tastytrade import ProductionSession
-   session = ProductionSession('username', 'password')
+   from tastytrade import Session
+   session = Session('username', 'password')
 
 Using the streamer
 ------------------

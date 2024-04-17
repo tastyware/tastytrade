@@ -1,5 +1,3 @@
-from enum import Enum
-
 from .candle import Candle
 from .event import Event, EventType
 from .greeks import Greeks
@@ -24,15 +22,3 @@ __all__ = [
     'Trade',
     'Underlying'
 ]
-
-
-class Channel(str, Enum):
-    """
-    This is an :class:`~enum.Enum` that contains the channels for the quote
-    streamer.
-    """
-    DATA = '/service/data'
-    HANDSHAKE = '/meta/handshake'
-    HEARTBEAT = '/meta/connect'
-    SUBSCRIPTION = '/service/sub'
-    TIME_SERIES = '/service/timeSeriesData'

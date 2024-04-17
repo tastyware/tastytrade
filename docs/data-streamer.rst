@@ -20,7 +20,6 @@ Or, you can create a streamer using an asynchronous context manager:
    async with DXLinkStreamer(session) as streamer:
        pass
 
-There are two kinds of streamers: ``DXLinkStreamer`` and ``DXFeedStreamer``. ``DXFeedStreamer`` is older, but has been kept around for compatibility reasons. It supports more event types, but it's now deprecated as it will probably be moved to delayed quotes at some point.
 Once you've created the streamer, you can subscribe/unsubscribe to events, like ``Quote``:
 
 .. code-block:: python
@@ -28,7 +27,7 @@ Once you've created the streamer, you can subscribe/unsubscribe to events, like 
    from tastytrade.dxfeed import EventType
    subs_list = ['SPY', 'SPX']
 
-   async with DXFeedStreamer(session) as streamer:
+   async with DXLinkStreamer(session) as streamer:
        await streamer.subscribe(EventType.QUOTE, subs_list)
        quotes = {}
        async for quote in streamer.listen(EventType.QUOTE):
@@ -67,7 +66,7 @@ We can also use the streamer to stream greeks for options symbols:
    exp = get_tasty_monthly()  # 45 DTE expiration!
    subs_list = [chain[exp][0].streamer_symbol]
 
-   async with DXFeedStreamer(session) as streamer:
+   async with DXLinkStreamer(session) as streamer:
        await streamer.subscribe(EventType.GREEKS, subs_list)
        greeks = await streamer.get_event(EventType.GREEKS)
        print(greeks)
@@ -85,7 +84,7 @@ For example, we can use the streamer to create an option chain that will continu
    import asyncio
    from datetime import date
    from dataclasses import dataclass
-   from tastytrade import DXFeedStreamer
+   from tastytrade import DXLinkStreamer
    from tastytrade.instruments import get_option_chain
    from tastytrade.dxfeed import Greeks, Quote
    from tastytrade.utils import today_in_new_york
@@ -94,14 +93,14 @@ For example, we can use the streamer to create an option chain that will continu
    class LivePrices:
        quotes: dict[str, Quote]
        greeks: dict[str, Greeks]
-       streamer: DXFeedStreamer
+       streamer: DXLinkStreamer
        puts: list[Option]
        calls: list[Option]
 
        @classmethod
        async def create(
            cls,
-           session: ProductionSession,
+           session: Session,
            symbol: str = 'SPY',
            expiration: date = today_in_new_york()
        ):
@@ -110,7 +109,7 @@ For example, we can use the streamer to create an option chain that will continu
            # the `streamer_symbol` property is the symbol used by the streamer
            streamer_symbols = [o.streamer_symbol for o in options]
 
-           streamer = await DXFeedStreamer.create(session)
+           streamer = await DXLinkStreamer.create(session)
            # subscribe to quotes and greeks for all options on that date
            await streamer.subscribe(EventType.QUOTE, [symbol] + streamer_symbols)
            await streamer.subscribe(EventType.GREEKS, streamer_symbols)

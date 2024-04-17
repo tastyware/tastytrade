@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from tastytrade.session import ProductionSession, Session
+from tastytrade.session import Session
 from tastytrade.utils import TastytradeJsonDataclass, validate_response
 
 
@@ -108,7 +108,7 @@ class MarketMetricInfo(TastytradeJsonDataclass):
 
 
 def get_market_metrics(
-    session: ProductionSession,
+    session: Session,
     symbols: List[str]
 ) -> List[MarketMetricInfo]:
     """
@@ -132,7 +132,7 @@ def get_market_metrics(
 
 
 def get_dividends(
-    session: ProductionSession,
+    session: Session,
     symbol: str
 ) -> List[DividendInfo]:
     """
@@ -157,7 +157,7 @@ def get_dividends(
 
 
 def get_earnings(
-    session: ProductionSession,
+    session: Session,
     symbol: str,
     start_date: date
 ) -> List[EarningsInfo]:

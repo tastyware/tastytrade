@@ -1,4 +1,4 @@
-from tastytrade import CertificationSession
+from tastytrade import Session
 
 
 def test_get_customer(session):
@@ -7,5 +7,5 @@ def test_get_customer(session):
 
 def test_destroy(get_cert_credentials):
     usr, pwd = get_cert_credentials
-    session = CertificationSession(usr, pwd)
+    session = Session(usr, pwd, is_test=True)
     assert session.destroy()
