@@ -60,7 +60,7 @@ Alternatively, ``NestedOptionChain`` and ``NestedFutureOptionChain`` provide a s
    chain = NestedOptionChain.get_chain(session, 'SPY')
    print(chain.expirations[0].strikes[0])
 
->>> Strike(strike_price=Decimal('415.0'), call='SPY   240207C00415000', put='SPY   240207P00415000')
+>>> Strike(strike_price=Decimal('437.0'), call='SPY   240417C00437000', put='SPY   240417P00437000', call_streamer_symbol='.SPY240417C437', put_streamer_symbol='.SPY240417P437')
 
 Each expiration contains a list of these strikes, which have the associated put and call symbols that can then be used to fetch option objects via ``Option.get_options()`` or converted to dxfeed symbols for use with the streamer via ``Option.occ_to_streamer_symbol()``.
 
