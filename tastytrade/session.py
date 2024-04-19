@@ -88,7 +88,6 @@ class Session:
         data = response.json()['data']
         self.streamer_token = data['token']
         self.dxlink_url = data['dxlink-url']
-        # self.rest_url = data['dxlink-url'] + '/rest/events.json'
         self.streamer_headers = {
             'Authorization': f'Bearer {self.streamer_token}'
         }

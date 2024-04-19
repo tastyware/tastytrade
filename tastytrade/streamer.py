@@ -353,9 +353,9 @@ class DXLinkStreamer:
                                    if v == message['channel'])
                     self._subscription_state[channel] = message['type']
                 elif message['type'] == 'CHANNEL_CLOSED':
-                    pass
+                    logger.debug('Channel closed: %s', message)
                 elif message['type'] == 'FEED_CONFIG':
-                    pass
+                    logger.debug('Feed configured: %s', message)
                 elif message['type'] == 'FEED_DATA':
                     await self._map_message(message['data'])
                 elif message['type'] == 'KEEPALIVE':
@@ -471,6 +471,41 @@ class DXLinkStreamer:
             time_out -= 1
             if time_out <= 0:
                 raise TastytradeError('Subscription channel not opened')
+        # setup the feed
+        await self._channel_setup(event_type)
+    
+    async def _channel_setup(self, event_type: EventType) -> None:
+        message = {
+            'type': 'FEED_SETUP',
+            'channel': self._channels[event_type],
+            'acceptAggregationPeriod': 10,
+            'acceptDataFormat': 'COMPACT'
+        }
+        def dict_from_schema(event_class: Event):
+            schema = event_class.schema()
+            return {schema['title']: list(schema['properties'].keys())}
+        if event_type == EventType.CANDLE:
+            accept = dict_from_schema(Candle)
+        elif event_type == EventType.GREEKS:
+            accept = dict_from_schema(Greeks)
+        elif event_type == EventType.PROFILE:
+            accept = dict_from_schema(Profile)
+        elif event_type == EventType.QUOTE:
+            accept = dict_from_schema(Quote)
+        elif event_type == EventType.SUMMARY:
+            accept = dict_from_schema(Summary)
+        elif event_type == EventType.THEO_PRICE:
+            accept = dict_from_schema(TheoPrice)
+        elif event_type == EventType.TIME_AND_SALE:
+            accept = dict_from_schema(TimeAndSale)
+        elif event_type == EventType.TRADE:
+            accept = dict_from_schema(Trade)
+        elif event_type == EventType.UNDERLYING:
+            accept = dict_from_schema(Underlying)
+        message['acceptEventFields'] = accept
+        # send message
+        logger.debug('setting up feed: %s', message)
+        await self._websocket.send(json.dumps(message))
 
     async def unsubscribe(
         self,
@@ -565,28 +600,48 @@ class DXLinkStreamer:
 
         :param message: raw JSON data from the websocket
         """
-        for item in message:
-            msg_type = item.pop('eventType')
-            # parse type or warn for unknown type
-            if msg_type == EventType.CANDLE:
-                await self._queues[EventType.CANDLE].put(Candle(**item))
-            elif msg_type == EventType.GREEKS:
-                await self._queues[EventType.GREEKS].put(Greeks(**item))
-            elif msg_type == EventType.PROFILE:
-                await self._queues[EventType.PROFILE].put(Profile(**item))
-            elif msg_type == EventType.QUOTE:
-                await self._queues[EventType.QUOTE].put(Quote(**item))
-            elif msg_type == EventType.SUMMARY:
-                await self._queues[EventType.SUMMARY].put(Summary(**item))
-            elif msg_type == EventType.THEO_PRICE:
-                await self._queues[EventType.THEO_PRICE].put(TheoPrice(**item))
-            elif msg_type == EventType.TIME_AND_SALE:
-                tas = TimeAndSale(**item)
+        logger.debug('received message: %s', message)
+        if isinstance(message[0], str):
+            msg_type = message[0]
+        else:
+            msg_type = message[0][0]
+        data = message[1]
+        # parse type or warn for unknown type
+        if msg_type == EventType.CANDLE:
+            candles = Candle.from_stream(data)
+            for candle in candles:
+                await self._queues[EventType.CANDLE].put(candle)
+        elif msg_type == EventType.GREEKS:
+            greeks = Greeks.from_stream(data)
+            for greek in greeks:
+                await self._queues[EventType.GREEKS].put(greek)
+        elif msg_type == EventType.PROFILE:
+            profiles = Profile.from_stream(data)
+            for profile in profiles:
+                await self._queues[EventType.PROFILE].put(profile)
+        elif msg_type == EventType.QUOTE:
+            quotes = Quote.from_stream(data)
+            for quote in quotes:
+                await self._queues[EventType.QUOTE].put(quote)
+        elif msg_type == EventType.SUMMARY:
+            summaries = Summary.from_stream(data)
+            for summary in summaries:
+                await self._queues[EventType.SUMMARY].put(summary)
+        elif msg_type == EventType.THEO_PRICE:
+            theo_prices = TheoPrice.from_stream(data)
+            for theo_price in theo_prices:
+                await self._queues[EventType.THEO_PRICE].put(theo_price)
+        elif msg_type == EventType.TIME_AND_SALE:
+            time_and_sales = TimeAndSale.from_stream(data)
+            for tas in time_and_sales:
                 await self._queues[EventType.TIME_AND_SALE].put(tas)
-            elif msg_type == EventType.TRADE:
-                await self._queues[EventType.TRADE].put(Trade(**item))
-            elif msg_type == EventType.UNDERLYING:
-                undl = Underlying(**item)
-                await self._queues[EventType.UNDERLYING].put(undl)
-            else:
-                raise TastytradeError(f'Unknown message type: {message}')
+        elif msg_type == EventType.TRADE:
+            trades = Trade.from_stream(data)
+            for trade in trades:
+                await self._queues[EventType.TRADE].put(trade)
+        elif msg_type == EventType.UNDERLYING:
+            underlyings = Underlying.from_stream(data)
+            for underlying in underlyings:
+                await self._queues[EventType.UNDERLYING].put(underlying)
+        else:
+            raise TastytradeError(f'Unknown message type received: {message}')
