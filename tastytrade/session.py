@@ -2,9 +2,16 @@ from abc import ABC
 from typing import Any, Dict, Optional
 
 import requests
+from fake_useragent import UserAgent  # type: ignore
 
 from tastytrade import API_URL, CERT_URL
-from tastytrade.utils import TastytradeError, validate_response
+from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
+                              validate_response)
+
+
+class TwoFactorInfo(TastytradeJsonDataclass):
+    is_active: bool
+    type: Optional[str] = None
 
 
 class Session(ABC):
@@ -108,6 +115,19 @@ class CertificationSession(Session):
         self.headers: Dict[str, str] = {'Authorization': self.session_token}
         self.validate()
 
+        # Pull streamer tokens and urls
+        response = requests.get(
+            f'{self.base_url}/api-quote-tokens',
+            headers=self.headers
+        )
+        validate_response(response)
+        data = response.json()['data']
+        self.streamer_token = data['token']
+        self.dxlink_url = data['dxlink-url']
+        self.streamer_headers = {
+            'Authorization': f'Bearer {self.streamer_token}'
+        }
+
 
 class ProductionSession(Session):
     """
@@ -167,10 +187,13 @@ class ProductionSession(Session):
         self.remember_token: Optional[str] = \
             json['data']['remember-token'] if remember_me else None
         #: The headers to use for API requests
-        self.headers: Dict[str, str] = {'Authorization': self.session_token}
+        self.headers: Dict[str, str] = {
+            'Authorization': self.session_token,
+            'User-Agent': UserAgent().random
+        }
         self.validate()
 
-        #: Pull streamer tokens and urls
+        # Pull streamer tokens and urls
         response = requests.get(
             f'{self.base_url}/quote-streamer-tokens',
             headers=self.headers
@@ -178,10 +201,23 @@ class ProductionSession(Session):
         validate_response(response)
         data = response.json()['data']
         self.streamer_token = data['token']
-        url = data['websocket-url'] + '/cometd'
-        self.dxfeed_url = url.replace('https', 'wss')
         self.dxlink_url = data['dxlink-url']
-        self.rest_url = data['websocket-url'] + '/rest/events.json'
         self.streamer_headers = {
             'Authorization': f'Bearer {self.streamer_token}'
         }
+
+    def get_2fa_info(self) -> TwoFactorInfo:
+        """
+        Gets the 2FA info for the current user.
+
+        :return: a dictionary containing the 2FA info.
+        """
+        response = requests.get(
+            f'{self.base_url}/users/me/two-factor-method',
+            headers=self.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']
+
+        return TwoFactorInfo(**data)
