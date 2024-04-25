@@ -2,7 +2,7 @@ from typing import List
 
 import requests
 
-from tastytrade.session import ProductionSession
+from tastytrade.session import Session
 from tastytrade.utils import TastytradeJsonDataclass
 
 
@@ -15,7 +15,7 @@ class SymbolData(TastytradeJsonDataclass):
 
 
 def symbol_search(
-    session: ProductionSession,
+    session: Session,
     symbol: str
 ) -> List[SymbolData]:  # pragma: no cover
     """

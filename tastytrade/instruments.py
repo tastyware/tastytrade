@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 import requests
 
 from tastytrade.order import InstrumentType, TradeableTastytradeJsonDataclass
-from tastytrade.session import ProductionSession, Session
+from tastytrade.session import Session
 from tastytrade.utils import TastytradeJsonDataclass, validate_response
 
 
@@ -1119,7 +1119,7 @@ def get_option_chain(
 
 
 def get_future_option_chain(
-    session: ProductionSession,
+    session: Session,
     symbol: str
 ) -> Dict[date, List[FutureOption]]:
     """

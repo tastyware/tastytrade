@@ -50,8 +50,10 @@ class Event(BaseModel):
         if not multiples.is_integer():
             msg = 'Mapper data input values are not a multiple of the key size'
             raise TastytradeError(msg)
+        keys = cls.model_fields.keys()
         for i in range(int(multiples)):
             offset = i * size
             local_values = data[offset:(i + 1) * size]
-            objs.append(cls(*local_values))
+            event_dict = dict(zip(keys, local_values))
+            objs.append(cls(**event_dict))
         return objs

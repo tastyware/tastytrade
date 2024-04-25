@@ -33,13 +33,13 @@ class Candle(Event):
     #: the last (close) price of the candle
     close: Optional[Decimal] = None
     #: the total volume of the candle
-    volume: Optional[int] = None
+    volume: Optional[Decimal] = None
     #: volume-weighted average price
     vwap: Optional[Decimal] = None
     #: bid volume in the candle
-    bidVolume: Optional[int] = None
+    bidVolume: Optional[Decimal] = None
     #: ask volume in the candle
-    askVolume: Optional[int] = None
+    askVolume: Optional[Decimal] = None
     #: implied volatility in the candle
     impVolatility: Optional[Decimal] = None
     #: open interest in the candle
