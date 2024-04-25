@@ -3,7 +3,12 @@ from typing import Any, Dict, Optional
 import requests
 
 from tastytrade import API_URL, CERT_URL
-from tastytrade.utils import TastytradeError, validate_response
+from tastytrade.utils import TastytradeJsonDataclass, TastytradeError, validate_response
+
+
+class TwoFactorInfo(TastytradeJsonDataclass):
+    is_active: bool
+    type: Optional[str] = None
 
 
 class Session:
@@ -133,3 +138,19 @@ class Session:
         validate_response(response)  # throws exception if not 200
 
         return response.json()['data']
+
+    def get_2fa_info(self) -> TwoFactorInfo:
+        """
+        Gets the 2FA info for the current user.
+
+        :return: a dictionary containing the 2FA info.
+        """
+        response = requests.get(
+            f'{self.base_url}/users/me/two-factor-method',
+            headers=self.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']
+
+        return TwoFactorInfo(**data)
