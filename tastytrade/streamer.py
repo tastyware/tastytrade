@@ -473,7 +473,7 @@ class DXLinkStreamer:
                 raise TastytradeError('Subscription channel not opened')
         # setup the feed
         await self._channel_setup(event_type)
-    
+
     async def _channel_setup(self, event_type: EventType) -> None:
         message = {
             'type': 'FEED_SETUP',
@@ -481,9 +481,11 @@ class DXLinkStreamer:
             'acceptAggregationPeriod': 10,
             'acceptDataFormat': 'COMPACT'
         }
-        def dict_from_schema(event_class: Event):
+
+        def dict_from_schema(event_class: Any):
             schema = event_class.schema()
             return {schema['title']: list(schema['properties'].keys())}
+
         if event_type == EventType.CANDLE:
             accept = dict_from_schema(Candle)
         elif event_type == EventType.GREEKS:
