@@ -3,7 +3,8 @@ from typing import Any, Dict, Optional
 import requests
 
 from tastytrade import API_URL, CERT_URL
-from tastytrade.utils import TastytradeJsonDataclass, TastytradeError, validate_response
+from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
+                              validate_response)
 
 
 class TwoFactorInfo(TastytradeJsonDataclass):
