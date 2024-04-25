@@ -166,9 +166,14 @@ class ProductionSession(Session):
                                   'token to log in.')
         #: The base url to use for API requests
         self.base_url: str = API_URL
+        #: The headers to use for API requests
+        self.headers: Dict[str, str] = {'User-Agent': UserAgent().random}
 
         if two_factor_authentication is not None:
-            headers = {'X-Tastyworks-OTP': two_factor_authentication}
+            headers = {
+                **self.headers,
+                'X-Tastyworks-OTP': two_factor_authentication
+            }
             response = requests.post(
                 f'{self.base_url}/sessions',
                 json=body,
@@ -183,14 +188,10 @@ class ProductionSession(Session):
         self.user: Dict[str, str] = json['data']['user']
         #: The session token used to authenticate requests
         self.session_token: str = json['data']['session-token']
+        self.headers['Authorization'] = self.session_token
         #: A single-use token which can be used to login without a password
         self.remember_token: Optional[str] = \
             json['data']['remember-token'] if remember_me else None
-        #: The headers to use for API requests
-        self.headers: Dict[str, str] = {
-            'Authorization': self.session_token,
-            'User-Agent': UserAgent().random
-        }
         self.validate()
 
         # Pull streamer tokens and urls
