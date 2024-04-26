@@ -98,11 +98,10 @@ For example, we can use the streamer to create an option chain that will continu
            calls = [o for o in options if o.option_type == OptionType.CALL]
            self = cls({}, {}, streamer, puts, calls)
 
-           t_listen_quotes = asyncio.create_task(self._update_quotes())
-           asyncio.gather(t_listen_greeks, t_listen_quotes)
+           asyncio.create_task(self._update_quotes())
 
-           # wait we have quotes and greeks for each option
-           while len(self.quotes) != len(options):
+           # wait we have quotes for each option
+           while len(self.quotes) != len(options) + 1:
                await asyncio.sleep(0.1)
 
            return self
