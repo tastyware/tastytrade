@@ -558,9 +558,9 @@ class DXLinkStreamer:
             'type': 'FEED_SUBSCRIPTION',
             'channel': self._channels[EventType.CANDLE],
             'add': [{
-                'symbol': f'{ticker}{{={interval},tho=true}}'
+                f'{ticker}{{={interval}}}'
                 if extended_trading_hours
-                else f'{ticker}{{={interval}}}',
+                else 'symbol': f'{ticker}{{={interval},tho=true}}',
                 'type': 'Candle',
                 'fromTime': int(start_time.timestamp() * 1000)
             } for ticker in symbols]
