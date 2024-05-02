@@ -1,9 +1,8 @@
-from dataclasses import dataclass
+from decimal import Decimal
 
 from .event import Event
 
 
-@dataclass
 class TheoPrice(Event):
     """
     Theo price is a snapshot of the theoretical option price computation that
@@ -25,14 +24,14 @@ class TheoPrice(Event):
     #: sequence number to distinguish events that have the same time
     sequence: int
     #: theoretical price
-    price: float
+    price: Decimal
     #: underlying price at the time of theo price computation
-    underlyingPrice: float
+    underlyingPrice: Decimal
     #: delta of the theoretical price
-    delta: float
+    delta: Decimal
     #: gamma of the theoretical price
-    gamma: float
+    gamma: Decimal
     #: implied simple dividend return of the corresponding option series
-    dividend: float
+    dividend: Decimal
     #: implied simple interest return of the corresponding option series
-    interest: float
+    interest: Decimal

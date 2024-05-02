@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from tastytrade import VERSION
 from tastytrade.utils import TastytradeJsonDataclass
@@ -261,8 +261,8 @@ class PlacedOrder(TastytradeJsonDataclass):
     edited: bool
     updated_at: datetime
     legs: List[Leg]
-    size: Optional[str] = None
-    id: Optional[str] = None
+    size: Optional[int] = None
+    id: Optional[int] = None
     price: Optional[Decimal] = None
     price_effect: Optional[PriceEffect] = None
     gtc_date: Optional[date] = None
@@ -283,9 +283,9 @@ class PlacedOrder(TastytradeJsonDataclass):
     user_id: Optional[str] = None
     username: Optional[str] = None
     terminal_at: Optional[datetime] = None
-    complex_order_id: Optional[str] = None
+    complex_order_id: Optional[Union[str, int]] = None
     complex_order_tag: Optional[str] = None
-    preflight_id: Optional[str] = None
+    preflight_id: Optional[Union[str, int]] = None
     order_rule: Optional[OrderRule] = None
 
 
@@ -296,7 +296,7 @@ class PlacedComplexOrder(TastytradeJsonDataclass):
     account_number: str
     type: str
     orders: List[PlacedOrder]
-    id: Optional[str] = None
+    id: Optional[Union[str, int]] = None
     trigger_order: Optional[PlacedOrder] = None
     terminal_at: Optional[str] = None
     ratio_price_threshold: Optional[Decimal] = None
@@ -346,7 +346,7 @@ class PlacedOrderResponse(TastytradeJsonDataclass):
     Dataclass grouping together information about a placed order.
     """
     buying_power_effect: BuyingPowerEffect
-    fee_calculation: FeeCalculation
+    fee_calculation: Optional[FeeCalculation] = None
     order: Optional[PlacedOrder] = None
     complex_order: Optional[PlacedComplexOrder] = None
     warnings: Optional[List[Message]] = None

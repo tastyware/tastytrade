@@ -3,8 +3,11 @@ mypy==1.4.1
 flake8==5.0.4
 isort==5.11.5
 types-requests==2.31.0.1
+types-pytz==2024.1.0.20240203
 websockets==11.0.3
-pydantic==1.10.11
+pandas_market_calendars==4.3.3
+pydantic==2.6.3
 pytest==7.4.0
 pytest_cov==4.1.0
 pytest-asyncio==0.21.1
+fake-useragent==1.5.1

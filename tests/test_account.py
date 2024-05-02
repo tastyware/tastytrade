@@ -25,7 +25,7 @@ def cert_session(get_cert_credentials):
 
 @pytest.fixture(scope='session')
 def cert_account(cert_session):
-    return Account.get_accounts(cert_session)[0]
+    return Account.get_accounts(cert_session)[1]
 
 
 def test_get_account(session, account):
@@ -94,7 +94,7 @@ def placed_order(session, account, new_order):
 
 def test_place_and_delete_order(session, account, new_order):
     order = account.place_order(session, new_order, dry_run=False).order
-    sleep(1)
+    sleep(3)
     account.delete_order(session, order.id)
 
 
@@ -103,10 +103,10 @@ def test_get_order(session, account, placed_order):
 
 
 def test_replace_and_delete_order(session, account, new_order, placed_order):
-    modified_order = new_order.copy()
+    modified_order = new_order.model_copy()
     modified_order.price = Decimal(40)
     replaced = account.replace_order(session, placed_order.id, modified_order)
-    sleep(1)
+    sleep(3)
     account.delete_order(session, replaced.id)
 
 
@@ -153,7 +153,7 @@ def test_place_oco_order(cert_session, cert_account):
         ]
     )
     resp2 = account.place_complex_order(session, oco, dry_run=False)
-    sleep(1)
+    sleep(3)
     # test get complex order
     _ = account.get_complex_order(session, resp2.complex_order.id)
     account.delete_complex_order(session, resp2.complex_order.id)
@@ -191,5 +191,5 @@ def test_place_otoco_order(cert_session, cert_account):
         ]
     )
     resp = account.place_complex_order(session, otoco, dry_run=False)
-    sleep(1)
+    sleep(3)
     account.delete_complex_order(session, resp.complex_order.id)

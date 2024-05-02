@@ -1,9 +1,9 @@
-from dataclasses import dataclass
+from decimal import Decimal
+from typing import Optional
 
 from .event import Event
 
 
-@dataclass
 class Quote(Event):
     """
     A Quote event is a snapshot of the best bid and ask prices, and other
@@ -21,15 +21,15 @@ class Quote(Event):
     bidTime: int
     #: bid exchange code
     bidExchangeCode: str
-    #: bid price
-    bidPrice: float
-    #: bid size as integer number (rounded toward zero)
-    bidSize: int
     #: time of the last ask change
     askTime: int
     #: ask exchange code
     askExchangeCode: str
+    #: bid price
+    bidPrice: Optional[Decimal] = None
     #: ask price
-    askPrice: float
+    askPrice: Optional[Decimal] = None
+    #: bid size as integer number (rounded toward zero)
+    bidSize: Optional[int] = None
     #: ask size as integer number (rounded toward zero)
-    askSize: int
+    askSize: Optional[int] = None

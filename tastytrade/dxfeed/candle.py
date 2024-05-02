@@ -1,9 +1,9 @@
-from dataclasses import dataclass
+from decimal import Decimal
+from typing import Optional
 
 from .event import Event
 
 
-@dataclass
 class Candle(Event):
     """
     A Candle event with open, high, low, close prices and other information
@@ -25,22 +25,22 @@ class Candle(Event):
     #: total number of events in the candle
     count: int
     #: the first (open) price of the candle
-    open: float
+    open: Optional[Decimal] = None
     #: the maximal (high) price of the candle
-    high: float
+    high: Optional[Decimal] = None
     #: the minimal (low) price of the candle
-    low: float
+    low: Optional[Decimal] = None
     #: the last (close) price of the candle
-    close: float
+    close: Optional[Decimal] = None
     #: the total volume of the candle
-    volume: int
+    volume: Optional[Decimal] = None
     #: volume-weighted average price
-    vwap: float
+    vwap: Optional[Decimal] = None
     #: bid volume in the candle
-    bidVolume: int
+    bidVolume: Optional[Decimal] = None
     #: ask volume in the candle
-    askVolume: int
+    askVolume: Optional[Decimal] = None
     #: implied volatility in the candle
-    impVolatility: float
+    impVolatility: Optional[Decimal] = None
     #: open interest in the candle
-    openInterest: int
+    openInterest: Optional[int] = None

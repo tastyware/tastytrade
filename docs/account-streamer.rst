@@ -22,3 +22,18 @@ Here's an example of setting up an account streamer to continuously wait for eve
 
        async for data in streamer.listen():
            print(data)
+
+Probably the most important information the account streamer handles is order fills. We can listen just for orders like so:
+
+.. code-block:: python
+
+   from tastytrade.order import PlacedOrder
+
+   async def listen_for_orders(session):
+       async with AccountStreamer(session) as streamer:
+           accounts = Account.get_accounts(session)
+           await streamer.subscribe_accounts(accounts)
+
+           async for data in streamer.listen():
+               if isinstance(data, PlacedOrder):
+                   yield return data

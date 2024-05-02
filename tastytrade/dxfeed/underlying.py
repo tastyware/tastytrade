@@ -1,9 +1,8 @@
-from dataclasses import dataclass
+from decimal import Decimal
 
 from .event import Event
 
 
-@dataclass
 class Underlying(Event):
     """
     Underlying event is a snapshot of computed values that are available for
@@ -24,11 +23,11 @@ class Underlying(Event):
     #: sequence number of this event to distinguish events with the same time
     sequence: int
     #: 30-day implied volatility for this underlying based on VIX methodology
-    volatility: float
+    volatility: Decimal
     #: front month implied volatility for the underlying using VIX methodology
-    frontVolatility: float
+    frontVolatility: Decimal
     #: back month implied volatility for the underlying using VIX methodology
-    backVolatility: float
+    backVolatility: Decimal
     #: call options traded volume for a day
     callVolume: int
     #: put options traded volume for a day
@@ -36,4 +35,4 @@ class Underlying(Event):
     #: options traded volume for a day
     optionVolume: int
     #: ratio of put options volume to call options volume for a day
-    putCallRatio: float
+    putCallRatio: Decimal

@@ -7,9 +7,9 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'tastytrade'
-copyright = '2023, Graeme Holliday'
+copyright = '2024, Graeme Holliday'
 author = 'Graeme Holliday'
-release = '6.4'
+release = '7.2'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

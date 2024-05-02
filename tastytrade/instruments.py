@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
@@ -49,9 +50,9 @@ class Deliverable(TastytradeJsonDataclass):
     deliverable_type: str
     description: str
     amount: Decimal
-    symbol: str
-    instrument_type: InstrumentType
     percent: str
+    symbol: Optional[str] = None
+    instrument_type: Optional[InstrumentType] = None
 
 
 class DestinationVenueSymbol(TastytradeJsonDataclass):
@@ -86,6 +87,8 @@ class Strike(TastytradeJsonDataclass):
     strike_price: Decimal
     call: str
     put: str
+    call_streamer_symbol: str
+    put_streamer_symbol: str
 
 
 class TickSize(TastytradeJsonDataclass):
@@ -477,7 +480,61 @@ class Option(TradeableTastytradeJsonDataclass):
 
         exp = self.expiration_date.strftime('%y%m%d')
         self.streamer_symbol = \
-            f".{self.underlying_symbol}{exp}{self.option_type.value}{strike}"
+            f'.{self.underlying_symbol}{exp}{self.option_type.value}{strike}'
+
+    @classmethod
+    def streamer_symbol_to_occ(cls, streamer_symbol) -> str:
+        """
+        Returns the OCC 2010 symbol equivalent to the given streamer symbol.
+
+        :param streamer_symbol: the streamer symbol to convert
+
+        :return: the equivalent OCC 2010 symbol
+        """
+        match = re.match(
+            r'\.([A-Z]+)(\d{6})([CP])(\d+)(\.(\d+))?',
+            streamer_symbol
+        )
+        if match is None:
+            return ''
+        symbol = match.group(1)[:6].ljust(6)
+        exp = match.group(2)
+        option_type = match.group(3)
+        strike = match.group(4).zfill(5)
+        if match.group(6) is not None:
+            decimal = str(100 * int(match.group(6))).zfill(3)
+        else:
+            decimal = '000'
+
+        return f'{symbol}{exp}{option_type}{strike}{decimal}'
+
+    @classmethod
+    def occ_to_streamer_symbol(cls, occ) -> str:
+        """
+        Returns the dxfeed symbol for use in the streamer from the given OCC
+        2010 symbol.
+
+        :param occ: the OCC symbol to convert
+
+        :return: the equivalent streamer symbol
+        """
+        match = re.match(
+            r'([A-Z]+)\s+(\d{6})([CP])(\d{5})(\d{3})',
+            occ
+        )
+        if match is None:
+            return ''
+        symbol = match.group(1)
+        exp = match.group(2)
+        option_type = match.group(3)
+        strike = int(match.group(4))
+        decimal = int(match.group(5))
+
+        res = f'.{symbol}{exp}{option_type}{strike}'
+        if decimal != 0:
+            decimal_str = str(decimal / 1000.0)
+            res += decimal_str[1:]
+        return res
 
 
 class NestedOptionChain(TastytradeJsonDataclass):
@@ -1035,7 +1092,7 @@ def get_option_chain(
     In the case that there are two expiries on the same day (e.g. SPXW
     and SPX AM options), both will be returned in the same list. If you
     just want one expiry, you'll need to filter the list yourself, or use
-    ~:class:`NestedOptionChain` instead.
+    :class:`NestedOptionChain` instead.
 
     :param session: the session to use for the request.
     :param symbol: the symbol to get the option chain for.
