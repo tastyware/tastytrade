@@ -174,23 +174,23 @@ class MarginReportEntry(TastytradeJsonDataclass):
     """
     description: str
     code: str
-    underlying_symbol: str
-    underlying_type: str
+    buying_power: Decimal
+    buying_power_effect: PriceEffect
     margin_calculation_type: str
     margin_requirement: Decimal
     margin_requirement_effect: PriceEffect
-    maintenance_requirement: Decimal
-    maintenance_requirement_effect: PriceEffect
-    buying_power: Decimal
-    buying_power_effect: PriceEffect
-    groups: List[Dict[str, Any]]
-    price_increase_percent: Decimal
-    price_decrease_percent: Decimal
+    point_of_no_return_percent: Decimal
     expected_price_range_up_percent: Optional[Decimal] = None
     expected_price_range_down_percent: Optional[Decimal] = None
-    point_of_no_return_percent: Optional[Decimal] = None
+    groups: Optional[List[Dict[str, Any]]] = None
     initial_requirement: Optional[Decimal] = None
     initial_requirement_effect: Optional[PriceEffect] = None
+    maintenance_requirement: Optional[Decimal] = None
+    maintenance_requirement_effect: Optional[PriceEffect] = None
+    price_increase_percent: Optional[Decimal] = None
+    price_decrease_percent: Optional[Decimal] = None
+    underlying_symbol: Optional[str] = None
+    underlying_type: Optional[str] = None
 
 
 class MarginReport(TastytradeJsonDataclass):
