@@ -5,9 +5,11 @@ from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
+from ssl import SSLContext, create_default_context
 from typing import Any, AsyncIterator, Dict, List, Optional, Union
 
 import websockets
+from websockets import WebSocketClientProtocol
 
 from tastytrade import logger
 from tastytrade.account import (Account, AccountBalance, CurrentPosition,
@@ -110,7 +112,7 @@ class AccountStreamer:
             CERT_STREAMER_URL if is_certification else STREAMER_URL
 
         self._queue: Queue = Queue()
-        self._websocket = None
+        self._websocket: Optional[WebSocketClientProtocol] = None
         self._connect_task = asyncio.create_task(self._connect())
 
     async def __aenter__(self):
@@ -144,10 +146,10 @@ class AccountStreamer:
         token provided during initialization.
         """
         headers = {'Authorization': f'Bearer {self.token}'}
-        async with websockets.connect(  # type: ignore
+        async with websockets.connect(
             self.base_url,
             extra_headers=headers
-        ) as websocket:
+        ) as websocket:  # type: ignore
             self._websocket = websocket
             self._heartbeat_task = asyncio.create_task(self._heartbeat())
 
@@ -274,7 +276,11 @@ class DXLinkStreamer:
             print(quote)
 
     """
-    def __init__(self, session: ProductionSession):
+    def __init__(
+        self,
+        session: ProductionSession,
+        ssl_context: SSLContext = create_default_context()
+    ):
         self._counter = 0
         self._lock: Lock = Lock()
         self._queues: Dict[EventType, Queue] = defaultdict(Queue)
@@ -297,6 +303,7 @@ class DXLinkStreamer:
         self._authenticated = False
         self._wss_url = session.dxlink_url
         self._auth_token = session.streamer_token
+        self._ssl_context = ssl_context
 
         self._connect_task = asyncio.create_task(self._connect())
 
@@ -311,8 +318,12 @@ class DXLinkStreamer:
         return self
 
     @classmethod
-    async def create(cls, session: ProductionSession) -> 'DXLinkStreamer':
-        self = cls(session)
+    async def create(
+        cls,
+        session: ProductionSession,
+        ssl_context: SSLContext = create_default_context()
+    ) -> 'DXLinkStreamer':
+        self = cls(session, ssl_context=ssl_context)
         return await self.__aenter__()
 
     async def __aexit__(self, exc_type, exc, tb):
@@ -330,8 +341,10 @@ class DXLinkStreamer:
         Connect to the websocket server using the URL and
         authorization token provided during initialization.
         """
-        async with websockets.connect(  # type: ignore
-            self._wss_url
+
+        async with websockets.connect(
+            self._wss_url,
+            ssl=self._ssl_context
         ) as websocket:
             self._websocket = websocket
             await self._setup_connection()
@@ -558,9 +571,9 @@ class DXLinkStreamer:
             'type': 'FEED_SUBSCRIPTION',
             'channel': self._channels[EventType.CANDLE],
             'add': [{
-                'symbol': f'{ticker}{{={interval},tho=true}}'
+                f'{ticker}{{={interval}}}'
                 if extended_trading_hours
-                else f'{ticker}{{={interval}}}',
+                else 'symbol': f'{ticker}{{={interval},tho=true}}',
                 'type': 'Candle',
                 'fromTime': int(start_time.timestamp() * 1000)
             } for ticker in symbols]
@@ -588,9 +601,9 @@ class DXLinkStreamer:
             'type': 'FEED_SUBSCRIPTION',
             'channel': self._channels[EventType.CANDLE],
             'remove': [{
-                'symbol': f'{ticker}{{={interval},tho=true}}'
+                f'{ticker}{{={interval}}}'
                 if extended_trading_hours
-                else f'{ticker}{{={interval}}}',
+                else 'symbol': f'{ticker}{{={interval},tho=true}}',
                 'type': 'Candle',
             }]
         }
