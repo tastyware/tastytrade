@@ -392,6 +392,18 @@ class DXLinkStreamer:
         while True:
             yield await self._queues[event_type].get()
 
+    def get_event_nowait(self, event_type: EventType) -> Optional[Event]:
+        """
+        Using the existing subscriptions, pulls an event of the given type and
+        returns it. if the queue is empty None is returned.
+
+        :param event_type: the type of event to get
+        """
+        if not self._queues[event_type].empty():
+            return self._queues[event_type].get_nowait()
+        else:
+            return None
+
     async def get_event(self, event_type: EventType) -> Event:
         """
         Using the existing subscription, pulls an event of the given type and
