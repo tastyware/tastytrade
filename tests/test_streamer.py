@@ -31,6 +31,7 @@ async def test_dxlink_streamer(session):
         await streamer.unsubscribe_candle(subs[0], '1d')
         await streamer.unsubscribe(EventType.QUOTE, subs[1])
 
+
 @pytest.mark.asyncio
 async def test_dxlink_streamer_nowait(session):
     async with DXLinkStreamer(session) as streamer:
