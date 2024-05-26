@@ -30,4 +30,3 @@ async def test_dxlink_streamer(session):
             break
         await streamer.unsubscribe_candle(subs[0], '1d')
         await streamer.unsubscribe(EventType.QUOTE, subs[1])
-
