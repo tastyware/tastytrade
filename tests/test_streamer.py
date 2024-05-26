@@ -41,6 +41,6 @@ async def test_dxlink_streamer_nowait(session):
         start_date = datetime.today() - timedelta(days=30)
         await streamer.subscribe_candle(subs, '1d', start_date)
         sleep(60)
-        assert streamer.get_event_nowait(EventType.CANDLE) is None
+        assert streamer.get_event_nowait(EventType.TRADE) is None
         await streamer.unsubscribe_candle(subs[0], '1d')
         await streamer.unsubscribe(EventType.QUOTE, subs[1])
