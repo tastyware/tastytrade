@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from time import sleep
 
 import pytest
 
@@ -39,6 +40,7 @@ async def test_dxlink_streamer_nowait(session):
         await streamer.subscribe(EventType.TRADE, subs)
         start_date = datetime.today() - timedelta(days=30)
         await streamer.subscribe_candle(subs, '1d', start_date)
+        sleep(10)
         assert streamer.get_event_nowait(EventType.CANDLE) is None
         await streamer.unsubscribe_candle(subs[0], '1d')
         await streamer.unsubscribe(EventType.QUOTE, subs[1])
