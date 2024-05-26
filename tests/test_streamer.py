@@ -7,6 +7,7 @@ from tastytrade.dxfeed import EventType
 
 pytest_plugins = ('pytest_asyncio',)
 
+# not clear if sleep is needed
 
 @pytest.mark.asyncio
 async def test_account_streamer(session):
