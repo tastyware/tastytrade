@@ -38,6 +38,6 @@ async def test_dxlink_streamer_nowait(session):
         subs = ['SPY']
         await streamer.subscribe(EventType.TRADE, subs)
         await streamer.subscribe(EventType.QUOTE, subs)
+        assert streamer.get_event_nowait(EventType.TRADE) is not None
         assert streamer.get_event_nowait(EventType.TRADE) is None
-        assert streamer.get_event_nowait(EventType.QUOTE) is not None
         await streamer.unsubscribe(EventType.QUOTE, subs[1])
