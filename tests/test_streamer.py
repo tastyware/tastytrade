@@ -30,3 +30,15 @@ async def test_dxlink_streamer(session):
             break
         await streamer.unsubscribe_candle(subs[0], '1d')
         await streamer.unsubscribe(EventType.QUOTE, subs[1])
+
+@pytest.mark.asyncio
+async def test_dxlink_streamer_nowait(session):
+    async with DXLinkStreamer(session) as streamer:
+        subs = ['SPY', 'AAPL']
+        await streamer.subscribe(EventType.QUOTE, subs)
+        start_date = datetime.today() - timedelta(days=30)
+        await streamer.subscribe_candle(subs, '1d', start_date)
+        _ = streamer.get_event_nowait(EventType.CANDLE)
+        _ = streamer.get_event(EventType.QUOTE)
+        await streamer.unsubscribe_candle(subs[0], '1d')
+        await streamer.unsubscribe(EventType.QUOTE, subs[1])
