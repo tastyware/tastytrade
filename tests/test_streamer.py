@@ -33,8 +33,8 @@ async def test_dxlink_streamer(session):
 
         subs = ['QQQ', 'BA']
         await streamer.subscribe(EventType.QUOTE, subs)
-        await streamer.subscribe(EventType.GREEKS, subs)
-        assert streamer.get_event_nowait(EventType.GREEKS) is None
+        await streamer.subscribe(EventType.TRADE, subs)
+        assert streamer.get_event_nowait(EventType.TRADE) is None
         assert streamer.get_event_nowait(EventType.QUOTE) is not None
         await streamer.unsubscribe_candle(subs[0], '1d')
         await streamer.unsubscribe(EventType.QUOTE, subs[1])
