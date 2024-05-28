@@ -2,9 +2,9 @@ name: Python application
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, advanced-streamer ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, advanced-streamer ]
 
 jobs:
   build:
