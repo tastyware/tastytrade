@@ -409,7 +409,7 @@ class DXLinkStreamer:
     def get_event_nowait(self, event_type: EventType) -> Optional[Event]:
         """
         Using the existing subscriptions, pulls an event of the given type and
-        returns it. if the queue is empty None is returned.
+        returns it. If the queue is empty None is returned.
 
         :param event_type: the type of event to get
         """

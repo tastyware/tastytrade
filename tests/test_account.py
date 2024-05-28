@@ -25,7 +25,7 @@ def cert_session(get_cert_credentials):
 
 @pytest.fixture(scope='session')
 def cert_account(cert_session):
-    return Account.get_accounts(cert_session)[1]
+    return Account.get_account(cert_session, '5WZ97189')
 
 
 def test_get_account(session, account):

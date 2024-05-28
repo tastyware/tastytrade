@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Optional, Union
 import requests
 from pydantic import BaseModel
 
-from tastytrade import logger
 from tastytrade.order import (InstrumentType, NewComplexOrder, NewOrder,
                               OrderStatus, PlacedComplexOrder, PlacedOrder,
                               PlacedOrderResponse, PriceEffect)
