@@ -583,9 +583,8 @@ class DXLinkStreamer:
             'type': 'FEED_SUBSCRIPTION',
             'channel': self._channels[EventType.CANDLE],
             'add': [{
-                f'{ticker}{{={interval}}}'
-                if extended_trading_hours
-                else 'symbol': f'{ticker}{{={interval},tho=true}}',
+                'symbol': (f'{ticker}{{={interval}}}' if extended_trading_hours
+                           else f'{ticker}{{={interval},tho=true}}'),
                 'type': 'Candle',
                 'fromTime': int(start_time.timestamp() * 1000)
             } for ticker in symbols]
@@ -613,10 +612,9 @@ class DXLinkStreamer:
             'type': 'FEED_SUBSCRIPTION',
             'channel': self._channels[EventType.CANDLE],
             'remove': [{
-                f'{ticker}{{={interval}}}'
-                if extended_trading_hours
-                else 'symbol': f'{ticker}{{={interval},tho=true}}',
-                'type': 'Candle',
+                'symbol': (f'{ticker}{{={interval}}}' if extended_trading_hours
+                           else f'{ticker}{{={interval},tho=true}}'),
+                'type': 'Candle'
             }]
         }
         await self._websocket.send(json.dumps(message))

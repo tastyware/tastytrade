@@ -7,7 +7,7 @@ f.close()
 
 setup(
     name='tastytrade',
-    version='7.3',
+    version='7.4',
     description='An unofficial SDK for Tastytrade!',
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/x-rst',
@@ -20,7 +20,7 @@ setup(
         'websockets>=11.0.3',
         'pydantic>=2.6.3',
         'pandas_market_calendars>=4.3.3',
-        'fake_useragent>=1.5.1',
+        'fake_useragent>=1.5.1'
     ],
     packages=find_packages(exclude=['ez_setup', 'tests*']),
     include_package_data=True
