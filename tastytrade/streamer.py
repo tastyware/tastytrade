@@ -649,7 +649,6 @@ class DXLinkStreamer:
         :param extended_trading_hours:
             whether candle to unsubscribe from contains extended trading hours
         """
-        await self._channel_request(EventType.CANDLE)
         message = {
             'type': 'FEED_SUBSCRIPTION',
             'channel': self._channels[EventType.CANDLE],
