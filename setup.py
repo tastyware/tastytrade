@@ -7,7 +7,7 @@ f.close()
 
 setup(
     name='tastytrade',
-    version='7.4',
+    version='7.5',
     description='An unofficial SDK for Tastytrade!',
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/x-rst',
@@ -23,5 +23,6 @@ setup(
         'fake_useragent>=1.5.1'
     ],
     packages=find_packages(exclude=['ez_setup', 'tests*']),
+    package_data={'tastytrade': ['py.typed']},
     include_package_data=True
 )

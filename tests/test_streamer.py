@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from tastytrade import Account, AccountStreamer, DXLinkStreamer
+from tastytrade import Account, AlertStreamer, DXLinkStreamer
 from tastytrade.dxfeed import EventType
 
 pytest_plugins = ('pytest_asyncio',)
@@ -10,7 +10,7 @@ pytest_plugins = ('pytest_asyncio',)
 
 @pytest.mark.asyncio
 async def test_account_streamer(session):
-    async with AccountStreamer(session) as streamer:
+    async with AlertStreamer(session) as streamer:
         await streamer.subscribe_public_watchlists()
         await streamer.subscribe_quote_alerts()
         await streamer.subscribe_user_messages(session)

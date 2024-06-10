@@ -78,7 +78,22 @@ class SubscriptionType(str, Enum):
     USER_MESSAGE = 'user-message-subscribe'
 
 
-class AccountStreamer:
+class AlertType(str, Enum):
+    """
+    This is an :class:`~enum.Enum` that contains the event types
+    for the account streamer.
+    """
+    ACCOUNT_BALANCE = 'AccountBalance'
+    ORDER = 'Order'
+    ORDER_CHAIN = 'OrderChain'
+    POSITION = 'CurrentPosition'
+    QUOTE_ALERT = 'QuoteAlert'
+    TRADING_STATUS = 'TradingStatus'
+    UNDERLYING_SUMMARY = 'UnderlyingYearGainSummary'
+    WATCHLIST = 'PublicWatchlists'
+
+
+class AlertStreamer:
     """
     Used to subscribe to account-level updates (balances, orders, positions),
     public watchlist updates, quote alerts, and user-level messages. It should
@@ -87,9 +102,9 @@ class AccountStreamer:
 
     Example usage::
 
-        from tastytrade import Account, AccountStreamer
+        from tastytrade import Account, AlertStreamer
 
-        async with AccountStreamer(session) as streamer:
+        async with AlertStreamer(session) as streamer:
             accounts = Account.get_accounts(session)
 
             # updates to balances, orders, and positions
@@ -111,7 +126,7 @@ class AccountStreamer:
         self.base_url: str = \
             CERT_STREAMER_URL if is_certification else STREAMER_URL
 
-        self._queue: Queue = Queue()
+        self._queues: Dict[AlertType, Queue] = defaultdict(Queue)
         self._websocket: Optional[WebSocketClientProtocol] = None
         self._connect_task = asyncio.create_task(self._connect())
 
@@ -126,7 +141,7 @@ class AccountStreamer:
         return self
 
     @classmethod
-    async def create(cls, session: Session) -> 'AccountStreamer':
+    async def create(cls, session: Session) -> 'AlertStreamer':
         self = cls(session)
         return await self.__aenter__()
 
@@ -156,46 +171,73 @@ class AccountStreamer:
             while True:
                 raw_message = await self._websocket.recv()  # type: ignore
                 logger.debug('raw message: %s', raw_message)
-                await self._queue.put(json.loads(raw_message))
+                data = json.loads(raw_message)
+                type_str = data.get('type')
+                if type_str is not None:
+                    await self._map_message(type_str, data['data'])
 
-    async def listen(self) -> AsyncIterator[TastytradeJsonDataclass]:
+    async def listen(
+        self,
+        event_type: AlertType
+    ) -> AsyncIterator[
+        Union[
+            AccountBalance,
+            CurrentPosition,
+            PlacedOrder,
+            OrderChain,
+            QuoteAlert,
+            TradingStatus,
+            UnderlyingYearGainSummary,
+            Watchlist
+        ]
+    ]:
         """
         Iterate over non-heartbeat messages received from the streamer,
         mapping them to their appropriate data class and yielding them.
         """
         while True:
-            data = await self._queue.get()
-            type_str = data.get('type')
-            if type_str is not None:
-                yield self._map_message(type_str, data['data'])
+            yield await self._queues[event_type].get()
 
-    def _map_message(
-        self,
-        type_str: str,
-        data: dict
-    ) -> TastytradeJsonDataclass:
+    async def _map_message(self, type_str: str, data: dict):
         """
         I'm not sure what the user-status messages look like,
         so they're absent.
         """
-        if type_str == 'AccountBalance':
-            return AccountBalance(**data)
-        elif type_str == 'CurrentPosition':
-            return CurrentPosition(**data)
-        elif type_str == 'Order':
-            return PlacedOrder(**data)
-        elif type_str == 'OrderChain':
-            return OrderChain(**data)
-        elif type_str == 'QuoteAlert':
-            return QuoteAlert(**data)
-        elif type_str == 'TradingStatus':
-            return TradingStatus(**data)
-        elif type_str == 'UnderlyingYearGainSummary':
-            return UnderlyingYearGainSummary(**data)
-        elif type_str == 'PublicWatchlists':
-            return Watchlist(**data)
+        if type_str == AlertType.ACCOUNT_BALANCE:
+            await self._queues[AlertType.ACCOUNT_BALANCE].put(
+                AccountBalance(**data)
+            )
+        elif type_str == AlertType.POSITION:
+            await self._queues[AlertType.POSITION].put(
+                CurrentPosition(**data)
+            )
+        elif type_str == AlertType.ORDER:
+            await self._queues[AlertType.ORDER].put(
+                PlacedOrder(**data)
+            )
+        elif type_str == AlertType.ORDER_CHAIN:
+            await self._queues[AlertType.ORDER_CHAIN].put(
+                OrderChain(**data)
+            )
+        elif type_str == AlertType.QUOTE_ALERT:
+            await self._queues[AlertType.QUOTE_ALERT].put(
+                QuoteAlert(**data)
+            )
+        elif type_str == AlertType.TRADING_STATUS:
+            await self._queues[AlertType.TRADING_STATUS].put(
+                TradingStatus(**data)
+            )
+        elif type_str == AlertType.UNDERLYING_SUMMARY:
+            await self._queues[AlertType.UNDERLYING_SUMMARY].put(
+                UnderlyingYearGainSummary(**data)
+            )
+        elif type_str == AlertType.WATCHLIST:
+            await self._queues[AlertType.WATCHLIST].put(
+                Watchlist(**data)
+            )
         else:
-            raise TastytradeError(f'Unknown message type: {type_str}\n{data}')
+            logger.error(f'Unknown message type {type_str}! Please open an '
+                         f'issue.\n{data}')
 
     async def subscribe_accounts(self, accounts: List[Account]) -> None:
         """
