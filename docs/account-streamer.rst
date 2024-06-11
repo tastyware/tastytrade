@@ -8,32 +8,29 @@ Here's an example of setting up an account streamer to continuously wait for eve
 
 .. code-block:: python
 
-   from tastytrade import Account, AccountStreamer
+    from tastytrade import Account, AlertStreamer
+    from tastytrade.streamer import AlertType
 
-   async with AccountStreamer(session) as streamer:
-       accounts = Account.get_accounts(session)
+    async with AlertStreamer(session) as streamer:
+        accounts = Account.get_accounts(session)
 
-       # updates to balances, orders, and positions
-       await streamer.subscribe_accounts(accounts)
-       # changes in public watchlists
-       await streamer.subscribe_public_watchlists()
-       # quote alerts configured by the user
-       await streamer.subscribe_quote_alerts()
+        # updates to balances, orders, and positions
+        await streamer.subscribe_accounts(accounts)
+        # changes in public watchlists
+        await streamer.subscribe_public_watchlists()
+        # quote alerts configured by the user
+        await streamer.subscribe_quote_alerts()
 
-       async for data in streamer.listen():
-           print(data)
+        async for watchlist in streamer.listen(AlertType.WATCHLIST):
+            print(f'Watchlist updated: {watchlist}')
 
 Probably the most important information the account streamer handles is order fills. We can listen just for orders like so:
 
 .. code-block:: python
 
-   from tastytrade.order import PlacedOrder
+    async with AlertStreamer(session) as streamer:
+        accounts = Account.get_accounts(session)
+        await streamer.subscribe_accounts(accounts)
 
-   async def listen_for_orders(session):
-       async with AccountStreamer(session) as streamer:
-           accounts = Account.get_accounts(session)
-           await streamer.subscribe_accounts(accounts)
-
-           async for data in streamer.listen():
-               if isinstance(data, PlacedOrder):
-                   yield return data
+        async for order in streamer.listen(AlertType.ORDER):
+            print(f'Order updated: {order}')

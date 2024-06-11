@@ -5,11 +5,10 @@ from typing import Any, Dict, List, Optional, Union
 import requests
 from pydantic import BaseModel
 
-from tastytrade import logger
 from tastytrade.order import (InstrumentType, NewComplexOrder, NewOrder,
                               OrderStatus, PlacedComplexOrder, PlacedOrder,
                               PlacedOrderResponse, PriceEffect)
-from tastytrade.session import Session
+from tastytrade.session import ProductionSession, Session
 from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
                               today_in_new_york, validate_response)
 
@@ -723,7 +722,7 @@ class Account(TastytradeJsonDataclass):
 
     def get_net_liquidating_value_history(
         self,
-        session: Session,
+        session: ProductionSession,
         time_back: Optional[str] = None,
         start_time: Optional[datetime] = None
     ) -> List[NetLiqOhlc]:
@@ -786,7 +785,7 @@ class Account(TastytradeJsonDataclass):
 
     def get_effective_margin_requirements(
         self,
-        session: Session,
+        session: ProductionSession,
         symbol: str
     ) -> MarginRequirement:
         """
@@ -1003,7 +1002,8 @@ class Account(TastytradeJsonDataclass):
         self,
         session: Session,
         order: NewOrder,
-        dry_run: bool = True
+        dry_run: bool = True,
+        raise_errors: bool = True
     ) -> PlacedOrderResponse:
         """
         Place the given order.
@@ -1011,6 +1011,10 @@ class Account(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param order: the order to place.
         :param dry_run: whether this is a test order or not.
+        :param raise_errors:
+            whether to raise errors. we may just want to see the BP usage for
+            an order even if it couldn't be placed. Note in some circumstances
+            an error may still be raised if the response is invalid.
 
         :return: a :class:`PlacedOrderResponse` object for the placed order.
         """
@@ -1020,14 +1024,12 @@ class Account(TastytradeJsonDataclass):
         headers = session.headers
         # required because we're passing the JSON as a string
         headers['Content-Type'] = 'application/json'
-        json = order.json(exclude_none=True, by_alias=True)
+        json = order.model_dump_json(exclude_none=True, by_alias=True)
 
         response = requests.post(url, headers=session.headers, data=json)
         # sometimes we just want to see BP usage for an invalid trade
-        try:
+        if raise_errors:
             validate_response(response)
-        except TastytradeError as error:
-            logger.error(error)
 
         data = response.json()['data']
 
@@ -1055,7 +1057,7 @@ class Account(TastytradeJsonDataclass):
         headers = session.headers
         # required because we're passing the JSON as a string
         headers['Content-Type'] = 'application/json'
-        json = order.json(exclude_none=True, by_alias=True)
+        json = order.model_dump_json(exclude_none=True, by_alias=True)
 
         response = requests.post(url, headers=session.headers, data=json)
         validate_response(response)
@@ -1087,7 +1089,7 @@ class Account(TastytradeJsonDataclass):
             (f'{session.base_url}/accounts/{self.account_number}/orders'
              f'/{old_order_id}'),
             headers=headers,
-            data=new_order.json(
+            data=new_order.model_dump_json(
                 exclude={'legs'},
                 exclude_none=True,
                 by_alias=True

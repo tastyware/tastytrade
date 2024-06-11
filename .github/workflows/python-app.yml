@@ -28,7 +28,7 @@ jobs:
         mypy -p tastytrade
     - name: Testing...
       run: |
-        python -m pytest --cov=tastytrade --cov-report=term-missing tests/ --cov-fail-under=90
+        python -m pytest --cov=tastytrade --cov-report=term-missing tests/ --cov-fail-under=95
       env:
         TT_USERNAME: ${{ secrets.TT_USERNAME }}
         TT_PASSWORD: ${{ secrets.TT_PASSWORD }}
