@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from tastytrade import ProductionSession
+from tastytrade import Session
 
 CERT_USERNAME = 'tastyware'
 CERT_PASSWORD = ':4s-S9/9L&Q~C]@v'
@@ -20,6 +20,6 @@ def session():
     assert username is not None
     assert password is not None
 
-    session = ProductionSession(username, password)
+    session = Session(username, password)
     yield session
     session.destroy()

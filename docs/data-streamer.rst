@@ -86,7 +86,7 @@ For example, we can use the streamer to create an option chain that will continu
    from dataclasses import dataclass
    from tastytrade import DXLinkStreamer
    from tastytrade.instruments import get_option_chain
-   from tastytrade.dxfeed import Greeks, Quote
+   from tastytrade.dxfeed import Quote
    from tastytrade.utils import today_in_new_york
 
    @dataclass
@@ -112,25 +112,18 @@ For example, we can use the streamer to create an option chain that will continu
            streamer = await DXLinkStreamer.create(session)
            # subscribe to quotes and greeks for all options on that date
            await streamer.subscribe(EventType.QUOTE, [symbol] + streamer_symbols)
-           await streamer.subscribe(EventType.GREEKS, streamer_symbols)
          
            puts = [o for o in options if o.option_type == OptionType.PUT]
            calls = [o for o in options if o.option_type == OptionType.CALL]
            self = cls({}, {}, streamer, puts, calls)
 
-           t_listen_greeks = asyncio.create_task(self._update_greeks())
-           t_listen_quotes = asyncio.create_task(self._update_quotes())
-           asyncio.gather(t_listen_greeks, t_listen_quotes)
+           asyncio.create_task(self._update_quotes())
 
-           # wait we have quotes and greeks for each option
-           while len(self.greeks) != len(options) or len(self.quotes) != len(options):
+           # wait we have quotes for each option
+           while len(self.quotes) != len(options) + 1:
                await asyncio.sleep(0.1)
 
            return self
-
-       async def _update_greeks(self):
-           async for e in self.streamer.listen(EventType.GREEKS):
-               self.greeks[e.eventSymbol] = e
       
        async def _update_quotes(self):
            async for e in self.streamer.listen(EventType.QUOTE):
@@ -142,6 +135,6 @@ Now, we can access the quotes and greeks at any time, and they'll be up-to-date 
 
    live_prices = await LivePrices.create(session, 'SPY', date(2023, 7, 21))
    symbol = live_prices.calls[44].streamer_symbol
-   print(live_prices.quotes[symbol], live_prices.greeks[symbol])
+   print(live_prices.quotes[symbol])
 
->>> Quote(eventSymbol='.SPY230721C387', eventTime=0, sequence=0, timeNanoPart=0, bidTime=1689365699000, bidExchangeCode='X', bidPrice=62.01, bidSize=50.0, askTime=1689365699000, askExchangeCode='X', askPrice=62.83, askSize=50.0) Greeks(eventSymbol='.SPY230721C387', eventTime=0, eventFlags=0, index=7255910303911641088, time=1689398266363, sequence=0, price=62.6049270064687, volatility=0.536152815048564, delta=0.971506591907638, gamma=0.001814464566110275, theta=-0.1440768557397271, rho=0.0831882577866199, vega=0.0436861878838861)
+>>> Quote(eventSymbol='.SPY230721C387', eventTime=0, sequence=0, timeNanoPart=0, bidTime=1689365699000, bidExchangeCode='X', bidPrice=62.01, bidSize=50.0, askTime=1689365699000, askExchangeCode='X', askPrice=62.83, askSize=50.0)

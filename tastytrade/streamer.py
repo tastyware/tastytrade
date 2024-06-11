@@ -19,7 +19,7 @@ from tastytrade.dxfeed import (Candle, Event, EventType, Greeks, Profile,
                                Underlying)
 from tastytrade.order import (InstrumentType, OrderChain, PlacedOrder,
                               PriceEffect)
-from tastytrade.session import CertificationSession, ProductionSession, Session
+from tastytrade.session import Session
 from tastytrade.utils import TastytradeError, TastytradeJsonDataclass
 from tastytrade.watchlists import Watchlist
 
@@ -122,9 +122,8 @@ class AlertStreamer:
         #: The active session used to initiate the streamer or make requests
         self.token: str = session.session_token
         #: The base url for the streamer websocket
-        is_certification = isinstance(session, CertificationSession)
         self.base_url: str = \
-            CERT_STREAMER_URL if is_certification else STREAMER_URL
+            CERT_STREAMER_URL if session.is_test else STREAMER_URL
 
         self._queues: Dict[AlertType, Queue] = defaultdict(Queue)
         self._websocket: Optional[WebSocketClientProtocol] = None

@@ -34,3 +34,16 @@ async def test_dxlink_streamer(session):
             break
         await streamer.unsubscribe_candle(subs[0], '1d')
         await streamer.unsubscribe(EventType.QUOTE, subs[1])
+
+
+@pytest.mark.asyncio
+async def test_dxlink_streamer_nowait(session):
+    async with DXLinkStreamer(session) as streamer:
+        subs_not_none = ['SPY']
+        subs_none = ['QQQQ']
+        await streamer.subscribe(EventType.TRADE, subs_not_none)
+        await streamer.subscribe(EventType.QUOTE, subs_none)
+        assert streamer.get_event_nowait(EventType.TRADE) is not None
+        assert streamer.get_event_nowait(EventType.QUOTE) is None
+        await streamer.unsubscribe(EventType.TRADE, subs_not_none)
+        await streamer.unsubscribe(EventType.QUOTE, subs_none)
