@@ -7,8 +7,8 @@ To use watchlists you'll need a production session:
 
 .. code-block:: python
 
-   from tastytrade import Session
-   session = Session(user, password)
+   from tastytrade import ProductionSession
+   session = ProductionSession(user, password)
 
 Now we can fetch the watchlist:
 

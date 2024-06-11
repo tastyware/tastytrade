@@ -3,10 +3,11 @@ from time import sleep
 
 import pytest
 
-from tastytrade import Account, Session
+from tastytrade import Account, CertificationSession
 from tastytrade.instruments import Equity
 from tastytrade.order import (NewComplexOrder, NewOrder, OrderAction,
-                              OrderTimeInForce, OrderType, PriceEffect)
+                              OrderStatus, OrderTimeInForce, OrderType,
+                              PriceEffect)
 
 
 @pytest.fixture(scope='session')
@@ -17,7 +18,7 @@ def account(session):
 @pytest.fixture(scope='session')
 def cert_session(get_cert_credentials):
     usr, pwd = get_cert_credentials
-    session = Session(usr, pwd, is_test=True)
+    session = CertificationSession(usr, pwd)
     yield session
     session.destroy()
 
@@ -123,14 +124,14 @@ def test_place_oco_order(cert_session, cert_account):
     # first, buy share of SPY to set up the OCO order
     symbol = Equity.get_equity(session, 'SPY')
     opening = symbol.build_leg(Decimal(1), OrderAction.BUY_TO_OPEN)
-    _ = account.place_order(session, NewOrder(
+    resp1 = account.place_order(session, NewOrder(
         time_in_force=OrderTimeInForce.DAY,
         order_type=OrderType.LIMIT,
         legs=[opening],
         price=Decimal('2.5'),  # should fill immediately for cert account
         price_effect=PriceEffect.DEBIT
     ), dry_run=False)
-    sleep(3)
+    assert resp1.order.status != OrderStatus.REJECTED
 
     closing = symbol.build_leg(Decimal(1), OrderAction.SELL_TO_CLOSE)
     oco = NewComplexOrder(

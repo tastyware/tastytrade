@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from tastytrade.order import (InstrumentType, NewComplexOrder, NewOrder,
                               OrderStatus, PlacedComplexOrder, PlacedOrder,
                               PlacedOrderResponse, PriceEffect)
-from tastytrade.session import Session
+from tastytrade.session import ProductionSession, Session
 from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
                               today_in_new_york, validate_response)
 
@@ -722,7 +722,7 @@ class Account(TastytradeJsonDataclass):
 
     def get_net_liquidating_value_history(
         self,
-        session: Session,
+        session: ProductionSession,
         time_back: Optional[str] = None,
         start_time: Optional[datetime] = None
     ) -> List[NetLiqOhlc]:
@@ -785,7 +785,7 @@ class Account(TastytradeJsonDataclass):
 
     def get_effective_margin_requirements(
         self,
-        session: Session,
+        session: ProductionSession,
         symbol: str
     ) -> MarginRequirement:
         """

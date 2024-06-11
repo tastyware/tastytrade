@@ -19,7 +19,7 @@ __all__ = [
     'CertificationSession',
     'DXLinkStreamer',
     'PairsWatchlist',
-    'Session',
+    'ProductionSession',
     'Watchlist',
     'symbol_search'
 ]
