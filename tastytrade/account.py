@@ -1021,9 +1021,6 @@ class Account(TastytradeJsonDataclass):
         url = f'{session.base_url}/accounts/{self.account_number}/orders'
         if dry_run:
             url += '/dry-run'
-        headers = session.headers
-        # required because we're passing the JSON as a string
-        headers['Content-Type'] = 'application/json'
         json = order.model_dump_json(exclude_none=True, by_alias=True)
 
         response = requests.post(url, headers=session.headers, data=json)
@@ -1054,9 +1051,6 @@ class Account(TastytradeJsonDataclass):
                '/complex-orders')
         if dry_run:
             url += '/dry-run'
-        headers = session.headers
-        # required because we're passing the JSON as a string
-        headers['Content-Type'] = 'application/json'
         json = order.model_dump_json(exclude_none=True, by_alias=True)
 
         response = requests.post(url, headers=session.headers, data=json)
@@ -1082,13 +1076,10 @@ class Account(TastytradeJsonDataclass):
 
         :return: a :class:`PlacedOrder` object for the modified order.
         """
-        headers = session.headers
-        # required because we're passing the JSON as a string
-        headers['Content-Type'] = 'application/json'
         response = requests.put(
             (f'{session.base_url}/accounts/{self.account_number}/orders'
              f'/{old_order_id}'),
-            headers=headers,
+            headers=session.headers,
             data=new_order.model_dump_json(
                 exclude={'legs'},
                 exclude_none=True,

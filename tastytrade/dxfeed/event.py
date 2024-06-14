@@ -30,7 +30,7 @@ class EventType(str, Enum):
 class Event(BaseModel):
     @validator('*', pre=True)
     def change_nan_to_none(cls, v):
-        if v == 'NaN' or v == 'Infinity':
+        if v == 'NaN' or v == 'Infinity' or v == '-Infinity':
             return None
         return v
 

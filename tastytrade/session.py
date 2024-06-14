@@ -112,7 +112,11 @@ class CertificationSession(Session):
         self.remember_token: Optional[str] = \
             json['data']['remember-token'] if remember_me else None
         #: The headers to use for API requests
-        self.headers: Dict[str, str] = {'Authorization': self.session_token}
+        self.headers: Dict[str, str] = {
+            'Accept': 'application/json',
+            'Authorization': self.session_token,
+            'Content-Type': 'application/json'
+        }
         self.validate()
 
         # Pull streamer tokens and urls
@@ -167,7 +171,11 @@ class ProductionSession(Session):
         #: The base url to use for API requests
         self.base_url: str = API_URL
         #: The headers to use for API requests
-        self.headers: Dict[str, str] = {'User-Agent': UserAgent().random}
+        self.headers: Dict[str, str] = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'User-Agent': UserAgent().random
+        }
 
         if two_factor_authentication is not None:
             headers = {

@@ -26,7 +26,7 @@ from tastytrade.watchlists import Watchlist
 CERT_STREAMER_URL = 'wss://streamer.cert.tastyworks.com'
 STREAMER_URL = 'wss://streamer.tastyworks.com'
 
-DXLINK_VERSION = '0.1-js/0.40.4-WB2'
+DXLINK_VERSION = '0.1-js/1.0.0-beta.4'
 
 
 class QuoteAlert(TastytradeJsonDataclass):
