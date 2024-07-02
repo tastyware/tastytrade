@@ -17,8 +17,8 @@ from tastytrade.account import (Account, AccountBalance, CurrentPosition,
 from tastytrade.dxfeed import (Candle, Event, EventType, Greeks, Profile,
                                Quote, Summary, TheoPrice, TimeAndSale, Trade,
                                Underlying)
-from tastytrade.order import (InstrumentType, OrderChain, PlacedOrder,
-                              PriceEffect)
+from tastytrade.order import (InstrumentType, OrderChain, PlacedComplexOrder,
+                              PlacedOrder, PriceEffect)
 from tastytrade.session import CertificationSession, ProductionSession, Session
 from tastytrade.utils import TastytradeError, TastytradeJsonDataclass
 from tastytrade.watchlists import Watchlist
@@ -84,6 +84,7 @@ class AlertType(str, Enum):
     for the account streamer.
     """
     ACCOUNT_BALANCE = 'AccountBalance'
+    COMPLEX_ORDER = 'ComplexOrder'
     ORDER = 'Order'
     ORDER_CHAIN = 'OrderChain'
     POSITION = 'CurrentPosition'
@@ -183,6 +184,7 @@ class AlertStreamer:
         Union[
             AccountBalance,
             CurrentPosition,
+            PlacedComplexOrder,
             PlacedOrder,
             OrderChain,
             QuoteAlert,
@@ -210,6 +212,10 @@ class AlertStreamer:
         elif type_str == AlertType.POSITION:
             await self._queues[AlertType.POSITION].put(
                 CurrentPosition(**data)
+            )
+        elif type_str == AlertType.COMPLEX_ORDER:
+            await self._queues[AlertType.COMPLEX_ORDER].put(
+                PlacedComplexOrder(**data)
             )
         elif type_str == AlertType.ORDER:
             await self._queues[AlertType.ORDER].put(
