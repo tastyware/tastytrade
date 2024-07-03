@@ -148,6 +148,8 @@ class ProductionSession(Session):
     :param two_factor_authentication:
         if two factor authentication is enabled, this is the code sent to the
         user's device
+    :param dxfeed_tos_compliant:
+        whether to use the dxfeed TOS-compliant API endpoint for the streamer
     """
     def __init__(
         self,
@@ -155,7 +157,8 @@ class ProductionSession(Session):
         password: Optional[str] = None,
         remember_me: bool = False,
         remember_token: Optional[str] = None,
-        two_factor_authentication: Optional[str] = None
+        two_factor_authentication: Optional[str] = None,
+        dxfeed_tos_compliant: bool = False
     ):
         body = {
             'login': login,
@@ -203,8 +206,11 @@ class ProductionSession(Session):
         self.validate()
 
         # Pull streamer tokens and urls
+        url = ('api-quote-tokens'
+               if dxfeed_tos_compliant
+               else 'quote-streamer-tokens')
         response = requests.get(
-            f'{self.base_url}/quote-streamer-tokens',
+            f'{self.base_url}/{url}',
             headers=self.headers
         )
         validate_response(response)
