@@ -6,8 +6,7 @@ import pytest
 from tastytrade import Account, CertificationSession
 from tastytrade.instruments import Equity
 from tastytrade.order import (NewComplexOrder, NewOrder, OrderAction,
-                              OrderStatus, OrderTimeInForce, OrderType,
-                              PriceEffect)
+                              OrderTimeInForce, OrderType, PriceEffect)
 
 
 @pytest.fixture(scope='session')
@@ -91,13 +90,8 @@ def placed_order(session, account, new_order):
     return account.place_order(session, new_order, dry_run=False).order
 
 
-def test_place_and_delete_order(session, account, new_order):
-    order = account.place_order(session, new_order, dry_run=False).order
-    sleep(3)
-    account.delete_order(session, order.id)
-
-
 def test_get_order(session, account, placed_order):
+    sleep(3)
     assert account.get_order(session, placed_order.id).id == placed_order.id
 
 
