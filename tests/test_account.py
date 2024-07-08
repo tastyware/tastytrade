@@ -15,7 +15,7 @@ def account(session):
     return Account.get_accounts(session)[0]
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def cert_session(get_cert_credentials):
     usr, pwd = get_cert_credentials
     session = CertificationSession(usr, pwd)
@@ -23,9 +23,8 @@ def cert_session(get_cert_credentials):
     session.destroy()
 
 
-@pytest.fixture(scope='session')
-def cert_account(cert_session):
-    return Account.get_account(cert_session, '5WZ97189')
+def test_cert_accounts(cert_session):
+    assert Account.get_accounts(cert_session) != []
 
 
 def test_get_account(session, account):
@@ -75,14 +74,14 @@ def test_get_effective_margin_requirements(session, account):
 
 @pytest.fixture(scope='session')
 def new_order(session):
-    symbol = Equity.get_equity(session, 'SPY')
+    symbol = Equity.get_equity(session, 'NVDA')
     leg = symbol.build_leg(Decimal(1), OrderAction.BUY_TO_OPEN)
 
     return NewOrder(
         time_in_force=OrderTimeInForce.DAY,
         order_type=OrderType.LIMIT,
         legs=[leg],
-        price=Decimal(42),  # if this fills the US has crumbled
+        price=Decimal(10),  # if this fills the US has crumbled
         price_effect=PriceEffect.DEBIT
     )
 
@@ -104,7 +103,7 @@ def test_get_order(session, account, placed_order):
 
 def test_replace_and_delete_order(session, account, new_order, placed_order):
     modified_order = new_order.model_copy()
-    modified_order.price = Decimal(40)
+    modified_order.price = Decimal(11)
     replaced = account.replace_order(session, placed_order.id, modified_order)
     sleep(3)
     account.delete_order(session, replaced.id)
@@ -114,25 +113,17 @@ def test_get_order_history(session, account):
     account.get_order_history(session, page_offset=0)
 
 
+def test_get_complex_order_history(session, account):
+    account.get_complex_order_history(session, page_offset=0)
+
+
 def test_get_live_orders(session, account):
     account.get_live_orders(session)
 
 
-def test_place_oco_order(cert_session, cert_account):
-    session = cert_session
-    account = cert_account
-    # first, buy share of SPY to set up the OCO order
-    symbol = Equity.get_equity(session, 'SPY')
-    opening = symbol.build_leg(Decimal(1), OrderAction.BUY_TO_OPEN)
-    resp1 = account.place_order(session, NewOrder(
-        time_in_force=OrderTimeInForce.DAY,
-        order_type=OrderType.LIMIT,
-        legs=[opening],
-        price=Decimal('2.5'),  # should fill immediately for cert account
-        price_effect=PriceEffect.DEBIT
-    ), dry_run=False)
-    assert resp1.order.status != OrderStatus.REJECTED
-
+def test_place_oco_order(session, account):
+    # account must have a share of NVDA for this to work
+    symbol = Equity.get_equity(session, 'NVDA')
     closing = symbol.build_leg(Decimal(1), OrderAction.SELL_TO_CLOSE)
     oco = NewComplexOrder(
         orders=[
@@ -159,9 +150,7 @@ def test_place_oco_order(cert_session, cert_account):
     account.delete_complex_order(session, resp2.complex_order.id)
 
 
-def test_place_otoco_order(cert_session, cert_account):
-    session = cert_session
-    account = cert_account
+def test_place_otoco_order(session, account):
     symbol = Equity.get_equity(session, 'AAPL')
     opening = symbol.build_leg(Decimal(1), OrderAction.BUY_TO_OPEN)
     closing = symbol.build_leg(Decimal(1), OrderAction.SELL_TO_CLOSE)
@@ -170,7 +159,7 @@ def test_place_otoco_order(cert_session, cert_account):
             time_in_force=OrderTimeInForce.DAY,
             order_type=OrderType.LIMIT,
             legs=[opening],
-            price=Decimal('250'),  # won't fill
+            price=Decimal('100'),  # won't fill
             price_effect=PriceEffect.DEBIT
         ),
         orders=[
@@ -178,7 +167,7 @@ def test_place_otoco_order(cert_session, cert_account):
                 time_in_force=OrderTimeInForce.GTC,
                 order_type=OrderType.LIMIT,
                 legs=[closing],
-                price=Decimal('2500'),  # won't fill
+                price=Decimal('400'),  # won't fill
                 price_effect=PriceEffect.CREDIT
             ),
             NewOrder(
@@ -193,3 +182,8 @@ def test_place_otoco_order(cert_session, cert_account):
     resp = account.place_complex_order(session, otoco, dry_run=False)
     sleep(3)
     account.delete_complex_order(session, resp.complex_order.id)
+
+
+def test_get_live_complex_orders(session, account):
+    orders = account.get_live_complex_orders(session)
+    assert orders != []

@@ -832,11 +832,11 @@ class Account(TastytradeJsonDataclass):
 
     def get_live_orders(self, session: Session) -> List[PlacedOrder]:
         """
-        Get all live orders for the account.
+        Get orders placed today for the account.
 
         :param session: the session to use for the request.
 
-        :return: a list of :class:`Order` objects.
+        :return: a list of :class:`PlacedOrder` objects.
         """
         response = requests.get(
             f'{session.base_url}/accounts/{self.account_number}/orders/live',
@@ -847,6 +847,28 @@ class Account(TastytradeJsonDataclass):
         data = response.json()['data']['items']
 
         return [PlacedOrder(**entry) for entry in data]
+
+    def get_live_complex_orders(
+        self,
+        session: Session
+    ) -> List[PlacedComplexOrder]:
+        """
+        Get complex orders placed today for the account.
+
+        :param session: the session to use for the request.
+
+        :return: a list of :class:`PlacedComplexOrder` objects.
+        """
+        response = requests.get(
+            (f'{session.base_url}/accounts/{self.account_number}'
+             f'/complex-orders/live'),
+            headers=session.headers
+        )
+        validate_response(response)
+
+        data = response.json()['data']['items']
+
+        return [PlacedComplexOrder(**entry) for entry in data]
 
     def get_complex_order(
         self,
@@ -997,6 +1019,57 @@ class Account(TastytradeJsonDataclass):
             params['page-offset'] += 1  # type: ignore
 
         return [PlacedOrder(**entry) for entry in results]
+
+    def get_complex_order_history(
+        self,
+        session: Session,
+        per_page: int = 50,
+        page_offset: Optional[int] = None
+    ) -> List[PlacedComplexOrder]:
+        """
+        Get order history of the account.
+
+        :param session: the session to use for the request.
+        :param per_page: the number of results to return per page.
+        :param page_offset:
+            provide a specific page to get; if not provided, get all pages
+
+        :return:
+            a list of Tastytrade 'PlacedComplexOrder' objects in JSON format.
+        """
+        # if a specific page is provided, we just get that page;
+        # otherwise, we loop through all pages
+        paginate = False
+        if page_offset is None:
+            page_offset = 0
+            paginate = True
+        params: Dict[str, Any] = {
+            'per-page': per_page,
+            'page-offset': page_offset
+        }
+
+        # loop through pages and get all transactions
+        results = []
+        while True:
+            response = requests.get(
+                (f'{session.base_url}/accounts/{self.account_number}'
+                 f'/complex-orders'),
+                headers=session.headers,
+                params={k: v for k, v in params.items() if v is not None}
+            )
+            validate_response(response)
+
+            json = response.json()
+            results.extend(json['data']['items'])
+
+            pagination = json['pagination']
+            if pagination['page-offset'] >= pagination['total-pages'] - 1:
+                break
+            if not paginate:
+                break
+            params['page-offset'] += 1  # type: ignore
+
+        return [PlacedComplexOrder(**entry) for entry in results]
 
     def place_order(
         self,
