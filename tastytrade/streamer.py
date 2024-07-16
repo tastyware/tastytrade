@@ -626,7 +626,8 @@ class DXLinkStreamer:
         :param end_time: ending time for the data range
         :param extended_trading_hours: whether to include extended trading
         """
-        await self._channel_request(EventType.CANDLE)
+        if self._subscription_state[EventType.CANDLE] != 'CHANNEL_OPENED':
+            await self._channel_request(EventType.CANDLE)
         message = {
             'type': 'FEED_SUBSCRIPTION',
             'channel': self._channels[EventType.CANDLE],

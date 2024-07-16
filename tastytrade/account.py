@@ -6,8 +6,8 @@ import requests
 from pydantic import BaseModel
 
 from tastytrade.order import (InstrumentType, NewComplexOrder, NewOrder,
-                              OrderStatus, PlacedComplexOrder, PlacedOrder,
-                              PlacedOrderResponse, PriceEffect)
+                              OrderAction, OrderStatus, PlacedComplexOrder,
+                              PlacedOrder, PlacedOrderResponse, PriceEffect)
 from tastytrade.session import ProductionSession, Session
 from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
                               today_in_new_york, validate_response)
@@ -335,7 +335,7 @@ class Transaction(TastytradeJsonDataclass):
     symbol: Optional[str] = None
     instrument_type: Optional[InstrumentType] = None
     underlying_symbol: Optional[str] = None
-    action: Optional[str] = None
+    action: Optional[OrderAction] = None
     quantity: Optional[Decimal] = None
     price: Optional[Decimal] = None
     regulatory_fees: Optional[Decimal] = None
@@ -873,7 +873,7 @@ class Account(TastytradeJsonDataclass):
     def get_complex_order(
         self,
         session: Session,
-        order_id: str
+        order_id: int
     ) -> PlacedComplexOrder:
         """
         Gets a complex order with the given ID.
@@ -894,7 +894,7 @@ class Account(TastytradeJsonDataclass):
 
         return PlacedComplexOrder(**data)
 
-    def get_order(self, session: Session, order_id: str) -> PlacedOrder:
+    def get_order(self, session: Session, order_id: int) -> PlacedOrder:
         """
         Gets an order with the given ID.
 
@@ -913,7 +913,7 @@ class Account(TastytradeJsonDataclass):
 
         return PlacedOrder(**data)
 
-    def delete_complex_order(self, session: Session, order_id: str) -> None:
+    def delete_complex_order(self, session: Session, order_id: int) -> None:
         """
         Delete a complex order by ID.
 
@@ -927,7 +927,7 @@ class Account(TastytradeJsonDataclass):
         )
         validate_response(response)
 
-    def delete_order(self, session: Session, order_id: str) -> None:
+    def delete_order(self, session: Session, order_id: int) -> None:
         """
         Delete an order by ID.
 
@@ -1136,7 +1136,7 @@ class Account(TastytradeJsonDataclass):
     def replace_order(
         self,
         session: Session,
-        old_order_id: str,
+        old_order_id: int,
         new_order: NewOrder
     ) -> PlacedOrder:
         """

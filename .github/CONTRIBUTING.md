@@ -12,3 +12,4 @@ Secrets are protected by Github and are not visible to anyone. You can read more
 4. Navigate to the forked repository's settings page and click on "Secrets and variables" > "Actions".
 5. Click on "New repository secret" to add your Tastytrade username named `TT_USERNAME`.
 6. Finally, do the same with your password, naming it `TT_PASSWORD`.
+7. Make sure you have at least one share of long $F in your account, which will be used to place the OCO complex order (nothing will fill).

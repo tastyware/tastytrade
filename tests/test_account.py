@@ -73,14 +73,14 @@ def test_get_effective_margin_requirements(session, account):
 
 @pytest.fixture(scope='session')
 def new_order(session):
-    symbol = Equity.get_equity(session, 'NVDA')
+    symbol = Equity.get_equity(session, 'F')
     leg = symbol.build_leg(Decimal(1), OrderAction.BUY_TO_OPEN)
 
     return NewOrder(
         time_in_force=OrderTimeInForce.DAY,
         order_type=OrderType.LIMIT,
         legs=[leg],
-        price=Decimal(10),  # if this fills the US has crumbled
+        price=Decimal(3),
         price_effect=PriceEffect.DEBIT
     )
 
@@ -97,7 +97,7 @@ def test_get_order(session, account, placed_order):
 
 def test_replace_and_delete_order(session, account, new_order, placed_order):
     modified_order = new_order.model_copy()
-    modified_order.price = Decimal(11)
+    modified_order.price = Decimal('3.01')
     replaced = account.replace_order(session, placed_order.id, modified_order)
     sleep(3)
     account.delete_order(session, replaced.id)
@@ -116,8 +116,8 @@ def test_get_live_orders(session, account):
 
 
 def test_place_oco_order(session, account):
-    # account must have a share of NVDA for this to work
-    symbol = Equity.get_equity(session, 'NVDA')
+    # account must have a share of F for this to work
+    symbol = Equity.get_equity(session, 'F')
     closing = symbol.build_leg(Decimal(1), OrderAction.SELL_TO_CLOSE)
     oco = NewComplexOrder(
         orders=[
@@ -125,14 +125,14 @@ def test_place_oco_order(session, account):
                 time_in_force=OrderTimeInForce.GTC,
                 order_type=OrderType.LIMIT,
                 legs=[closing],
-                price=Decimal('2500'),  # will never fill
+                price=Decimal('100'),  # will never fill
                 price_effect=PriceEffect.CREDIT
             ),
             NewOrder(
                 time_in_force=OrderTimeInForce.GTC,
                 order_type=OrderType.STOP,
                 legs=[closing],
-                stop_trigger=Decimal('25'),  # will never fill
+                stop_trigger=Decimal('3'),  # will never fill
                 price_effect=PriceEffect.CREDIT
             )
         ]
