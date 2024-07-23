@@ -18,9 +18,11 @@ class InstrumentType(str, Enum):
     EQUITY = 'Equity'
     EQUITY_OFFERING = 'Equity Offering'
     EQUITY_OPTION = 'Equity Option'
+    FIXED_INCOME = 'Fixed Income Security'
     FUTURE = 'Future'
     FUTURE_OPTION = 'Future Option'
     INDEX = 'Index'
+    LIQUIDITY_POOL = 'Liquidity Pool'
     UNKNOWN = 'Unknown'
     WARRANT = 'Warrant'
 

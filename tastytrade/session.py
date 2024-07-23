@@ -1,8 +1,8 @@
-from abc import ABC
 from typing import Any, Dict, Optional
 
-import requests
+import httpx
 from fake_useragent import UserAgent  # type: ignore
+from httpx import Client, Response
 
 from tastytrade import API_URL, CERT_URL
 from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
@@ -14,126 +14,7 @@ class TwoFactorInfo(TastytradeJsonDataclass):
     type: Optional[str] = None
 
 
-class Session(ABC):
-    """
-    An abstract class which contains the basic functionality of a session.
-    """
-    base_url: str
-    headers: Dict[str, str]
-    user: Dict[str, str]
-    session_token: str
-
-    def validate(self) -> bool:
-        """
-        Validates the current session by sending a request to the API.
-
-        :return: True if the session is valid and False otherwise.
-        """
-        response = requests.post(
-            f'{self.base_url}/sessions/validate',
-            headers=self.headers
-        )
-
-        return (response.status_code // 100 == 2)
-
-    def destroy(self) -> bool:
-        """
-        Sends a API request to log out of the existing session. This will
-        invalidate the current session token and login.
-
-        :return:
-            True if the session terminated successfully and False otherwise.
-        """
-        response = requests.delete(
-            f'{self.base_url}/sessions',
-            headers=self.headers
-        )
-
-        return (response.status_code // 100 == 2)
-
-    def get_customer(self) -> Dict[str, Any]:
-        """
-        Gets the customer dict from the API.
-
-        :return: a Tastytrade 'Customer' object in JSON format.
-        """
-        response = requests.get(
-            f'{self.base_url}/customers/me',
-            headers=self.headers
-        )
-        validate_response(response)  # throws exception if not 200
-
-        return response.json()['data']
-
-
-class CertificationSession(Session):
-    """
-    A certification (test) session created at the developer portal which can
-    be used to interact with the remote API.
-
-    :param login: tastytrade username or email
-    :param remember_me:
-        whether or not to create a remember token to use instead of a password
-    :param password:
-        tastytrade password to login; if absent, remember token is required
-    :param remember_token:
-        previously generated token; if absent, password is required
-    """
-    def __init__(
-        self,
-        login: str,
-        password: Optional[str] = None,
-        remember_me: bool = False,
-        remember_token: Optional[str] = None
-    ):
-        body = {
-            'login': login,
-            'remember-me': remember_me
-        }
-        if password is not None:
-            body['password'] = password
-        elif remember_token is not None:
-            body['remember-token'] = remember_token
-        else:
-            raise TastytradeError('You must provide a password or remember '
-                                  'token to log in.')
-        #: The base url to use for API requests
-        self.base_url: str = CERT_URL
-
-        response = requests.post(f'{self.base_url}/sessions', json=body)
-        validate_response(response)  # throws exception if not 200
-
-        json = response.json()
-        #: The user dict returned by the API; contains basic user information
-        self.user: Dict[str, str] = json['data']['user']
-        #: The session token used to authenticate requests
-        self.session_token: str = json['data']['session-token']
-        #: A single-use token which can be used to login without a password
-        self.remember_token: Optional[str] = \
-            json['data']['remember-token'] if remember_me else None
-        #: The headers to use for API requests
-        self.headers: Dict[str, str] = {
-            'Accept': 'application/json',
-            'Authorization': self.session_token,
-            'Content-Type': 'application/json'
-        }
-        self.validate()
-
-        # Pull streamer tokens and urls
-        response = requests.get(
-            f'{self.base_url}/api-quote-tokens',
-            headers=self.headers
-        )
-        validate_response(response)
-        data = response.json()['data']
-        self.streamer_token = data['token']
-        self.dxlink_url = data['dxlink-url']
-        self.streamer_headers = {
-            'Authorization': f'Bearer {self.streamer_token}'
-        }
-
-
-class ProductionSession(Session):
+class Session:
     """
     Contains a local user login which can then be used to interact with the
     remote API.
@@ -145,20 +26,32 @@ class ProductionSession(Session):
         tastytrade password to login; if absent, remember token is required
     :param remember_token:
         previously generated token; if absent, password is required
+    :param is_test:
+        whether to use the test API endpoints, default False
     :param two_factor_authentication:
         if two factor authentication is enabled, this is the code sent to the
         user's device
     :param dxfeed_tos_compliant:
         whether to use the dxfeed TOS-compliant API endpoint for the streamer
     """
+    client: Client
+    is_test: bool
+    remember_token: Optional[str]
+    session_token: str
+    streamer_token: str
+    dxlink_url: str
+    user: Dict[str, str]
+
     def __init__(
         self,
         login: str,
         password: Optional[str] = None,
         remember_me: bool = False,
         remember_token: Optional[str] = None,
+        is_test: bool = False,
         two_factor_authentication: Optional[str] = None,
-        dxfeed_tos_compliant: bool = False
+        dxfeed_tos_compliant: bool = False,
+        proxy: Optional[str] = None
     ):
         body = {
             'login': login,
@@ -171,68 +64,111 @@ class ProductionSession(Session):
         else:
             raise TastytradeError('You must provide a password or remember '
                                   'token to log in.')
-        #: The base url to use for API requests
-        self.base_url: str = API_URL
-        #: The headers to use for API requests
-        self.headers: Dict[str, str] = {
+        # The base url to use for API requests
+        base_url = CERT_URL if is_test else API_URL
+        #: Whether this is a cert or real session
+        self.is_test = is_test
+        # The headers to use for API requests
+        headers = {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
             'User-Agent': UserAgent().random
         }
-
         if two_factor_authentication is not None:
-            headers = {
-                **self.headers,
-                'X-Tastyworks-OTP': two_factor_authentication
-            }
-            response = requests.post(
-                f'{self.base_url}/sessions',
+            response = httpx.post(
+                f'{base_url}/sessions',
                 json=body,
-                headers=headers
+                headers={
+                    **headers,
+                    'X-Tastyworks-OTP': two_factor_authentication
+                },
+                proxy=proxy
             )
         else:
-            response = requests.post(f'{self.base_url}/sessions', json=body)
+            response = httpx.post(
+                f'{base_url}/sessions',
+                json=body,
+                proxy=proxy
+            )
         validate_response(response)  # throws exception if not 200
 
         json = response.json()
         #: The user dict returned by the API; contains basic user information
-        self.user: Dict[str, str] = json['data']['user']
+        self.user = json['data']['user']
         #: The session token used to authenticate requests
-        self.session_token: str = json['data']['session-token']
-        self.headers['Authorization'] = self.session_token
+        self.session_token = json['data']['session-token']
+        headers['Authorization'] = self.session_token
         #: A single-use token which can be used to login without a password
-        self.remember_token: Optional[str] = \
-            json['data']['remember-token'] if remember_me else None
+        self.remember_token = json['data'].get('remember-token')
+        # Set clients for sync and async requests
+        self.client = Client(
+            base_url=base_url,
+            headers=headers,
+            proxy=proxy,
+            timeout=30  # many requests can take a while
+        )
         self.validate()
 
         # Pull streamer tokens and urls
         url = ('api-quote-tokens'
-               if dxfeed_tos_compliant
+               if dxfeed_tos_compliant or is_test
                else 'quote-streamer-tokens')
-        response = requests.get(
-            f'{self.base_url}/{url}',
-            headers=self.headers
-        )
+        response = self.client.get(f'/{url}')
         validate_response(response)
         data = response.json()['data']
+        #: Auth token for dxfeed websocket
         self.streamer_token = data['token']
+        #: URL for dxfeed websocket
         self.dxlink_url = data['dxlink-url']
-        self.streamer_headers = {
-            'Authorization': f'Bearer {self.streamer_token}'
-        }
+
+    def get(self, url, **kwargs) -> Dict[str, Any]:
+        response = self.client.get(url, **kwargs)
+        return self._validate_and_parse(response)
+
+    def delete(self, url, **kwargs) -> None:
+        response = self.client.delete(url, **kwargs)
+        validate_response(response)
+
+    def post(self, url, **kwargs) -> Dict[str, Any]:
+        response = self.client.post(url, **kwargs)
+        return self._validate_and_parse(response)
+
+    def put(self, url, **kwargs) -> Dict[str, Any]:
+        response = self.client.put(url, **kwargs)
+        return self._validate_and_parse(response)
+
+    def _validate_and_parse(self, response: Response) -> Dict[str, Any]:
+        validate_response(response)
+        return response.json()['data']
+
+    def validate(self) -> bool:
+        """
+        Validates the current session by sending a request to the API.
+
+        :return: True if the session is valid and False otherwise.
+        """
+        response = self.client.post('/sessions/validate')
+        return (response.status_code // 100 == 2)
+
+    def destroy(self) -> None:
+        """
+        Sends a API request to log out of the existing session. This will
+        invalidate the current session token and login.
+        """
+        self.delete('/sessions')
+
+    def get_customer(self) -> Dict[str, Any]:
+        """
+        Gets the customer dict from the API.
+
+        :return: a Tastytrade 'Customer' object in JSON format.
+        """
+        data = self.get('/customers/me')
+        return data
 
     def get_2fa_info(self) -> TwoFactorInfo:
         """
         Gets the 2FA info for the current user.
-
-        :return: a dictionary containing the 2FA info.
         """
-        response = requests.get(
-            f'{self.base_url}/users/me/two-factor-method',
-            headers=self.headers
-        )
-        validate_response(response)
-
-        data = response.json()['data']
-
+        data = self.get('/users/me/two-factor-method')
         return TwoFactorInfo(**data)

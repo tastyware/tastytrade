@@ -1,23 +1,19 @@
-.PHONY: clean venv test install docs
-
-clean:
-	find . -name '*.py[co]' -delete
+.PHONY: venv lint test docs
 
 venv:
-	python -m venv env
-	env/bin/pip install -r requirements.txt
+	python -m venv .venv
+	.venv/bin/pip install -r requirements.txt
+	.venv/bin/pip install -e .
+	.venv/bin/pip install -r docs/requirements.txt
 
 lint:
-	isort --check --diff tastytrade/ tests/
-	flake8 --count --show-source --statistics tastytrade/ tests/
-	mypy -p tastytrade
-	mypy -p tests
+	.venv/bin/isort --check --diff tastytrade/ tests/
+	.venv/bin/flake8 --count --show-source --statistics tastytrade/ tests/
+	.venv/bin/mypy -p tastytrade
+	.venv/bin/mypy -p tests
 
 test:
-	python -m pytest --cov=tastytrade --cov-report=term-missing tests/ --cov-fail-under=95
-
-install:
-	env/bin/pip install -e .
+	.venv/bin/pytest --cov=tastytrade --cov-report=term-missing tests/ --cov-fail-under=95
 
 docs:
 	cd docs; make html

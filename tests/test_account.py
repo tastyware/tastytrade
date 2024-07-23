@@ -3,7 +3,7 @@ from time import sleep
 
 import pytest
 
-from tastytrade import Account, CertificationSession
+from tastytrade import Account, Session
 from tastytrade.instruments import Equity
 from tastytrade.order import (NewComplexOrder, NewOrder, OrderAction,
                               OrderTimeInForce, OrderType, PriceEffect)
@@ -17,7 +17,7 @@ def account(session):
 @pytest.fixture
 def cert_session(get_cert_credentials):
     usr, pwd = get_cert_credentials
-    session = CertificationSession(usr, pwd)
+    session = Session(usr, pwd, is_test=True)
     yield session
     session.destroy()
 

@@ -1,11 +1,9 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
-import requests
-
-from tastytrade.session import ProductionSession, Session
-from tastytrade.utils import TastytradeJsonDataclass, validate_response
+from tastytrade.session import Session
+from tastytrade.utils import TastytradeJsonDataclass
 
 
 class DividendInfo(TastytradeJsonDataclass):
@@ -108,7 +106,7 @@ class MarketMetricInfo(TastytradeJsonDataclass):
 
 
 def get_market_metrics(
-    session: ProductionSession,
+    session: Session,
     symbols: List[str]
 ) -> List[MarketMetricInfo]:
     """
@@ -116,23 +114,16 @@ def get_market_metrics(
 
     :param session: active user session to use
     :param symbols: list of symbols to retrieve metrics for
-
-    :return: a list of Tastytrade 'MarketMetricInfo' objects in JSON format.
     """
-    response = requests.get(
-        f'{session.base_url}/market-metrics',
-        headers=session.headers,
+    data = session.get(
+        '/market-metrics',
         params={'symbols': ','.join(symbols)}
     )
-    validate_response(response)
-
-    data = response.json()['data']['items']
-
-    return [MarketMetricInfo(**entry) for entry in data]
+    return [MarketMetricInfo(**i) for i in data['items']]
 
 
 def get_dividends(
-    session: ProductionSession,
+    session: Session,
     symbol: str
 ) -> List[DividendInfo]:
     """
@@ -140,24 +131,15 @@ def get_dividends(
 
     :param session: active user session to use
     :param symbol: symbol to retrieve dividend information for
-
-    :return: a list of Tastytrade 'DividendInfo' objects in JSON format.
     """
     symbol = symbol.replace('/', '%2F')
-    response = requests.get(
-        (f'{session.base_url}/market-metrics/historic-corporate-events/'
-         f'dividends/{symbol}'),
-        headers=session.headers
-    )
-    validate_response(response)
-
-    data = response.json()['data']['items']
-
-    return [DividendInfo(**entry) for entry in data]
+    data = session.get(f'/market-metrics/historic-corporate-events/'
+                       f'dividends/{symbol}')
+    return [DividendInfo(**i) for i in data['items']]
 
 
 def get_earnings(
-    session: ProductionSession,
+    session: Session,
     symbol: str,
     start_date: date
 ) -> List[EarningsInfo]:
@@ -167,22 +149,15 @@ def get_earnings(
     :param session: active user session to use
     :param symbol: symbol to retrieve earnings information for
     :param start_date: limits earnings to those on or after the given date
-
-    :return: a list of Tastytrade 'EarningsInfo' objects in JSON format.
     """
     symbol = symbol.replace('/', '%2F')
-    params: Dict[str, Any] = {'start-date': start_date}
-    response = requests.get(
-        (f'{session.base_url}/market-metrics/historic-corporate-events/'
+    params = {'start-date': start_date}
+    data = session.get(
+        (f'/market-metrics/historic-corporate-events/'
          f'earnings-reports/{symbol}'),
-        headers=session.headers,
         params=params
     )
-    validate_response(response)
-
-    data = response.json()['data']['items']
-
-    return [EarningsInfo(**entry) for entry in data]
+    return [EarningsInfo(**i) for i in data['items']]
 
 
 def get_risk_free_rate(session: Session) -> Decimal:
@@ -190,14 +165,6 @@ def get_risk_free_rate(session: Session) -> Decimal:
     Retrieves the current risk-free rate.
 
     :param session: active user session to use
-
-    :return: the current risk-free rate
     """
-    response = requests.get(
-        f'{session.base_url}/margin-requirements-public-configuration',
-        headers=session.headers
-    )
-    validate_response(response)
-
-    data = response.json()['data']['risk-free-rate']
-    return Decimal(data)
+    data = session.get('/margin-requirements-public-configuration')
+    return Decimal(data['risk-free-rate'])

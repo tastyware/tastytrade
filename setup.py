@@ -7,7 +7,7 @@ f.close()
 
 setup(
     name='tastytrade',
-    version='7.9',
+    version='8.1',
     description='An unofficial SDK for Tastytrade!',
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
@@ -16,7 +16,7 @@ setup(
     url='https://github.com/tastyware/tastytrade',
     license='MIT',
     install_requires=[
-        'requests<3',
+        'httpx>=0.27.0',
         'websockets>=11.0.3',
         'pydantic>=2.6.3',
         'pandas_market_calendars>=4.3.3',
