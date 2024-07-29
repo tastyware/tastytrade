@@ -1,5 +1,3 @@
-from datetime import date
-
 from tastytrade.search import symbol_search
 
 
