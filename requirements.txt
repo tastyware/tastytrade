@@ -1,8 +1,7 @@
-requests==2.32.1
+httpx==0.27.0
 mypy==1.10.0
 flake8==7.0.0
 isort==5.13.2
-types-requests==2.31.0.20240406
 types-pytz==2024.1.0.20240417
 websockets==12.0
 pandas_market_calendars==4.3.3
@@ -11,3 +10,4 @@ pytest==8.2.1
 pytest_cov==5.0.0
 pytest-asyncio==0.23.7
 fake-useragent==1.5.1
+numpy<2

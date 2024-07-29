@@ -1,10 +1,8 @@
 from typing import Dict, List, Optional
 
-import requests
-
 from tastytrade.instruments import InstrumentType
-from tastytrade.session import ProductionSession
-from tastytrade.utils import TastytradeJsonDataclass, validate_response
+from tastytrade.session import Session
+from tastytrade.utils import TastytradeJsonDataclass
 
 
 class Pair(TastytradeJsonDataclass):
@@ -30,28 +28,20 @@ class PairsWatchlist(TastytradeJsonDataclass):
     @classmethod
     def get_pairs_watchlists(
         cls,
-        session: ProductionSession
+        session: Session
     ) -> List['PairsWatchlist']:
         """
         Fetches a list of all Tastytrade public pairs watchlists.
 
         :param session: the session to use for the request.
-
-        :return: a list of :class:`PairsWatchlist` objects.
         """
-        response = requests.get(
-            f'{session.base_url}/pairs-watchlists',
-            headers=session.headers
-        )
-        validate_response(response)
-        data = response.json()['data']['items']
-
-        return [cls(**entry) for entry in data]
+        data = session.get('/pairs-watchlists')
+        return [cls(**i) for i in data['items']]
 
     @classmethod
     def get_pairs_watchlist(
         cls,
-        session: ProductionSession,
+        session: Session,
         name: str
     ) -> 'PairsWatchlist':
         """
@@ -59,17 +49,8 @@ class PairsWatchlist(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         :param name: the name of the pairs watchlist to fetch.
-
-        :return: a :class:`PairsWatchlist` object.
         """
-        response = requests.get(
-            f'{session.base_url}/pairs-watchlists/{name}',
-            headers=session.headers
-        )
-        validate_response(response)
-
-        data = response.json()['data']
-
+        data = session.get(f'/pairs-watchlists/{name}')
         return cls(**data)
 
 
@@ -86,7 +67,7 @@ class Watchlist(TastytradeJsonDataclass):
     @classmethod
     def get_public_watchlists(
         cls,
-        session: ProductionSession,
+        session: Session,
         counts_only: bool = False
     ) -> List['Watchlist']:
         """
@@ -94,24 +75,17 @@ class Watchlist(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         :param counts_only: whether to only fetch the counts of the watchlists.
-
-        :return: a list of :class:`Watchlist` objects.
         """
-        response = requests.get(
-            f'{session.base_url}/public-watchlists',
-            headers=session.headers,
+        data = session.get(
+            '/public-watchlists',
             params={'counts-only': counts_only}
         )
-        validate_response(response)
-
-        data = response.json()['data']['items']
-
-        return [cls(**entry) for entry in data]
+        return [cls(**i) for i in data['items']]
 
     @classmethod
     def get_public_watchlist(
         cls,
-        session: ProductionSession,
+        session: Session,
         name: str
     ) -> 'Watchlist':
         """
@@ -119,45 +93,27 @@ class Watchlist(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         :param name: the name of the watchlist to fetch.
-
-        :return: a :class:`Watchlist` object.
         """
-        response = requests.get(
-            f'{session.base_url}/public-watchlists/{name}',
-            headers=session.headers
-        )
-        validate_response(response)
-
-        data = response.json()['data']
-
+        data = session.get(f'/public-watchlists/{name}')
         return cls(**data)
 
     @classmethod
     def get_private_watchlists(
         cls,
-        session: ProductionSession
+        session: Session
     ) -> List['Watchlist']:
         """
         Fetches a the user's private watchlists.
 
         :param session: the session to use for the request.
-
-        :return: a list of :class:`Watchlist` objects.
         """
-        response = requests.get(
-            f'{session.base_url}/watchlists',
-            headers=session.headers
-        )
-        validate_response(response)
-
-        data = response.json()['data']['items']
-
-        return [cls(**entry) for entry in data]
+        data = session.get('/watchlists')
+        return [cls(**i) for i in data['items']]
 
     @classmethod
     def get_private_watchlist(
         cls,
-        session: ProductionSession,
+        session: Session,
         name: str
     ) -> 'Watchlist':
         """
@@ -165,62 +121,38 @@ class Watchlist(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         :param name: the name of the watchlist to fetch.
-
-        :return: a :class:`Watchlist` object.
         """
-        response = requests.get(
-            f'{session.base_url}/watchlists/{name}',
-            headers=session.headers
-        )
-        validate_response(response)
-
-        data = response.json()['data']
-
+        data = session.get(f'/watchlists/{name}')
         return cls(**data)
 
     @classmethod
-    def remove_private_watchlist(
-        cls,
-        session: ProductionSession,
-        name: str
-    ) -> None:
+    def remove_private_watchlist(cls, session: Session, name: str) -> None:
         """
         Deletes the named private watchlist.
 
         :param session: the session to use for the request.
         :param name: the name of the watchlist to delete.
         """
-        response = requests.delete(
-            f'{session.base_url}/watchlists/{name}',
-            headers=session.headers
-        )
-        validate_response(response)
+        session.delete(f'/watchlists/{name}')
 
-    def upload_private_watchlist(self, session: ProductionSession) -> None:
+    def upload_private_watchlist(self, session: Session) -> None:
         """
         Creates a private remote watchlist identical to this local one.
 
         :param session: the session to use for the request.
         """
-        response = requests.post(
-            f'{session.base_url}/watchlists',
-            headers=session.headers,
-            json=self.dict(by_alias=True)
-        )
-        validate_response(response)
+        session.post('/watchlists', json=self.model_dump(by_alias=True))
 
-    def update_private_watchlist(self, session: ProductionSession) -> None:
+    def update_private_watchlist(self, session: Session) -> None:
         """
         Updates the existing private remote watchlist.
 
         :param session: the session to use for the request.
         """
-        response = requests.put(
-            f'{session.base_url}/watchlists/{self.name}',
-            headers=session.headers,
-            json=self.dict(by_alias=True)
+        session.put(
+            f'/watchlists/{self.name}',
+            json=self.model_dump(by_alias=True)
         )
-        validate_response(response)
 
     def add_symbol(self, symbol: str, instrument_type: InstrumentType) -> None:
         """

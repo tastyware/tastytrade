@@ -19,7 +19,7 @@ from tastytrade.dxfeed import (Candle, Event, EventType, Greeks, Profile,
                                Underlying)
 from tastytrade.order import (InstrumentType, OrderChain, PlacedComplexOrder,
                               PlacedOrder, PriceEffect)
-from tastytrade.session import CertificationSession, ProductionSession, Session
+from tastytrade.session import Session
 from tastytrade.utils import TastytradeError, TastytradeJsonDataclass
 from tastytrade.watchlists import Watchlist
 
@@ -123,9 +123,8 @@ class AlertStreamer:
         #: The active session used to initiate the streamer or make requests
         self.token: str = session.session_token
         #: The base url for the streamer websocket
-        is_certification = isinstance(session, CertificationSession)
-        self.base_url: str = \
-            CERT_STREAMER_URL if is_certification else STREAMER_URL
+        self.base_url: str = (CERT_STREAMER_URL
+                              if session.is_test else STREAMER_URL)
 
         self._queues: Dict[AlertType, Queue] = defaultdict(Queue)
         self._websocket: Optional[WebSocketClientProtocol] = None
@@ -200,7 +199,11 @@ class AlertStreamer:
         while True:
             yield await self._queues[event_type].get()
 
-    async def _map_message(self, type_str: str, data: dict):
+    async def _map_message(
+        self,
+        type_str: str,
+        data: dict
+    ):  # pragma: no cover
         """
         I'm not sure what the user-status messages look like,
         so they're absent.
@@ -326,7 +329,7 @@ class DXLinkStreamer:
     """
     def __init__(
         self,
-        session: ProductionSession,
+        session: Session,
         ssl_context: SSLContext = create_default_context()
     ):
         self._counter = 0
@@ -368,7 +371,7 @@ class DXLinkStreamer:
     @classmethod
     async def create(
         cls,
-        session: ProductionSession,
+        session: Session,
         ssl_context: SSLContext = create_default_context()
     ) -> 'DXLinkStreamer':
         self = cls(session, ssl_context=ssl_context)
@@ -667,7 +670,7 @@ class DXLinkStreamer:
         }
         await self._websocket.send(json.dumps(message))
 
-    async def _map_message(self, message) -> None:
+    async def _map_message(self, message) -> None:  # pragma: no cover
         """
         Takes the raw JSON data, parses the events and places them into their
         respective queues.
