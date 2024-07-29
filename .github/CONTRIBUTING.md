@@ -1,6 +1,6 @@
 # Contributions
 
-Since Tastytrade certification sessions are severely limited in capabilities, the test suite for this SDK requires the usage of your own Tastytrade credentials. In order to pass the tests, you'll need to set use your Tastytrade credentials to run the tests on your local fork
+Since Tastytrade certification sessions are severely limited in capabilities, the test suite for this SDK requires the usage of your own Tastytrade credentials. In order to pass the tests, you'll need to set use your Tastytrade credentials to run the tests on your local fork.
 
 ## Steps to follow to contribute
 
