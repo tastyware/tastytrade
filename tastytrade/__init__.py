@@ -2,7 +2,7 @@ import logging
 
 API_URL = 'https://api.tastyworks.com'
 CERT_URL = 'https://api.cert.tastyworks.com'
-VERSION = '8.1'
+VERSION = '8.2'
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
