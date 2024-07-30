@@ -1,8 +1,7 @@
 from typing import Any, Dict, Optional
 
-import httpx
+import requests
 from fake_useragent import UserAgent  # type: ignore
-from httpx import Client, Response
 
 from tastytrade import API_URL, CERT_URL
 from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
@@ -34,14 +33,6 @@ class Session:
     :param dxfeed_tos_compliant:
         whether to use the dxfeed TOS-compliant API endpoint for the streamer
     """
-    client: Client
-    is_test: bool
-    remember_token: Optional[str]
-    session_token: str
-    streamer_token: str
-    dxlink_url: str
-    user: Dict[str, str]
-
     def __init__(
         self,
         login: str,
@@ -50,8 +41,7 @@ class Session:
         remember_token: Optional[str] = None,
         is_test: bool = False,
         two_factor_authentication: Optional[str] = None,
-        dxfeed_tos_compliant: bool = False,
-        proxy: Optional[str] = None
+        dxfeed_tos_compliant: bool = False
     ):
         body = {
             'login': login,
@@ -65,7 +55,7 @@ class Session:
             raise TastytradeError('You must provide a password or remember '
                                   'token to log in.')
         # The base url to use for API requests
-        base_url = CERT_URL if is_test else API_URL
+        self.base_url = CERT_URL if is_test else API_URL
         #: Whether this is a cert or real session
         self.is_test = is_test
         # The headers to use for API requests
@@ -74,21 +64,19 @@ class Session:
             'Content-Type': 'application/json',
             'User-Agent': UserAgent().random
         }
+        # Set client for requests
+        self.client = requests.Session()
+        self.client.headers.update(headers)
         if two_factor_authentication is not None:
-            response = httpx.post(
-                f'{base_url}/sessions',
+            response = self.client.post(
+                f'{self.base_url}/sessions',
                 json=body,
-                headers={
-                    **headers,
-                    'X-Tastyworks-OTP': two_factor_authentication
-                },
-                proxy=proxy
+                headers={'X-Tastyworks-OTP': two_factor_authentication}
             )
         else:
-            response = httpx.post(
-                f'{base_url}/sessions',
-                json=body,
-                proxy=proxy
+            response = self.client.post(
+                f'{self.base_url}/sessions',
+                json=body
             )
         validate_response(response)  # throws exception if not 200
 
@@ -97,47 +85,41 @@ class Session:
         self.user = json['data']['user']
         #: The session token used to authenticate requests
         self.session_token = json['data']['session-token']
-        headers['Authorization'] = self.session_token
         #: A single-use token which can be used to login without a password
         self.remember_token = json['data'].get('remember-token')
-        # Set clients for sync and async requests
-        self.client = Client(
-            base_url=base_url,
-            headers=headers,
-            proxy=proxy,
-            timeout=30  # many requests can take a while
-        )
+        self.client.headers.update({'Authorization': self.session_token})
         self.validate()
 
         # Pull streamer tokens and urls
-        url = ('api-quote-tokens'
+        url = ('/api-quote-tokens'
                if dxfeed_tos_compliant or is_test
-               else 'quote-streamer-tokens')
-        response = self.client.get(f'/{url}')
-        validate_response(response)
-        data = response.json()['data']
+               else '/quote-streamer-tokens')
+        data = self.get(url)
         #: Auth token for dxfeed websocket
         self.streamer_token = data['token']
         #: URL for dxfeed websocket
         self.dxlink_url = data['dxlink-url']
 
     def get(self, url, **kwargs) -> Dict[str, Any]:
-        response = self.client.get(url, **kwargs)
+        response = self.client.get(self.base_url + url, timeout=30, **kwargs)
         return self._validate_and_parse(response)
 
     def delete(self, url, **kwargs) -> None:
-        response = self.client.delete(url, **kwargs)
+        response = self.client.delete(self.base_url + url, **kwargs)
         validate_response(response)
 
     def post(self, url, **kwargs) -> Dict[str, Any]:
-        response = self.client.post(url, **kwargs)
+        response = self.client.post(self.base_url + url, **kwargs)
         return self._validate_and_parse(response)
 
     def put(self, url, **kwargs) -> Dict[str, Any]:
-        response = self.client.put(url, **kwargs)
+        response = self.client.put(self.base_url + url, **kwargs)
         return self._validate_and_parse(response)
 
-    def _validate_and_parse(self, response: Response) -> Dict[str, Any]:
+    def _validate_and_parse(
+        self,
+        response: requests.Response
+    ) -> Dict[str, Any]:
         validate_response(response)
         return response.json()['data']
 
@@ -147,7 +129,7 @@ class Session:
 
         :return: True if the session is valid and False otherwise.
         """
-        response = self.client.post('/sessions/validate')
+        response = self.client.post(f'{self.base_url}/sessions/validate')
         return (response.status_code // 100 == 2)
 
     def destroy(self) -> None:

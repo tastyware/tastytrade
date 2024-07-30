@@ -2,8 +2,8 @@ from datetime import date, datetime, timedelta
 
 import pandas_market_calendars as mcal  # type: ignore
 import pytz
-from httpx import Response
 from pydantic import BaseModel
+from requests import Response
 
 NYSE = mcal.get_calendar('NYSE')
 TZ = pytz.timezone('US/Eastern')

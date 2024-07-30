@@ -276,7 +276,7 @@ class Equity(TradeableTastytradeJsonDataclass):
         equities = []
         while True:
             response = session.client.get(
-                '/instruments/equities/active',
+                f'{session.base_url}/instruments/equities/active',
                 params={k: v for k, v in params.items() if v is not None}
             )
             validate_response(response)

@@ -599,7 +599,8 @@ class Account(TastytradeJsonDataclass):
         txns = []
         while True:
             response = session.client.get(
-                f'/accounts/{self.account_number}/transactions',
+                (f'{session.base_url}/accounts/{self.account_number}'
+                 f'/transactions'),
                 params={
                     k: v  # type: ignore
                     for k, v in params.items()
@@ -846,9 +847,9 @@ class Account(TastytradeJsonDataclass):
         orders = []
         while True:
             response = session.client.get(
-                f'/accounts/{self.account_number}/orders',
+                f'{session.base_url}/accounts/{self.account_number}/orders',
                 params={
-                    k: v   # type: ignore
+                    k: v  # type: ignore
                     for k, v in params.items()
                     if v is not None
                 }
@@ -895,7 +896,8 @@ class Account(TastytradeJsonDataclass):
         orders = []
         while True:
             response = session.client.get(
-                f'/accounts/{self.account_number}/complex-orders',
+                (f'{session.base_url}/accounts/{self.account_number}'
+                 f'/complex-orders'),
                 params={k: v for k, v in params.items() if v is not None}
             )
             validate_response(response)
