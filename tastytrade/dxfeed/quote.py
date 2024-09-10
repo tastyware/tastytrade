@@ -33,5 +33,5 @@ class Quote(Event):
     #: or decimal for cryptocurrencies
     bidSize: Optional[Decimal] = None
     #: ask size as integer number (rounded toward zero)
-    #. or decimal for cryptocurrencies
+    #: or decimal for cryptocurrencies
     askSize: Optional[Decimal] = None
