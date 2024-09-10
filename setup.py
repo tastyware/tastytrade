@@ -7,7 +7,7 @@ f.close()
 
 setup(
     name='tastytrade',
-    version='8.2',
+    version='8.3',
     description='An unofficial SDK for Tastytrade!',
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',

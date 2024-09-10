@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from tastytrade.instruments import InstrumentType
 from tastytrade.session import Session
@@ -60,7 +60,7 @@ class Watchlist(TastytradeJsonDataclass):
     with functions to update, publish, modify and remove watchlists.
     """
     name: str
-    watchlist_entries: Optional[List[Dict[str, str]]] = None
+    watchlist_entries: Optional[List[Dict[str, Any]]] = None
     group_name: str = 'default'
     order_index: int = 9999
 

@@ -30,6 +30,8 @@ class Quote(Event):
     #: ask price
     askPrice: Optional[Decimal] = None
     #: bid size as integer number (rounded toward zero)
-    bidSize: Optional[int] = None
+    #: or decimal for cryptocurrencies
+    bidSize: Optional[Decimal] = None
     #: ask size as integer number (rounded toward zero)
-    askSize: Optional[int] = None
+    #. or decimal for cryptocurrencies
+    askSize: Optional[Decimal] = None

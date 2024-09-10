@@ -2,7 +2,7 @@ import logging
 
 API_URL = 'https://api.tastyworks.com'
 CERT_URL = 'https://api.cert.tastyworks.com'
-VERSION = '8.2'
+VERSION = '8.3'
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -10,6 +10,7 @@ logger.setLevel(logging.DEBUG)
 # flake8: noqa
 
 from .account import Account
+from .dxfeed import EventType
 from .instruments import (Cryptocurrency, Equity, Future, FutureOption,
                           FutureOptionProduct, FutureProduct,
                           NestedFutureOptionChain, NestedOptionChain, Option,
@@ -38,6 +39,7 @@ __all__ = [
     'Cryptocurrency',
     'DXLinkStreamer',
     'Equity',
+    'EventType',
     'Future',
     'FutureOption',
     'FutureOptionProduct',

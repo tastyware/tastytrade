@@ -461,17 +461,18 @@ class Option(TradeableTastytradeJsonDataclass):
 
         :param occ: the OCC symbol to convert
         """
+        symbol = occ[:6].split()[0]
+        info = occ[6:]
         match = re.match(
-            r'([A-Z]+)\s+(\d{6})([CP])(\d{5})(\d{3})',
-            occ
+            r'(\d{6})([CP])(\d{5})(\d{3})',
+            info
         )
         if match is None:
             return ''
-        symbol = match.group(1)
-        exp = match.group(2)
-        option_type = match.group(3)
-        strike = int(match.group(4))
-        decimal = int(match.group(5))
+        exp = match.group(1)
+        option_type = match.group(2)
+        strike = int(match.group(3))
+        decimal = int(match.group(4))
 
         res = f'.{symbol}{exp}{option_type}{strike}'
         if decimal != 0:
