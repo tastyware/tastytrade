@@ -14,7 +14,7 @@ From source
 -----------
 
 You can also install from source.
-Make sure you have [uv](https://docs.astral.sh/uv/getting-started/installation/) installed beforehand.
+Make sure you have `uv <https://docs.astral.sh/uv/getting-started/installation/>`_ installed beforehand.
 
 ::
 
