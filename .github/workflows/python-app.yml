@@ -19,7 +19,7 @@ jobs:
     - name: Setup uv venv
       run: |
         uv sync
-        uv pip install -e .
+        uv pip install .
     - name: Lint with ruff
       run: |
         uv run ruff check tastytrade/
