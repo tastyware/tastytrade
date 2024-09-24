@@ -8,27 +8,29 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python 3.8
-      uses: actions/setup-python@v2
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
       with:
-        python-version: '3.8'
-    - name: Install dependencies
+        python-version: '3.12'
+    - uses: yezz123/setup-uv@v4
+    - name: Setup uv venv
       run: |
-        python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Linting...
+        uv sync
+        uv pip install -e .
+    - name: Lint with ruff
       run: |
-        isort --check --diff tastytrade/ tests/
-        flake8 --count --show-source --statistics tastytrade/ tests/
-        mypy -p tastytrade
-    - name: Testing...
+        uv run ruff check tastytrade/
+        uv run ruff check tests/
+    - name: Type check with mypy
       run: |
-        python -m pytest --cov=tastytrade --cov-report=term-missing tests/ --cov-fail-under=95
+        uv run mypy -p tastytrade
+        uv run mypy -p tests
+    - name: Test with pytest
+      run: |
+        uv run pytest --cov=tastytrade --cov-report=term-missing tests/ --cov-fail-under=95
       env:
         TT_USERNAME: ${{ secrets.TT_USERNAME }}
         TT_PASSWORD: ${{ secrets.TT_PASSWORD }}
