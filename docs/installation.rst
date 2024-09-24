@@ -13,32 +13,27 @@ The easiest way to install tastytrade is using pip:
 From source
 -----------
 
-You can also install from source:
+You can also install from source.
+Make sure you have [uv](https://docs.astral.sh/uv/getting-started/installation/) installed beforehand.
 
 ::
 
    $ git clone https://github.com/tastyware/tastytrade.git
-   $ cd tastytrade; make venv
-   $ source env/bin/activate
+   $ cd tastytrade
    $ make install
 
 If you're contributing, you'll want to run tests on your changes locally:
 
 ::
 
+   $ make lint
    $ make test
 
-And finally, to build the documentation:
+If you want to build the documentation (usually not necessary):
 
 ::
 
    $ make docs
-
-The first time, you'll need to install the documentation dependencies:
-
-::
-
-   $ pip install -r docs/requirements.txt
 
 Windows
 -------
@@ -50,7 +45,5 @@ Here's an example for PowerShell:
 
    $ git clone https://github.com/tastyware/tastytrade.git
    $ cd tastytrade
-   $ python -m venv env
-   $ env/Scripts/Activate.ps1
-   $ env/Scripts/pip.exe install -r requirements.txt
-   $ env/Scripts/pip.exe install -e .
+   $ uv sync
+   $ uv pip install -e .
