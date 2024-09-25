@@ -1,8 +1,7 @@
-name: Publish Python distribution to PyPI
+name: Publish Python distribution to TestPyPI
 
 on:
-  release:
-    types: [created]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -29,15 +28,16 @@ jobs:
         name: python-package-distributions
         path: dist/
 
-  publish-to-pypi:
-    name: >-
-      Publish Python distribution to PyPI
+  publish-to-testpypi:
+    name: Publish Python distribution to TestPyPI
     needs:
     - build
     runs-on: ubuntu-latest
+
     environment:
-      name: pypi
-      url: https://pypi.org/p/tastytrade
+      name: testpypi
+      url: https://test.pypi.org/p/tastytrade
+
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
 
@@ -47,5 +47,7 @@ jobs:
       with:
         name: python-package-distributions
         path: dist/
-    - name: Publish distribution to PyPI
+    - name: Publish distribution to TestPyPI
       uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
