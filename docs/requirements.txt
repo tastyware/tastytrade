@@ -1,0 +1,5 @@
+sphinx==6.2.1
+sphinx-rtd-theme==1.2.2
+sphinx-toolbox==3.4.0
+enum-tools==0.10.0
+autodoc-pydantic==2.0.1
