@@ -11,6 +11,18 @@ logger.setLevel(logging.DEBUG)
 # ruff: noqa: E402
 
 from .account import Account
+from .backtest import (
+    Backtest,
+    BacktestEntry,
+    BacktestExit,
+    BacktestLeg,
+    BacktestResponse,
+    BacktestResults,
+    BacktestSession,
+    BacktestSnapshot,
+    BacktestStatistics,
+    BacktestTrial,
+)
 from .dxfeed import EventType
 from .instruments import (
     Cryptocurrency,
@@ -61,6 +73,16 @@ __all__ = [
     "Account",
     "AlertStreamer",
     "AlertType",
+    "Backtest",
+    "BacktestEntry",
+    "BacktestExit",
+    "BacktestLeg",
+    "BacktestResponse",
+    "BacktestResults",
+    "BacktestSession",
+    "BacktestSnapshot",
+    "BacktestStatistics",
+    "BacktestTrial",
     "ComplexOrderType",
     "Cryptocurrency",
     "DXLinkStreamer",

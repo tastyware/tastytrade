@@ -7,6 +7,12 @@ Account
    :members:
    :show-inheritance:
 
+Backtesting
+-----------
+.. automodule:: tastytrade.backtest
+   :members:
+   :show-inheritance:
+
 Instruments
 -----------
 .. automodule:: tastytrade.instruments

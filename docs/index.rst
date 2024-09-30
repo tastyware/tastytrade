@@ -29,6 +29,7 @@ A simple, reverse-engineered SDK for Tastytrade built on their (now mostly publi
    orders
    account-streamer
    data-streamer
+   backtest
    watchlists
 
 .. toctree::
