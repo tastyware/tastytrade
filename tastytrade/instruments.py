@@ -284,7 +284,7 @@ class Equity(TradeableTastytradeJsonDataclass):
         equities = []
         while True:
             response = session.client.get(
-                f"{session.base_url}/instruments/equities/active",
+                "/instruments/equities/active",
                 params={k: v for k, v in params.items() if v is not None},
             )
             validate_response(response)
@@ -773,7 +773,7 @@ class FutureOption(TradeableTastytradeJsonDataclass):
             "symbol[]": symbols,
             "option-root-symbol": root_symbol,
             "expiration-date": expiration_date,
-            "option-type": option_type,
+            "option-type": option_type.value if option_type else None,
             "strike-price": strike_price,
         }
         data = session.get(

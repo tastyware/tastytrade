@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional
 
-import requests
+import httpx
 from fake_useragent import UserAgent  # type: ignore
 
 from tastytrade import API_URL, CERT_URL
@@ -50,10 +50,8 @@ class Session:
             body["remember-token"] = remember_token
         else:
             raise TastytradeError(
-                "You must provide a password or remember " "token to log in."
+                "You must provide a password or remember token to log in."
             )
-        # The base url to use for API requests
-        self.base_url = CERT_URL if is_test else API_URL
         #: Whether this is a cert or real session
         self.is_test = is_test
         # The headers to use for API requests
@@ -63,16 +61,17 @@ class Session:
             "User-Agent": UserAgent().random,
         }
         # Set client for requests
-        self.client = requests.Session()
-        self.client.headers.update(headers)
+        self.client = httpx.Client(
+            base_url=(CERT_URL if is_test else API_URL), headers=headers
+        )
         if two_factor_authentication is not None:
             response = self.client.post(
-                f"{self.base_url}/sessions",
+                "/sessions",
                 json=body,
                 headers={"X-Tastyworks-OTP": two_factor_authentication},
             )
         else:
-            response = self.client.post(f"{self.base_url}/sessions", json=body)
+            response = self.client.post("/sessions", json=body)
         validate_response(response)  # throws exception if not 200
 
         json = response.json()
@@ -98,22 +97,22 @@ class Session:
         self.dxlink_url = data["dxlink-url"]
 
     def get(self, url, **kwargs) -> Dict[str, Any]:
-        response = self.client.get(self.base_url + url, timeout=30, **kwargs)
+        response = self.client.get(url, timeout=30, **kwargs)
         return self._validate_and_parse(response)
 
     def delete(self, url, **kwargs) -> None:
-        response = self.client.delete(self.base_url + url, **kwargs)
+        response = self.client.delete(url, **kwargs)
         validate_response(response)
 
     def post(self, url, **kwargs) -> Dict[str, Any]:
-        response = self.client.post(self.base_url + url, **kwargs)
+        response = self.client.post(url, **kwargs)
         return self._validate_and_parse(response)
 
     def put(self, url, **kwargs) -> Dict[str, Any]:
-        response = self.client.put(self.base_url + url, **kwargs)
+        response = self.client.put(url, **kwargs)
         return self._validate_and_parse(response)
 
-    def _validate_and_parse(self, response: requests.Response) -> Dict[str, Any]:
+    def _validate_and_parse(self, response: httpx._models.Response) -> Dict[str, Any]:
         validate_response(response)
         return response.json()["data"]
 
@@ -123,7 +122,7 @@ class Session:
 
         :return: True if the session is valid and False otherwise.
         """
-        response = self.client.post(f"{self.base_url}/sessions/validate")
+        response = self.client.post("/sessions/validate")
         return response.status_code // 100 == 2
 
     def destroy(self) -> None:

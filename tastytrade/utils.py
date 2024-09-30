@@ -1,11 +1,9 @@
 from datetime import date, datetime, timedelta
-from typing import Union
 
 import pandas_market_calendars as mcal  # type: ignore
 import pytz
-from httpx._models import Response as HTTPXReponse
+from httpx._models import Response
 from pydantic import BaseModel
-from requests import Response
 
 NYSE = mcal.get_calendar("NYSE")
 TZ = pytz.timezone("US/Eastern")
@@ -210,7 +208,7 @@ class TastytradeJsonDataclass(BaseModel):
         populate_by_name = True
 
 
-def validate_response(response: Union[Response, HTTPXReponse]) -> None:
+def validate_response(response: Response) -> None:
     """
     Checks if the given code is an error; if so, raises an exception.
 

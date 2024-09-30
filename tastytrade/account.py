@@ -512,7 +512,7 @@ class Account(TastytradeJsonDataclass):
         snapshots = []
         while True:
             response = session.client.get(
-                (f"{session.base_url}/accounts/{self.account_number}/balance-snapshots"),
+                f"/accounts/{self.account_number}/balance-snapshots",
                 params={
                     k: v  # type: ignore
                     for k, v in params.items()
@@ -521,7 +521,9 @@ class Account(TastytradeJsonDataclass):
             )
             validate_response(response)
             json = response.json()
-            snapshots.extend([AccountBalanceSnapshot(**i) for i in json["data"]["items"]])
+            snapshots.extend(
+                [AccountBalanceSnapshot(**i) for i in json["data"]["items"]]
+            )
             # handle pagination
             pagination = json["pagination"]
             if (
@@ -564,7 +566,7 @@ class Account(TastytradeJsonDataclass):
         params = {
             "underlying-symbol[]": underlying_symbols,
             "symbol": symbol,
-            "instrument-type": instrument_type,
+            "instrument-type": instrument_type.value if instrument_type else None,
             "include-closed-positions": include_closed,
             "underlying-product-code": underlying_product_code,
             "partition-keys[]": partition_keys,
@@ -638,7 +640,7 @@ class Account(TastytradeJsonDataclass):
             "sub-type[]": sub_types,
             "start-date": start_date,
             "end-date": end_date,
-            "instrument-type": instrument_type,
+            "instrument-type": instrument_type.value if instrument_type else None,
             "symbol": symbol,
             "underlying-symbol": underlying_symbol,
             "action": action,
@@ -651,7 +653,7 @@ class Account(TastytradeJsonDataclass):
         txns = []
         while True:
             response = session.client.get(
-                (f"{session.base_url}/accounts/{self.account_number}" f"/transactions"),
+                f"/accounts/{self.account_number}/transactions",
                 params={
                     k: v  # type: ignore
                     for k, v in params.items()
@@ -679,7 +681,7 @@ class Account(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param id: the ID of the transaction to fetch.
         """
-        data = session.get(f"/accounts/{self.account_number}/transactions/" f"{id}")
+        data = session.get(f"/accounts/{self.account_number}/transactions/{id}")
         return Transaction(**data)
 
     def get_total_fees(
@@ -765,7 +767,7 @@ class Account(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         """
-        data = session.get(f"/margin/accounts/{self.account_number}" f"/requirements")
+        data = session.get(f"/margin/accounts/{self.account_number}/requirements")
         return MarginReport(**data)
 
     def get_live_orders(self, session: Session) -> List[PlacedOrder]:
@@ -783,7 +785,7 @@ class Account(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         """
-        data = session.get(f"/accounts/{self.account_number}/complex-" f"orders/live")
+        data = session.get(f"/accounts/{self.account_number}/complex-orders/live")
         return [PlacedComplexOrder(**i) for i in data["items"]]
 
     def get_complex_order(self, session: Session, order_id: int) -> PlacedComplexOrder:
@@ -793,9 +795,7 @@ class Account(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param order_id: the ID of the order to fetch.
         """
-        data = session.get(
-            f"/accounts/{self.account_number}/complex-" f"orders/{order_id}"
-        )
+        data = session.get(f"/accounts/{self.account_number}/complex-orders/{order_id}")
         return PlacedComplexOrder(**data)
 
     def get_order(self, session: Session, order_id: int) -> PlacedOrder:
@@ -805,7 +805,7 @@ class Account(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param order_id: the ID of the order to fetch.
         """
-        data = session.get(f"/accounts/{self.account_number}/orders" f"/{order_id}")
+        data = session.get(f"/accounts/{self.account_number}/orders/{order_id}")
         return PlacedOrder(**data)
 
     def delete_complex_order(self, session: Session, order_id: int) -> None:
@@ -815,7 +815,7 @@ class Account(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param order_id: the ID of the order to delete.
         """
-        session.delete(f"/accounts/{self.account_number}/complex-" f"orders/{order_id}")
+        session.delete(f"/accounts/{self.account_number}/complex-orders/{order_id}")
 
     def delete_order(self, session: Session, order_id: int) -> None:
         """
@@ -873,9 +873,11 @@ class Account(TastytradeJsonDataclass):
             "start-date": start_date,
             "end-date": end_date,
             "underlying-symbol": underlying_symbol,
-            "status[]": statuses,
+            "status[]": [s.value for s in statuses] if statuses else None,
             "futures-symbol": futures_symbol,
-            "underlying-instrument-type": underlying_instrument_type,
+            "underlying-instrument-type": underlying_instrument_type.value
+            if underlying_instrument_type
+            else None,
             "sort": sort,
             "start-at": start_at,
             "end-at": end_at,
@@ -884,7 +886,7 @@ class Account(TastytradeJsonDataclass):
         orders = []
         while True:
             response = session.client.get(
-                f"{session.base_url}/accounts/{self.account_number}/orders",
+                f"/accounts/{self.account_number}/orders",
                 params={
                     k: v  # type: ignore
                     for k, v in params.items()
@@ -927,10 +929,7 @@ class Account(TastytradeJsonDataclass):
         orders = []
         while True:
             response = session.client.get(
-                (
-                    f"{session.base_url}/accounts/{self.account_number}"
-                    f"/complex-orders"
-                ),
+                f"/accounts/{self.account_number}/complex-orders",
                 params={k: v for k, v in params.items() if v is not None},
             )
             validate_response(response)

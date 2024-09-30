@@ -22,7 +22,7 @@ def symbol_search(session: Session, symbol: str) -> List[SymbolData]:
     :param symbol: search phrase
     """
     symbol = symbol.replace("/", "%2F")
-    response = session.client.get(f"{session.base_url}/symbols/search/" f"{symbol}")
+    response = session.client.get(f"/symbols/search/{symbol}")
     if response.status_code // 100 != 2:
         # here it doesn't really make sense to throw an exception
         return []

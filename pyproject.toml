@@ -1,6 +1,6 @@
 [project]
 name = "tastytrade"
-version = "8.4"
+version = "8.5"
 description = "An unofficial SDK for Tastytrade!"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -14,7 +14,6 @@ dependencies = [
     "httpx>=0.27.2",
     "pandas-market-calendars>=4.4.1",
     "pydantic>=2.9.2",
-    "requests>=2.32.3",
     "websockets>=13.1",
 ]
 
@@ -31,7 +30,6 @@ dev-dependencies = [
     "ruff>=0.6.7",
     "types-pytz>=2024.2.0.20240913",
     "types-requests>=2.32.0.20240914",
-    "jupyter>=1.1.1",
 ]
 
 [tool.setuptools.package-data]
