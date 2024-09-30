@@ -14,6 +14,7 @@ class Summary(Event):
 
     Before opening the bidding, the values are reset to N/A or NaN.
     """
+
     #: symbol of this event
     eventSymbol: str
     #: time of this event

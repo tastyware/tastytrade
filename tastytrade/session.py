@@ -3,9 +3,8 @@ from typing import Any, Dict, Optional
 import requests
 from fake_useragent import UserAgent  # type: ignore
 
-from tastytrade import API_URL, CERT_URL
-from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
-                              validate_response)
+from tastytrade import API_URL, BACKTEST_URL, CERT_URL
+from tastytrade.utils import TastytradeError, TastytradeJsonDataclass, validate_response
 
 
 class TwoFactorInfo(TastytradeJsonDataclass):
@@ -33,6 +32,7 @@ class Session:
     :param dxfeed_tos_compliant:
         whether to use the dxfeed TOS-compliant API endpoint for the streamer
     """
+
     def __init__(
         self,
         login: str,
@@ -41,64 +41,73 @@ class Session:
         remember_token: Optional[str] = None,
         is_test: bool = False,
         two_factor_authentication: Optional[str] = None,
-        dxfeed_tos_compliant: bool = False
+        dxfeed_tos_compliant: bool = False,
     ):
-        body = {
-            'login': login,
-            'remember-me': remember_me
-        }
+        body = {"login": login, "remember-me": remember_me}
         if password is not None:
-            body['password'] = password
+            body["password"] = password
         elif remember_token is not None:
-            body['remember-token'] = remember_token
+            body["remember-token"] = remember_token
         else:
-            raise TastytradeError('You must provide a password or remember '
-                                  'token to log in.')
+            raise TastytradeError(
+                "You must provide a password or remember " "token to log in."
+            )
         # The base url to use for API requests
         self.base_url = CERT_URL if is_test else API_URL
         #: Whether this is a cert or real session
         self.is_test = is_test
         # The headers to use for API requests
         headers = {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'User-Agent': UserAgent().random
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "User-Agent": UserAgent().random,
         }
         # Set client for requests
         self.client = requests.Session()
         self.client.headers.update(headers)
         if two_factor_authentication is not None:
             response = self.client.post(
-                f'{self.base_url}/sessions',
+                f"{self.base_url}/sessions",
                 json=body,
-                headers={'X-Tastyworks-OTP': two_factor_authentication}
+                headers={"X-Tastyworks-OTP": two_factor_authentication},
             )
         else:
-            response = self.client.post(
-                f'{self.base_url}/sessions',
-                json=body
-            )
+            response = self.client.post(f"{self.base_url}/sessions", json=body)
         validate_response(response)  # throws exception if not 200
 
         json = response.json()
         #: The user dict returned by the API; contains basic user information
-        self.user = json['data']['user']
+        self.user = json["data"]["user"]
         #: The session token used to authenticate requests
-        self.session_token = json['data']['session-token']
+        self.session_token = json["data"]["session-token"]
         #: A single-use token which can be used to login without a password
-        self.remember_token = json['data'].get('remember-token')
-        self.client.headers.update({'Authorization': self.session_token})
+        self.remember_token = json["data"].get("remember-token")
+        self.client.headers.update({"Authorization": self.session_token})
         self.validate()
 
         # Pull streamer tokens and urls
-        url = ('/api-quote-tokens'
-               if dxfeed_tos_compliant or is_test
-               else '/quote-streamer-tokens')
+        url = (
+            "/api-quote-tokens"
+            if dxfeed_tos_compliant or is_test
+            else "/quote-streamer-tokens"
+        )
         data = self.get(url)
         #: Auth token for dxfeed websocket
-        self.streamer_token = data['token']
+        self.streamer_token = data["token"]
         #: URL for dxfeed websocket
-        self.dxlink_url = data['dxlink-url']
+        self.dxlink_url = data["dxlink-url"]
+        if not is_test:
+            # Pull backtest token
+            response = requests.post(
+                f"{BACKTEST_URL}/sessions",
+                headers=headers,
+                json={"tastytradeToken": self.session_token},
+            )
+            validate_response(response)
+            #: Token used for backtesting
+            self.backtest_token = response.json()["token"]
+        else:
+            self.backtest_token = None
 
     def get(self, url, **kwargs) -> Dict[str, Any]:
         response = self.client.get(self.base_url + url, timeout=30, **kwargs)
@@ -116,12 +125,9 @@ class Session:
         response = self.client.put(self.base_url + url, **kwargs)
         return self._validate_and_parse(response)
 
-    def _validate_and_parse(
-        self,
-        response: requests.Response
-    ) -> Dict[str, Any]:
+    def _validate_and_parse(self, response: requests.Response) -> Dict[str, Any]:
         validate_response(response)
-        return response.json()['data']
+        return response.json()["data"]
 
     def validate(self) -> bool:
         """
@@ -129,15 +135,15 @@ class Session:
 
         :return: True if the session is valid and False otherwise.
         """
-        response = self.client.post(f'{self.base_url}/sessions/validate')
-        return (response.status_code // 100 == 2)
+        response = self.client.post(f"{self.base_url}/sessions/validate")
+        return response.status_code // 100 == 2
 
     def destroy(self) -> None:
         """
         Sends a API request to log out of the existing session. This will
         invalidate the current session token and login.
         """
-        self.delete('/sessions')
+        self.delete("/sessions")
 
     def get_customer(self) -> Dict[str, Any]:
         """
@@ -145,12 +151,12 @@ class Session:
 
         :return: a Tastytrade 'Customer' object in JSON format.
         """
-        data = self.get('/customers/me')
+        data = self.get("/customers/me")
         return data
 
     def get_2fa_info(self) -> TwoFactorInfo:
         """
         Gets the 2FA info for the current user.
         """
-        data = self.get('/users/me/two-factor-method')
+        data = self.get("/users/me/two-factor-method")
         return TwoFactorInfo(**data)

@@ -4,23 +4,36 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
-from tastytrade.order import (InstrumentType, NewComplexOrder, NewOrder,
-                              OrderAction, OrderStatus, PlacedComplexOrder,
-                              PlacedOrder, PlacedOrderResponse, PriceEffect)
+from tastytrade.order import (
+    InstrumentType,
+    NewComplexOrder,
+    NewOrder,
+    OrderAction,
+    OrderStatus,
+    PlacedComplexOrder,
+    PlacedOrder,
+    PlacedOrderResponse,
+    PriceEffect,
+)
 from tastytrade.session import Session
-from tastytrade.utils import (TastytradeError, TastytradeJsonDataclass,
-                              today_in_new_york, validate_response)
+from tastytrade.utils import (
+    TastytradeError,
+    TastytradeJsonDataclass,
+    today_in_new_york,
+    validate_response,
+)
 
 
 class EmptyDict(BaseModel):
     class Config:
-        extra = 'forbid'
+        extra = "forbid"
 
 
 class AccountBalance(TastytradeJsonDataclass):
     """
     Dataclass containing account balance information.
     """
+
     account_number: str
     cash_balance: Decimal
     long_equity_value: Decimal
@@ -76,6 +89,7 @@ class AccountBalanceSnapshot(TastytradeJsonDataclass):
     """
     Dataclass containing account balance for a moment in time (snapshot).
     """
+
     account_number: str
     cash_balance: Decimal
     long_equity_value: Decimal
@@ -122,6 +136,7 @@ class CurrentPosition(TastytradeJsonDataclass):
     Dataclass containing imformation about an individual position in a
     portfolio.
     """
+
     account_number: str
     symbol: str
     instrument_type: InstrumentType
@@ -161,6 +176,7 @@ class Lot(TastytradeJsonDataclass):
     """
     Dataclass containing information about the lot of a position.
     """
+
     id: str
     transaction_id: int
     quantity: Decimal
@@ -175,6 +191,7 @@ class MarginReportEntry(TastytradeJsonDataclass):
     Dataclass containing an individual entry (relating to a specific position)
     as part of the overall margin report.
     """
+
     description: str
     code: str
     buying_power: Decimal
@@ -200,6 +217,7 @@ class MarginReport(TastytradeJsonDataclass):
     """
     Dataclass containing an overall portfolio margin report.
     """
+
     account_number: str
     description: str
     margin_calculation_type: str
@@ -228,6 +246,7 @@ class MarginRequirement(TastytradeJsonDataclass):
     """
     Dataclass containing general margin requirement information for a symbol.
     """
+
     underlying_symbol: str
     long_equity_initial: Decimal
     short_equity_initial: Decimal
@@ -245,6 +264,7 @@ class NetLiqOhlc(TastytradeJsonDataclass):
     Dataclass containing historical net liquidation data in OHLC format
     (open, high, low, close), with a timestamp.
     """
+
     open: Decimal
     high: Decimal
     low: Decimal
@@ -264,6 +284,7 @@ class PositionLimit(TastytradeJsonDataclass):
     """
     Dataclass containing information about general account limits.
     """
+
     account_number: str
     equity_order_size: int
     equity_option_order_size: int
@@ -281,6 +302,7 @@ class TradingStatus(TastytradeJsonDataclass):
     Dataclass containing information about an account's trading status, such
     as what types of trades are allowed (e.g. margin, crypto, futures)
     """
+
     account_number: str
     equities_margin_calculation_type: str
     fee_schedule_name: str
@@ -324,6 +346,7 @@ class Transaction(TastytradeJsonDataclass):
     """
     Dataclass containing information about a past transaction.
     """
+
     id: int
     account_number: str
     transaction_type: str
@@ -377,6 +400,7 @@ class Account(TastytradeJsonDataclass):
     methods for retrieving information about the account, placing orders,
     and retrieving past transactions.
     """
+
     account_number: str
     opened_at: datetime
     nickname: str
@@ -403,11 +427,7 @@ class Account(TastytradeJsonDataclass):
     submitting_user_id: Optional[str] = None
 
     @classmethod
-    def get_accounts(
-        cls,
-        session: Session,
-        include_closed=False
-    ) -> List['Account']:
+    def get_accounts(cls, session: Session, include_closed=False) -> List["Account"]:
         """
         Gets all trading accounts associated with the Tastytrade user.
 
@@ -415,22 +435,22 @@ class Account(TastytradeJsonDataclass):
         :param include_closed:
             whether to include closed accounts in the results (default False)
         """
-        data = session.get('/customers/me/accounts')
+        data = session.get("/customers/me/accounts")
         return [
-            cls(**i['account'])
-            for i in data['items']
-            if include_closed or not i['account']['is-closed']
+            cls(**i["account"])
+            for i in data["items"]
+            if include_closed or not i["account"]["is-closed"]
         ]
 
     @classmethod
-    def get_account(cls, session: Session, account_number: str) -> 'Account':
+    def get_account(cls, session: Session, account_number: str) -> "Account":
         """
         Returns the Tastytrade account associated with the given account ID.
 
         :param session: the session to use for the request.
         :param account_number: the account ID to get.
         """
-        data = session.get(f'/customers/me/accounts/{account_number}')
+        data = session.get(f"/customers/me/accounts/{account_number}")
         return cls(**data)
 
     def get_trading_status(self, session: Session) -> TradingStatus:
@@ -439,7 +459,7 @@ class Account(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         """
-        data = session.get(f'/accounts/{self.account_number}/trading-status')
+        data = session.get(f"/accounts/{self.account_number}/trading-status")
         return TradingStatus(**data)
 
     def get_balances(self, session: Session) -> AccountBalance:
@@ -448,14 +468,14 @@ class Account(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         """
-        data = session.get(f'/accounts/{self.account_number}/balances')
+        data = session.get(f"/accounts/{self.account_number}/balances")
         return AccountBalance(**data)
 
     def get_balance_snapshots(
         self,
         session: Session,
         snapshot_date: Optional[date] = None,
-        time_of_day: Optional[str] = None
+        time_of_day: Optional[str] = None,
     ) -> List[AccountBalanceSnapshot]:
         """
         Returns a list of two balance snapshots. The first one is the
@@ -470,15 +490,12 @@ class Account(TastytradeJsonDataclass):
         :param time_of_day:
             the time of day of the snapshot to get, either 'EOD' or 'BOD'.
         """
-        params = {
-            'snapshot-date': snapshot_date,
-            'time-of-day': time_of_day
-        }
+        params = {"snapshot-date": snapshot_date, "time-of-day": time_of_day}
         data = session.get(
-            f'/accounts/{self.account_number}/balance-snapshots',
-            params={k: v for k, v in params.items() if v is not None}
+            f"/accounts/{self.account_number}/balance-snapshots",
+            params={k: v for k, v in params.items() if v is not None},
         )
-        return [AccountBalanceSnapshot(**i) for i in data['items']]
+        return [AccountBalanceSnapshot(**i) for i in data["items"]]
 
     def get_positions(
         self,
@@ -490,7 +507,7 @@ class Account(TastytradeJsonDataclass):
         underlying_product_code: Optional[str] = None,
         partition_keys: Optional[List[str]] = None,
         net_positions: Optional[bool] = None,
-        include_marks: Optional[bool] = None
+        include_marks: Optional[bool] = None,
     ) -> List[CurrentPosition]:
         """
         Get the current positions of the account.
@@ -510,27 +527,27 @@ class Account(TastytradeJsonDataclass):
             include current quote mark (note: can decrease performance).
         """
         params = {
-            'underlying-symbol[]': underlying_symbols,
-            'symbol': symbol,
-            'instrument-type': instrument_type,
-            'include-closed-positions': include_closed,
-            'underlying-product-code': underlying_product_code,
-            'partition-keys[]': partition_keys,
-            'net-positions': net_positions,
-            'include-marks': include_marks
+            "underlying-symbol[]": underlying_symbols,
+            "symbol": symbol,
+            "instrument-type": instrument_type,
+            "include-closed-positions": include_closed,
+            "underlying-product-code": underlying_product_code,
+            "partition-keys[]": partition_keys,
+            "net-positions": net_positions,
+            "include-marks": include_marks,
         }
         data = session.get(
-            f'/accounts/{self.account_number}/positions',
-            params={k: v for k, v in params.items() if v is not None}
+            f"/accounts/{self.account_number}/positions",
+            params={k: v for k, v in params.items() if v is not None},
         )
-        return [CurrentPosition(**i) for i in data['items']]
+        return [CurrentPosition(**i) for i in data["items"]]
 
     def get_history(
         self,
         session: Session,
         per_page: int = 250,
         page_offset: Optional[int] = None,
-        sort: str = 'Desc',
+        sort: str = "Desc",
         type: Optional[str] = None,
         types: Optional[List[str]] = None,
         sub_types: Optional[List[str]] = None,
@@ -543,7 +560,7 @@ class Account(TastytradeJsonDataclass):
         partition_key: Optional[str] = None,
         futures_symbol: Optional[str] = None,
         start_at: Optional[datetime] = None,
-        end_at: Optional[datetime] = None
+        end_at: Optional[datetime] = None,
     ) -> List[Transaction]:
         """
         Get transaction history of the account.
@@ -578,46 +595,45 @@ class Account(TastytradeJsonDataclass):
             page_offset = 0
             paginate = True
         params = {
-            'per-page': per_page,
-            'page-offset': page_offset,
-            'sort': sort,
-            'type': type,
-            'types[]': types,
-            'sub-type[]': sub_types,
-            'start-date': start_date,
-            'end-date': end_date,
-            'instrument-type': instrument_type,
-            'symbol': symbol,
-            'underlying-symbol': underlying_symbol,
-            'action': action,
-            'partition-key': partition_key,
-            'futures-symbol': futures_symbol,
-            'start-at': start_at,
-            'end-at': end_at
+            "per-page": per_page,
+            "page-offset": page_offset,
+            "sort": sort,
+            "type": type,
+            "types[]": types,
+            "sub-type[]": sub_types,
+            "start-date": start_date,
+            "end-date": end_date,
+            "instrument-type": instrument_type,
+            "symbol": symbol,
+            "underlying-symbol": underlying_symbol,
+            "action": action,
+            "partition-key": partition_key,
+            "futures-symbol": futures_symbol,
+            "start-at": start_at,
+            "end-at": end_at,
         }
         # loop through pages and get all transactions
         txns = []
         while True:
             response = session.client.get(
-                (f'{session.base_url}/accounts/{self.account_number}'
-                 f'/transactions'),
+                (f"{session.base_url}/accounts/{self.account_number}" f"/transactions"),
                 params={
                     k: v  # type: ignore
                     for k, v in params.items()
                     if v is not None
-                }
+                },
             )
             validate_response(response)
             json = response.json()
-            txns.extend([Transaction(**i) for i in json['data']['items']])
+            txns.extend([Transaction(**i) for i in json["data"]["items"]])
             # handle pagination
-            pagination = json['pagination']
+            pagination = json["pagination"]
             if (
-                pagination['page-offset'] >= pagination['total-pages'] - 1 or
-                not paginate
+                pagination["page-offset"] >= pagination["total-pages"] - 1
+                or not paginate
             ):
                 break
-            params['page-offset'] += 1  # type: ignore
+            params["page-offset"] += 1  # type: ignore
 
         return txns
 
@@ -628,14 +644,11 @@ class Account(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param id: the ID of the transaction to fetch.
         """
-        data = session.get(f'/accounts/{self.account_number}/transactions/'
-                           f'{id}')
+        data = session.get(f"/accounts/{self.account_number}/transactions/" f"{id}")
         return Transaction(**data)
 
     def get_total_fees(
-        self,
-        session: Session,
-        date: date = today_in_new_york()
+        self, session: Session, date: date = today_in_new_york()
     ) -> FeesInfo:
         """
         Get the total fees for a given date.
@@ -644,8 +657,8 @@ class Account(TastytradeJsonDataclass):
         :param date: the date to get fees for.
         """
         data = session.get(
-            f'/accounts/{self.account_number}/transactions/total-fees',
-            params={'date': date}
+            f"/accounts/{self.account_number}/transactions/total-fees",
+            params={"date": date},
         )
         return FeesInfo(**data)
 
@@ -653,7 +666,7 @@ class Account(TastytradeJsonDataclass):
         self,
         session: Session,
         time_back: Optional[str] = None,
-        start_time: Optional[datetime] = None
+        start_time: Optional[datetime] = None,
     ) -> List[NetLiqOhlc]:
         """
         Returns a list of account net liquidating value snapshots over the
@@ -672,17 +685,16 @@ class Account(TastytradeJsonDataclass):
         params = {}
         if start_time:
             # format to Tastytrade DateTime format
-            params = {'start-time': start_time.strftime('%Y-%m-%dT%H:%M:%SZ')}
+            params = {"start-time": start_time.strftime("%Y-%m-%dT%H:%M:%SZ")}
         elif not time_back:
-            msg = 'Either time_back or start_time must be specified.'
+            msg = "Either time_back or start_time must be specified."
             raise TastytradeError(msg)
         else:
-            params = {'time-back': time_back}
+            params = {"time-back": time_back}
         data = session.get(
-            f'/accounts/{self.account_number}/net-liq/history',
-            params=params
+            f"/accounts/{self.account_number}/net-liq/history", params=params
         )
-        return [NetLiqOhlc(**i) for i in data['items']]
+        return [NetLiqOhlc(**i) for i in data["items"]]
 
     def get_position_limit(self, session: Session) -> PositionLimit:
         """
@@ -690,13 +702,11 @@ class Account(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         """
-        data = session.get(f'/accounts/{self.account_number}/position-limit')
+        data = session.get(f"/accounts/{self.account_number}/position-limit")
         return PositionLimit(**data)
 
     def get_effective_margin_requirements(
-        self,
-        session: Session,
-        symbol: str
+        self, session: Session, symbol: str
     ) -> MarginRequirement:
         """
         Get the effective margin requirements for a given symbol.
@@ -706,9 +716,11 @@ class Account(TastytradeJsonDataclass):
         :param symbol: the symbol to get margin requirements for.
         """
         if symbol:
-            symbol = symbol.replace('/', '%2F')
-        data = session.get(f'/accounts/{self.account_number}/margin-'
-                           f'requirements/{symbol}/effective')
+            symbol = symbol.replace("/", "%2F")
+        data = session.get(
+            f"/accounts/{self.account_number}/margin-"
+            f"requirements/{symbol}/effective"
+        )
         return MarginRequirement(**data)
 
     def get_margin_requirements(self, session: Session) -> MarginReport:
@@ -718,8 +730,7 @@ class Account(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         """
-        data = session.get(f'/margin/accounts/{self.account_number}'
-                           f'/requirements')
+        data = session.get(f"/margin/accounts/{self.account_number}" f"/requirements")
         return MarginReport(**data)
 
     def get_live_orders(self, session: Session) -> List[PlacedOrder]:
@@ -728,35 +739,28 @@ class Account(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         """
-        data = session.get(f'/accounts/{self.account_number}/orders/live')
-        return [PlacedOrder(**i) for i in data['items']]
+        data = session.get(f"/accounts/{self.account_number}/orders/live")
+        return [PlacedOrder(**i) for i in data["items"]]
 
-    def get_live_complex_orders(
-        self,
-        session: Session
-    ) -> List[PlacedComplexOrder]:
+    def get_live_complex_orders(self, session: Session) -> List[PlacedComplexOrder]:
         """
         Get complex orders placed today for the account.
 
         :param session: the session to use for the request.
         """
-        data = session.get(f'/accounts/{self.account_number}/complex-'
-                           f'orders/live')
-        return [PlacedComplexOrder(**i) for i in data['items']]
+        data = session.get(f"/accounts/{self.account_number}/complex-" f"orders/live")
+        return [PlacedComplexOrder(**i) for i in data["items"]]
 
-    def get_complex_order(
-        self,
-        session: Session,
-        order_id: int
-    ) -> PlacedComplexOrder:
+    def get_complex_order(self, session: Session, order_id: int) -> PlacedComplexOrder:
         """
         Gets a complex order with the given ID.
 
         :param session: the session to use for the request.
         :param order_id: the ID of the order to fetch.
         """
-        data = session.get(f'/accounts/{self.account_number}/complex-'
-                           f'orders/{order_id}')
+        data = session.get(
+            f"/accounts/{self.account_number}/complex-" f"orders/{order_id}"
+        )
         return PlacedComplexOrder(**data)
 
     def get_order(self, session: Session, order_id: int) -> PlacedOrder:
@@ -766,8 +770,7 @@ class Account(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param order_id: the ID of the order to fetch.
         """
-        data = session.get(f'/accounts/{self.account_number}/orders'
-                           f'/{order_id}')
+        data = session.get(f"/accounts/{self.account_number}/orders" f"/{order_id}")
         return PlacedOrder(**data)
 
     def delete_complex_order(self, session: Session, order_id: int) -> None:
@@ -777,8 +780,7 @@ class Account(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param order_id: the ID of the order to delete.
         """
-        session.delete(f'/accounts/{self.account_number}/complex-'
-                       f'orders/{order_id}')
+        session.delete(f"/accounts/{self.account_number}/complex-" f"orders/{order_id}")
 
     def delete_order(self, session: Session, order_id: int) -> None:
         """
@@ -787,7 +789,7 @@ class Account(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param order_id: the ID of the order to delete.
         """
-        session.delete(f'/accounts/{self.account_number}/orders/{order_id}')
+        session.delete(f"/accounts/{self.account_number}/orders/{order_id}")
 
     def get_order_history(
         self,
@@ -802,7 +804,7 @@ class Account(TastytradeJsonDataclass):
         underlying_instrument_type: Optional[InstrumentType] = None,
         sort: Optional[str] = None,
         start_at: Optional[datetime] = None,
-        end_at: Optional[datetime] = None
+        end_at: Optional[datetime] = None,
     ) -> List[PlacedOrder]:
         """
         Get order history of the account.
@@ -831,48 +833,45 @@ class Account(TastytradeJsonDataclass):
             page_offset = 0
             paginate = True
         params = {
-            'per-page': per_page,
-            'page-offset': page_offset,
-            'start-date': start_date,
-            'end-date': end_date,
-            'underlying-symbol': underlying_symbol,
-            'status[]': statuses,
-            'futures-symbol': futures_symbol,
-            'underlying-instrument-type': underlying_instrument_type,
-            'sort': sort,
-            'start-at': start_at,
-            'end-at': end_at
+            "per-page": per_page,
+            "page-offset": page_offset,
+            "start-date": start_date,
+            "end-date": end_date,
+            "underlying-symbol": underlying_symbol,
+            "status[]": statuses,
+            "futures-symbol": futures_symbol,
+            "underlying-instrument-type": underlying_instrument_type,
+            "sort": sort,
+            "start-at": start_at,
+            "end-at": end_at,
         }
         # loop through pages and get all transactions
         orders = []
         while True:
             response = session.client.get(
-                f'{session.base_url}/accounts/{self.account_number}/orders',
+                f"{session.base_url}/accounts/{self.account_number}/orders",
                 params={
                     k: v  # type: ignore
                     for k, v in params.items()
                     if v is not None
-                }
+                },
             )
             validate_response(response)
             json = response.json()
-            orders.extend([PlacedOrder(**i) for i in json['data']['items']])
+            orders.extend([PlacedOrder(**i) for i in json["data"]["items"]])
             # handle pagination
-            pagination = json['pagination']
+            pagination = json["pagination"]
             if (
-                pagination['page-offset'] >= pagination['total-pages'] - 1 or
-                not paginate
+                pagination["page-offset"] >= pagination["total-pages"] - 1
+                or not paginate
             ):
                 break
-            params['page-offset'] += 1  # type: ignore
+            params["page-offset"] += 1  # type: ignore
 
         return orders
 
     def get_complex_order_history(
-        self,
-        session: Session,
-        per_page: int = 50,
-        page_offset: Optional[int] = None
+        self, session: Session, per_page: int = 50, page_offset: Optional[int] = None
     ) -> List[PlacedComplexOrder]:
         """
         Get order history of the account.
@@ -888,39 +887,33 @@ class Account(TastytradeJsonDataclass):
         if page_offset is None:
             page_offset = 0
             paginate = True
-        params = {
-            'per-page': per_page,
-            'page-offset': page_offset
-        }
+        params = {"per-page": per_page, "page-offset": page_offset}
         # loop through pages and get all transactions
         orders = []
         while True:
             response = session.client.get(
-                (f'{session.base_url}/accounts/{self.account_number}'
-                 f'/complex-orders'),
-                params={k: v for k, v in params.items() if v is not None}
+                (
+                    f"{session.base_url}/accounts/{self.account_number}"
+                    f"/complex-orders"
+                ),
+                params={k: v for k, v in params.items() if v is not None},
             )
             validate_response(response)
             json = response.json()
-            orders.extend(
-                [PlacedComplexOrder(**i) for i in json['data']['items']]
-            )
+            orders.extend([PlacedComplexOrder(**i) for i in json["data"]["items"]])
             # handle pagination
-            pagination = json['pagination']
+            pagination = json["pagination"]
             if (
-                pagination['page-offset'] >= pagination['total-pages'] - 1 or
-                not paginate
+                pagination["page-offset"] >= pagination["total-pages"] - 1
+                or not paginate
             ):
                 break
-            params['page-offset'] += 1  # type: ignore
+            params["page-offset"] += 1  # type: ignore
 
         return orders
 
     def place_order(
-        self,
-        session: Session,
-        order: NewOrder,
-        dry_run: bool = True
+        self, session: Session, order: NewOrder, dry_run: bool = True
     ) -> PlacedOrderResponse:
         """
         Place the given order.
@@ -929,18 +922,15 @@ class Account(TastytradeJsonDataclass):
         :param order: the order to place.
         :param dry_run: whether this is a test order or not.
         """
-        url = f'/accounts/{self.account_number}/orders'
+        url = f"/accounts/{self.account_number}/orders"
         if dry_run:
-            url += '/dry-run'
+            url += "/dry-run"
         json = order.model_dump_json(exclude_none=True, by_alias=True)
         data = session.post(url, data=json)
         return PlacedOrderResponse(**data)
 
     def place_complex_order(
-        self,
-        session: Session,
-        order: NewComplexOrder,
-        dry_run: bool = True
+        self, session: Session, order: NewComplexOrder, dry_run: bool = True
     ) -> PlacedOrderResponse:
         """
         Place the given order.
@@ -949,18 +939,15 @@ class Account(TastytradeJsonDataclass):
         :param order: the order to place.
         :param dry_run: whether this is a test order or not.
         """
-        url = f'/accounts/{self.account_number}/complex-orders'
+        url = f"/accounts/{self.account_number}/complex-orders"
         if dry_run:
-            url += '/dry-run'
+            url += "/dry-run"
         json = order.model_dump_json(exclude_none=True, by_alias=True)
         data = session.post(url, data=json)
         return PlacedOrderResponse(**data)
 
     def replace_order(
-        self,
-        session: Session,
-        old_order_id: int,
-        new_order: NewOrder
+        self, session: Session, old_order_id: int, new_order: NewOrder
     ) -> PlacedOrder:
         """
         Replace an order with a new order with different characteristics (but
@@ -971,11 +958,9 @@ class Account(TastytradeJsonDataclass):
         :param new_order: the new order to replace the old order with.
         """
         data = session.put(
-            f'/accounts/{self.account_number}/orders/{old_order_id}',
+            f"/accounts/{self.account_number}/orders/{old_order_id}",
             data=new_order.model_dump_json(
-                exclude={'legs'},
-                exclude_none=True,
-                by_alias=True
-            )
+                exclude={"legs"}, exclude_none=True, by_alias=True
+            ),
         )
         return PlacedOrder(**data)

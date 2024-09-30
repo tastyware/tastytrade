@@ -12,27 +12,42 @@ import websockets
 from websockets import WebSocketClientProtocol
 
 from tastytrade import logger
-from tastytrade.account import (Account, AccountBalance, CurrentPosition,
-                                TradingStatus)
-from tastytrade.dxfeed import (Candle, Event, EventType, Greeks, Profile,
-                               Quote, Summary, TheoPrice, TimeAndSale, Trade,
-                               Underlying)
-from tastytrade.order import (InstrumentType, OrderChain, PlacedComplexOrder,
-                              PlacedOrder, PriceEffect)
+from tastytrade.account import Account, AccountBalance, CurrentPosition, TradingStatus
+from tastytrade.dxfeed import (
+    Candle,
+    Event,
+    EventType,
+    Greeks,
+    Profile,
+    Quote,
+    Summary,
+    TheoPrice,
+    TimeAndSale,
+    Trade,
+    Underlying,
+)
+from tastytrade.order import (
+    InstrumentType,
+    OrderChain,
+    PlacedComplexOrder,
+    PlacedOrder,
+    PriceEffect,
+)
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeError, TastytradeJsonDataclass
 from tastytrade.watchlists import Watchlist
 
-CERT_STREAMER_URL = 'wss://streamer.cert.tastyworks.com'
-STREAMER_URL = 'wss://streamer.tastyworks.com'
+CERT_STREAMER_URL = "wss://streamer.cert.tastyworks.com"
+STREAMER_URL = "wss://streamer.tastyworks.com"
 
-DXLINK_VERSION = '0.1-js/1.0.0-beta.4'
+DXLINK_VERSION = "0.1-js/1.0.0-beta.4"
 
 
 class QuoteAlert(TastytradeJsonDataclass):
     """
     Dataclass that contains information about a quote alert
     """
+
     user_external_id: str
     symbol: str
     alert_external_id: str
@@ -52,6 +67,7 @@ class UnderlyingYearGainSummary(TastytradeJsonDataclass):
     Dataclass that contains information about the yearly gain
     or loss for an underlying
     """
+
     year: int
     account_number: str
     symbol: str
@@ -71,11 +87,12 @@ class SubscriptionType(str, Enum):
     This is an :class:`~enum.Enum` that contains the subscription types
     for the alert streamer.
     """
-    ACCOUNT = 'account-subscribe'  # may be 'connect' in the future
-    HEARTBEAT = 'heartbeat'
-    PUBLIC_WATCHLISTS = 'public-watchlists-subscribe'
-    QUOTE_ALERTS = 'quote-alerts-subscribe'
-    USER_MESSAGE = 'user-message-subscribe'
+
+    ACCOUNT = "account-subscribe"  # may be 'connect' in the future
+    HEARTBEAT = "heartbeat"
+    PUBLIC_WATCHLISTS = "public-watchlists-subscribe"
+    QUOTE_ALERTS = "quote-alerts-subscribe"
+    USER_MESSAGE = "user-message-subscribe"
 
 
 class AlertType(str, Enum):
@@ -83,15 +100,16 @@ class AlertType(str, Enum):
     This is an :class:`~enum.Enum` that contains the event types
     for the account streamer.
     """
-    ACCOUNT_BALANCE = 'AccountBalance'
-    COMPLEX_ORDER = 'ComplexOrder'
-    ORDER = 'Order'
-    ORDER_CHAIN = 'OrderChain'
-    POSITION = 'CurrentPosition'
-    QUOTE_ALERT = 'QuoteAlert'
-    TRADING_STATUS = 'TradingStatus'
-    UNDERLYING_SUMMARY = 'UnderlyingYearGainSummary'
-    WATCHLIST = 'PublicWatchlists'
+
+    ACCOUNT_BALANCE = "AccountBalance"
+    COMPLEX_ORDER = "ComplexOrder"
+    ORDER = "Order"
+    ORDER_CHAIN = "OrderChain"
+    POSITION = "CurrentPosition"
+    QUOTE_ALERT = "QuoteAlert"
+    TRADING_STATUS = "TradingStatus"
+    UNDERLYING_SUMMARY = "UnderlyingYearGainSummary"
+    WATCHLIST = "PublicWatchlists"
 
 
 class AlertStreamer:
@@ -119,12 +137,12 @@ class AlertStreamer:
                 print(data)
 
     """
+
     def __init__(self, session: Session):
         #: The active session used to initiate the streamer or make requests
         self.token: str = session.session_token
         #: The base url for the streamer websocket
-        self.base_url: str = (CERT_STREAMER_URL
-                              if session.is_test else STREAMER_URL)
+        self.base_url: str = CERT_STREAMER_URL if session.is_test else STREAMER_URL
 
         self._queues: Dict[AlertType, Queue] = defaultdict(Queue)
         self._websocket: Optional[WebSocketClientProtocol] = None
@@ -136,12 +154,12 @@ class AlertStreamer:
             await asyncio.sleep(0.1)
             time_out -= 1
             if time_out < 0:
-                raise TastytradeError('Connection timed out')
+                raise TastytradeError("Connection timed out")
 
         return self
 
     @classmethod
-    async def create(cls, session: Session) -> 'AlertStreamer':
+    async def create(cls, session: Session) -> "AlertStreamer":
         self = cls(session)
         return await self.__aenter__()
 
@@ -160,25 +178,23 @@ class AlertStreamer:
         Connect to the websocket server using the URL and authorization
         token provided during initialization.
         """
-        headers = {'Authorization': f'Bearer {self.token}'}
+        headers = {"Authorization": f"Bearer {self.token}"}
         async with websockets.connect(
-            self.base_url,
-            extra_headers=headers
+            self.base_url, extra_headers=headers
         ) as websocket:  # type: ignore
             self._websocket = websocket
             self._heartbeat_task = asyncio.create_task(self._heartbeat())
 
             while True:
                 raw_message = await self._websocket.recv()  # type: ignore
-                logger.debug('raw message: %s', raw_message)
+                logger.debug("raw message: %s", raw_message)
                 data = json.loads(raw_message)
-                type_str = data.get('type')
+                type_str = data.get("type")
                 if type_str is not None:
-                    await self._map_message(type_str, data['data'])
+                    await self._map_message(type_str, data["data"])
 
     async def listen(
-        self,
-        event_type: AlertType
+        self, event_type: AlertType
     ) -> AsyncIterator[
         Union[
             AccountBalance,
@@ -189,7 +205,7 @@ class AlertStreamer:
             QuoteAlert,
             TradingStatus,
             UnderlyingYearGainSummary,
-            Watchlist
+            Watchlist,
         ]
     ]:
         """
@@ -199,54 +215,35 @@ class AlertStreamer:
         while True:
             yield await self._queues[event_type].get()
 
-    async def _map_message(
-        self,
-        type_str: str,
-        data: dict
-    ):  # pragma: no cover
+    async def _map_message(self, type_str: str, data: dict):  # pragma: no cover
         """
         I'm not sure what the user-status messages look like,
         so they're absent.
         """
         if type_str == AlertType.ACCOUNT_BALANCE:
-            await self._queues[AlertType.ACCOUNT_BALANCE].put(
-                AccountBalance(**data)
-            )
+            await self._queues[AlertType.ACCOUNT_BALANCE].put(AccountBalance(**data))
         elif type_str == AlertType.POSITION:
-            await self._queues[AlertType.POSITION].put(
-                CurrentPosition(**data)
-            )
+            await self._queues[AlertType.POSITION].put(CurrentPosition(**data))
         elif type_str == AlertType.COMPLEX_ORDER:
-            await self._queues[AlertType.COMPLEX_ORDER].put(
-                PlacedComplexOrder(**data)
-            )
+            await self._queues[AlertType.COMPLEX_ORDER].put(PlacedComplexOrder(**data))
         elif type_str == AlertType.ORDER:
-            await self._queues[AlertType.ORDER].put(
-                PlacedOrder(**data)
-            )
+            await self._queues[AlertType.ORDER].put(PlacedOrder(**data))
         elif type_str == AlertType.ORDER_CHAIN:
-            await self._queues[AlertType.ORDER_CHAIN].put(
-                OrderChain(**data)
-            )
+            await self._queues[AlertType.ORDER_CHAIN].put(OrderChain(**data))
         elif type_str == AlertType.QUOTE_ALERT:
-            await self._queues[AlertType.QUOTE_ALERT].put(
-                QuoteAlert(**data)
-            )
+            await self._queues[AlertType.QUOTE_ALERT].put(QuoteAlert(**data))
         elif type_str == AlertType.TRADING_STATUS:
-            await self._queues[AlertType.TRADING_STATUS].put(
-                TradingStatus(**data)
-            )
+            await self._queues[AlertType.TRADING_STATUS].put(TradingStatus(**data))
         elif type_str == AlertType.UNDERLYING_SUMMARY:
             await self._queues[AlertType.UNDERLYING_SUMMARY].put(
                 UnderlyingYearGainSummary(**data)
             )
         elif type_str == AlertType.WATCHLIST:
-            await self._queues[AlertType.WATCHLIST].put(
-                Watchlist(**data)
-            )
+            await self._queues[AlertType.WATCHLIST].put(Watchlist(**data))
         else:
-            logger.error(f'Unknown message type {type_str}! Please open an '
-                         f'issue.\n{data}')
+            logger.error(
+                f"Unknown message type {type_str}! Please open an " f"issue.\n{data}"
+            )
 
     async def subscribe_accounts(self, accounts: List[Account]) -> None:
         """
@@ -255,8 +252,7 @@ class AlertStreamer:
         :param accounts: list of :class:`Account` to subscribe to updates for
         """
         await self._subscribe(
-            SubscriptionType.ACCOUNT,
-            [a.account_number for a in accounts]
+            SubscriptionType.ACCOUNT, [a.account_number for a in accounts]
         )
 
     async def subscribe_public_watchlists(self) -> None:
@@ -275,7 +271,7 @@ class AlertStreamer:
         """
         Subscribes to user-level messages, e.g. new account creation.
         """
-        external_id = session.user['external-id']
+        external_id = session.user["external-id"]
         await self._subscribe(SubscriptionType.USER_MESSAGE, value=external_id)
 
     async def _heartbeat(self) -> None:
@@ -284,26 +280,23 @@ class AlertStreamer:
         alive.
         """
         while True:
-            await self._subscribe(SubscriptionType.HEARTBEAT, '')
+            await self._subscribe(SubscriptionType.HEARTBEAT, "")
             # send the heartbeat every 10 seconds
             await asyncio.sleep(10)
 
     async def _subscribe(
         self,
         subscription: SubscriptionType,
-        value: Union[Optional[str], List[str]] = ''
+        value: Union[Optional[str], List[str]] = "",
     ) -> None:
         """
         Subscribes to a :class:`SubscriptionType`. Depending on the kind of
         subscription, the value parameter may be required.
         """
-        message: Dict[str, Any] = {
-            'auth-token': self.token,
-            'action': subscription
-        }
+        message: Dict[str, Any] = {"auth-token": self.token, "action": subscription}
         if value:
-            message['value'] = value
-        logger.debug('sending alert subscription: %s', message)
+            message["value"] = value
+        logger.debug("sending alert subscription: %s", message)
         await self._websocket.send(json.dumps(message))  # type: ignore
 
 
@@ -327,10 +320,9 @@ class DXLinkStreamer:
             print(quote)
 
     """
+
     def __init__(
-        self,
-        session: Session,
-        ssl_context: SSLContext = create_default_context()
+        self, session: Session, ssl_context: SSLContext = create_default_context()
     ):
         self._counter = 0
         self._lock: Lock = Lock()
@@ -346,8 +338,9 @@ class DXLinkStreamer:
             EventType.TRADE: 15,
             EventType.UNDERLYING: 17,
         }
-        self._subscription_state: Dict[EventType, str] = \
-            defaultdict(lambda: 'CHANNEL_CLOSED')
+        self._subscription_state: Dict[EventType, str] = defaultdict(
+            lambda: "CHANNEL_CLOSED"
+        )
 
         #: The unique client identifier received from the server
         self._session = session
@@ -364,16 +357,14 @@ class DXLinkStreamer:
             await asyncio.sleep(0.1)
             time_out -= 1
             if time_out < 0:
-                raise TastytradeError('Connection timed out')
+                raise TastytradeError("Connection timed out")
 
         return self
 
     @classmethod
     async def create(
-        cls,
-        session: Session,
-        ssl_context: SSLContext = create_default_context()
-    ) -> 'DXLinkStreamer':
+        cls, session: Session, ssl_context: SSLContext = create_default_context()
+    ) -> "DXLinkStreamer":
         self = cls(session, ssl_context=ssl_context)
         return await self.__aenter__()
 
@@ -394,8 +385,7 @@ class DXLinkStreamer:
         """
 
         async with websockets.connect(
-            self._wss_url,
-            ssl=self._ssl_context
+            self._wss_url, ssl=self._ssl_context
         ) as websocket:
             self._websocket = websocket
             await self._setup_connection()
@@ -405,44 +395,44 @@ class DXLinkStreamer:
                 raw_message = await self._websocket.recv()
                 message = json.loads(raw_message)
 
-                logger.debug('received: %s', message)
-                if message['type'] == 'SETUP':
+                logger.debug("received: %s", message)
+                if message["type"] == "SETUP":
                     await self._authenticate_connection()
-                elif message['type'] == 'AUTH_STATE':
-                    if message['state'] == 'AUTHORIZED':
+                elif message["type"] == "AUTH_STATE":
+                    if message["state"] == "AUTHORIZED":
                         self._authenticated = True
-                        self._heartbeat_task = \
-                            asyncio.create_task(self._heartbeat())
-                elif message['type'] == 'CHANNEL_OPENED':
-                    channel = next(k for k, v in self._channels.items()
-                                   if v == message['channel'])
-                    self._subscription_state[channel] = message['type']
-                elif message['type'] == 'CHANNEL_CLOSED':
-                    logger.debug('Channel closed: %s', message)
-                elif message['type'] == 'FEED_CONFIG':
-                    logger.debug('Feed configured: %s', message)
-                elif message['type'] == 'FEED_DATA':
-                    await self._map_message(message['data'])
-                elif message['type'] == 'KEEPALIVE':
+                        self._heartbeat_task = asyncio.create_task(self._heartbeat())
+                elif message["type"] == "CHANNEL_OPENED":
+                    channel = next(
+                        k for k, v in self._channels.items() if v == message["channel"]
+                    )
+                    self._subscription_state[channel] = message["type"]
+                elif message["type"] == "CHANNEL_CLOSED":
+                    logger.debug("Channel closed: %s", message)
+                elif message["type"] == "FEED_CONFIG":
+                    logger.debug("Feed configured: %s", message)
+                elif message["type"] == "FEED_DATA":
+                    await self._map_message(message["data"])
+                elif message["type"] == "KEEPALIVE":
                     pass
                 else:
-                    raise TastytradeError('Unknown message type:', message)
+                    raise TastytradeError("Unknown message type:", message)
 
     async def _setup_connection(self):
         message = {
-            'type': 'SETUP',
-            'channel': 0,
-            'keepaliveTimeout': 60,
-            'acceptKeepaliveTimeout': 60,
-            'version': DXLINK_VERSION
+            "type": "SETUP",
+            "channel": 0,
+            "keepaliveTimeout": 60,
+            "acceptKeepaliveTimeout": 60,
+            "version": DXLINK_VERSION,
         }
         await self._websocket.send(json.dumps(message))
 
     async def _authenticate_connection(self):
         message = {
-            'type': 'AUTH',
-            'channel': 0,
-            'token': self._auth_token,
+            "type": "AUTH",
+            "channel": 0,
+            "token": self._auth_token,
         }
         await self._websocket.send(json.dumps(message))
 
@@ -483,22 +473,15 @@ class DXLinkStreamer:
         Sends a keepalive message every 30 seconds to keep the connection
         alive.
         """
-        message = {
-            'type': 'KEEPALIVE',
-            'channel': 0
-        }
+        message = {"type": "KEEPALIVE", "channel": 0}
 
         while True:
-            logger.debug('sending keepalive message: %s', message)
+            logger.debug("sending keepalive message: %s", message)
             await self._websocket.send(json.dumps(message))
             # send the heartbeat every 30 seconds
             await asyncio.sleep(30)
 
-    async def subscribe(
-        self,
-        event_type: EventType,
-        symbols: List[str]
-    ) -> None:
+    async def subscribe(self, event_type: EventType, symbols: List[str]) -> None:
         """
         Subscribes to quotes for given list of symbols. Used for recurring data
         feeds.
@@ -507,15 +490,14 @@ class DXLinkStreamer:
         :param event_type: type of subscription to add
         :param symbols: list of symbols to subscribe for
         """
-        if self._subscription_state[event_type] != 'CHANNEL_OPENED':
+        if self._subscription_state[event_type] != "CHANNEL_OPENED":
             await self._channel_request(event_type)
         message = {
-            'type': 'FEED_SUBSCRIPTION',
-            'channel': self._channels[event_type],
-            'add': [{'symbol': symbol, 'type': event_type}
-                    for symbol in symbols]
+            "type": "FEED_SUBSCRIPTION",
+            "channel": self._channels[event_type],
+            "add": [{"symbol": symbol, "type": event_type} for symbol in symbols],
         }
-        logger.debug('sending subscription: %s', message)
+        logger.debug("sending subscription: %s", message)
         await self._websocket.send(json.dumps(message))
 
     async def cancel_channel(self, event_type: EventType) -> None:
@@ -525,43 +507,43 @@ class DXLinkStreamer:
         :param event_type: cancel the channel for this event
         """
         message = {
-            'type': 'CHANNEL_CANCEL',
-            'channel': self._channels[event_type],
+            "type": "CHANNEL_CANCEL",
+            "channel": self._channels[event_type],
         }
-        logger.debug('sending channel cancel: %s', message)
+        logger.debug("sending channel cancel: %s", message)
         await self._websocket.send(json.dumps(message))
 
     async def _channel_request(self, event_type: EventType) -> None:
         message = {
-            'type': 'CHANNEL_REQUEST',
-            'channel': self._channels[event_type],
-            'service': 'FEED',
-            'parameters': {
-                'contract': 'AUTO',
+            "type": "CHANNEL_REQUEST",
+            "channel": self._channels[event_type],
+            "service": "FEED",
+            "parameters": {
+                "contract": "AUTO",
             },
         }
-        logger.debug('sending subscription: %s', message)
+        logger.debug("sending subscription: %s", message)
         await self._websocket.send(json.dumps(message))
         time_out = 100
-        while not self._subscription_state[event_type] == 'CHANNEL_OPENED':
+        while not self._subscription_state[event_type] == "CHANNEL_OPENED":
             await asyncio.sleep(0.1)
             time_out -= 1
             if time_out <= 0:
-                raise TastytradeError('Subscription channel not opened')
+                raise TastytradeError("Subscription channel not opened")
         # setup the feed
         await self._channel_setup(event_type)
 
     async def _channel_setup(self, event_type: EventType) -> None:
         message = {
-            'type': 'FEED_SETUP',
-            'channel': self._channels[event_type],
-            'acceptAggregationPeriod': 10,
-            'acceptDataFormat': 'COMPACT'
+            "type": "FEED_SETUP",
+            "channel": self._channels[event_type],
+            "acceptAggregationPeriod": 10,
+            "acceptDataFormat": "COMPACT",
         }
 
         def dict_from_schema(event_class: Any):
             schema = event_class.schema()
-            return {schema['title']: list(schema['properties'].keys())}
+            return {schema["title"]: list(schema["properties"].keys())}
 
         if event_type == EventType.CANDLE:
             accept = dict_from_schema(Candle)
@@ -581,16 +563,12 @@ class DXLinkStreamer:
             accept = dict_from_schema(Trade)
         elif event_type == EventType.UNDERLYING:
             accept = dict_from_schema(Underlying)
-        message['acceptEventFields'] = accept
+        message["acceptEventFields"] = accept
         # send message
-        logger.debug('setting up feed: %s', message)
+        logger.debug("setting up feed: %s", message)
         await self._websocket.send(json.dumps(message))
 
-    async def unsubscribe(
-        self,
-        event_type: EventType,
-        symbols: List[str]
-    ) -> None:
+    async def unsubscribe(self, event_type: EventType, symbols: List[str]) -> None:
         """
         Removes existing subscription for given list of symbols.
         For candles, use :meth:`unsubscribe_candle` instead.
@@ -599,15 +577,16 @@ class DXLinkStreamer:
         :param symbols: list of symbols to unsubscribe from
         """
         if not self._authenticated:
-            raise TastytradeError('Stream not authenticated')
-        event_type_str = str(event_type).split('.')[1].capitalize()
+            raise TastytradeError("Stream not authenticated")
+        event_type_str = str(event_type).split(".")[1].capitalize()
         message = {
-            'type': 'FEED_SUBSCRIPTION',
-            'channel': self._channels[event_type],
-            'remove': [{'symbol': symbol, "type": event_type_str} for symbol in
-                       symbols]
+            "type": "FEED_SUBSCRIPTION",
+            "channel": self._channels[event_type],
+            "remove": [
+                {"symbol": symbol, "type": event_type_str} for symbol in symbols
+            ],
         }
-        logger.debug('sending subscription: %s', message)
+        logger.debug("sending subscription: %s", message)
         await self._websocket.send(json.dumps(message))
 
     async def subscribe_candle(
@@ -616,7 +595,7 @@ class DXLinkStreamer:
         interval: str,
         start_time: datetime,
         end_time: Optional[datetime] = None,
-        extended_trading_hours: bool = False
+        extended_trading_hours: bool = False,
     ) -> None:
         """
         Subscribes to time series data for the given symbol.
@@ -629,27 +608,33 @@ class DXLinkStreamer:
         :param end_time: ending time for the data range
         :param extended_trading_hours: whether to include extended trading
         """
-        if self._subscription_state[EventType.CANDLE] != 'CHANNEL_OPENED':
+        if self._subscription_state[EventType.CANDLE] != "CHANNEL_OPENED":
             await self._channel_request(EventType.CANDLE)
         message = {
-            'type': 'FEED_SUBSCRIPTION',
-            'channel': self._channels[EventType.CANDLE],
-            'add': [{
-                'symbol': (f'{ticker}{{={interval}}}' if extended_trading_hours
-                           else f'{ticker}{{={interval},tho=true}}'),
-                'type': 'Candle',
-                'fromTime': int(start_time.timestamp() * 1000)
-            } for ticker in symbols]
+            "type": "FEED_SUBSCRIPTION",
+            "channel": self._channels[EventType.CANDLE],
+            "add": [
+                {
+                    "symbol": (
+                        f"{ticker}{{={interval}}}"
+                        if extended_trading_hours
+                        else f"{ticker}{{={interval},tho=true}}"
+                    ),
+                    "type": "Candle",
+                    "fromTime": int(start_time.timestamp() * 1000),
+                }
+                for ticker in symbols
+            ],
         }
         if end_time is not None:
-            raise TastytradeError('End time no longer supported')
+            raise TastytradeError("End time no longer supported")
         await self._websocket.send(json.dumps(message))
 
     async def unsubscribe_candle(
         self,
         ticker: str,
         interval: Optional[str] = None,
-        extended_trading_hours: bool = False
+        extended_trading_hours: bool = False,
     ) -> None:
         """
         Removes existing subscription for a candle.
@@ -660,13 +645,18 @@ class DXLinkStreamer:
             whether candle to unsubscribe from contains extended trading hours
         """
         message = {
-            'type': 'FEED_SUBSCRIPTION',
-            'channel': self._channels[EventType.CANDLE],
-            'remove': [{
-                'symbol': (f'{ticker}{{={interval}}}' if extended_trading_hours
-                           else f'{ticker}{{={interval},tho=true}}'),
-                'type': 'Candle'
-            }]
+            "type": "FEED_SUBSCRIPTION",
+            "channel": self._channels[EventType.CANDLE],
+            "remove": [
+                {
+                    "symbol": (
+                        f"{ticker}{{={interval}}}"
+                        if extended_trading_hours
+                        else f"{ticker}{{={interval},tho=true}}"
+                    ),
+                    "type": "Candle",
+                }
+            ],
         }
         await self._websocket.send(json.dumps(message))
 
@@ -677,7 +667,7 @@ class DXLinkStreamer:
 
         :param message: raw JSON data from the websocket
         """
-        logger.debug('received message: %s', message)
+        logger.debug("received message: %s", message)
         if isinstance(message[0], str):
             msg_type = message[0]
         else:
@@ -721,4 +711,4 @@ class DXLinkStreamer:
             for underlying in underlyings:
                 await self._queues[EventType.UNDERLYING].put(underlying)
         else:
-            raise TastytradeError(f'Unknown message type received: {message}')
+            raise TastytradeError(f"Unknown message type received: {message}")

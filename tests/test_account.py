@@ -5,11 +5,17 @@ import pytest
 
 from tastytrade import Account, Session
 from tastytrade.instruments import Equity
-from tastytrade.order import (NewComplexOrder, NewOrder, OrderAction,
-                              OrderTimeInForce, OrderType, PriceEffect)
+from tastytrade.order import (
+    NewComplexOrder,
+    NewOrder,
+    OrderAction,
+    OrderTimeInForce,
+    OrderType,
+    PriceEffect,
+)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def account(session):
     return Account.get_accounts(session)[0]
 
@@ -64,16 +70,16 @@ def test_get_margin_requirements(session, account):
 
 
 def test_get_net_liquidating_value_history(session, account):
-    account.get_net_liquidating_value_history(session, time_back='1y')
+    account.get_net_liquidating_value_history(session, time_back="1y")
 
 
 def test_get_effective_margin_requirements(session, account):
-    account.get_effective_margin_requirements(session, 'SPY')
+    account.get_effective_margin_requirements(session, "SPY")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def new_order(session):
-    symbol = Equity.get_equity(session, 'F')
+    symbol = Equity.get_equity(session, "F")
     leg = symbol.build_leg(Decimal(1), OrderAction.BUY_TO_OPEN)
 
     return NewOrder(
@@ -81,11 +87,11 @@ def new_order(session):
         order_type=OrderType.LIMIT,
         legs=[leg],
         price=Decimal(3),
-        price_effect=PriceEffect.DEBIT
+        price_effect=PriceEffect.DEBIT,
     )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def placed_order(session, account, new_order):
     return account.place_order(session, new_order, dry_run=False).order
 
@@ -97,7 +103,7 @@ def test_get_order(session, account, placed_order):
 
 def test_replace_and_delete_order(session, account, new_order, placed_order):
     modified_order = new_order.model_copy()
-    modified_order.price = Decimal('3.01')
+    modified_order.price = Decimal("3.01")
     replaced = account.replace_order(session, placed_order.id, modified_order)
     sleep(3)
     account.delete_order(session, replaced.id)
@@ -148,7 +154,7 @@ def test_place_oco_order(session, account):
 
 
 def test_place_otoco_order(session, account):
-    symbol = Equity.get_equity(session, 'AAPL')
+    symbol = Equity.get_equity(session, "AAPL")
     opening = symbol.build_leg(Decimal(1), OrderAction.BUY_TO_OPEN)
     closing = symbol.build_leg(Decimal(1), OrderAction.SELL_TO_CLOSE)
     otoco = NewComplexOrder(
@@ -156,25 +162,25 @@ def test_place_otoco_order(session, account):
             time_in_force=OrderTimeInForce.DAY,
             order_type=OrderType.LIMIT,
             legs=[opening],
-            price=Decimal('100'),  # won't fill
-            price_effect=PriceEffect.DEBIT
+            price=Decimal("100"),  # won't fill
+            price_effect=PriceEffect.DEBIT,
         ),
         orders=[
             NewOrder(
                 time_in_force=OrderTimeInForce.GTC,
                 order_type=OrderType.LIMIT,
                 legs=[closing],
-                price=Decimal('400'),  # won't fill
-                price_effect=PriceEffect.CREDIT
+                price=Decimal("400"),  # won't fill
+                price_effect=PriceEffect.CREDIT,
             ),
             NewOrder(
                 time_in_force=OrderTimeInForce.GTC,
                 order_type=OrderType.STOP,
                 legs=[closing],
-                stop_trigger=Decimal('25'),  # won't fill
-                price_effect=PriceEffect.CREDIT
-            )
-        ]
+                stop_trigger=Decimal("25"),  # won't fill
+                price_effect=PriceEffect.CREDIT,
+            ),
+        ],
     )
     resp = account.place_complex_order(session, otoco, dry_run=False)
     sleep(3)

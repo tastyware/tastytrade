@@ -35,6 +35,7 @@ dev-dependencies = [
     "sphinx-toolbox==3.4.0",
     "enum-tools>=0.12.0",
     "autodoc-pydantic>=2.2.0",
+    "jupyter>=1.1.1",
 ]
 
 [tool.setuptools.package-data]
