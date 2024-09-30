@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 import requests
 from fake_useragent import UserAgent  # type: ignore
 
-from tastytrade import API_URL, BACKTEST_URL, CERT_URL
+from tastytrade import API_URL, CERT_URL
 from tastytrade.utils import TastytradeError, TastytradeJsonDataclass, validate_response
 
 
@@ -96,18 +96,6 @@ class Session:
         self.streamer_token = data["token"]
         #: URL for dxfeed websocket
         self.dxlink_url = data["dxlink-url"]
-        if not is_test:
-            # Pull backtest token
-            response = requests.post(
-                f"{BACKTEST_URL}/sessions",
-                headers=headers,
-                json={"tastytradeToken": self.session_token},
-            )
-            validate_response(response)
-            #: Token used for backtesting
-            self.backtest_token = response.json()["token"]
-        else:
-            self.backtest_token = None
 
     def get(self, url, **kwargs) -> Dict[str, Any]:
         response = self.client.get(self.base_url + url, timeout=30, **kwargs)

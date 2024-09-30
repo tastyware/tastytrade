@@ -1,7 +1,9 @@
 from datetime import date, datetime, timedelta
+from typing import Union
 
 import pandas_market_calendars as mcal  # type: ignore
 import pytz
+from httpx._models import Response as HTTPXReponse
 from pydantic import BaseModel
 from requests import Response
 
@@ -202,12 +204,13 @@ class TastytradeJsonDataclass(BaseModel):
     A pydantic dataclass that converts keys from snake case to dasherized
     and performs type validation and coercion.
     """
+
     class Config:
         alias_generator = _dasherize
         populate_by_name = True
 
 
-def validate_response(response: Response) -> None:
+def validate_response(response: Union[Response, HTTPXReponse]) -> None:
     """
     Checks if the given code is an error; if so, raises an exception.
 

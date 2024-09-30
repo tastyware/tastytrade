@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel
 
@@ -474,28 +474,63 @@ class Account(TastytradeJsonDataclass):
     def get_balance_snapshots(
         self,
         session: Session,
+        per_page: int = 250,
+        page_offset: Optional[int] = None,
+        currency: str = "USD",
+        end_date: Optional[date] = None,
+        start_date: Optional[date] = None,
         snapshot_date: Optional[date] = None,
-        time_of_day: Optional[str] = None,
+        time_of_day: Literal["BOD", "EOD"] = "EOD",
     ) -> List[AccountBalanceSnapshot]:
         """
-        Returns a list of two balance snapshots. The first one is the
-        specified date, or, if not provided, the oldest snapshot available.
-        The second one is the most recent snapshot.
-
-        If you provide the snapshot date, you must also provide the time of
-        day.
+        Returns a list of balance snapshots. This list will
+        just have a few snapshots if you don't pass a start
+        date; otherwise, it will be each day's balances in
+        the given range.
 
         :param session: the session to use for the request.
+        :param currency: the currency to show balances in.
+        :param start_date: the starting date of the range.
+        :param end_date: the ending date of the range.
         :param snapshot_date: the date of the snapshot to get.
         :param time_of_day:
-            the time of day of the snapshot to get, either 'EOD' or 'BOD'.
+            the time of day of the snapshots to get, either 'EOD' (End Of Day) or 'BOD' (Beginning Of Day).
         """
-        params = {"snapshot-date": snapshot_date, "time-of-day": time_of_day}
-        data = session.get(
-            f"/accounts/{self.account_number}/balance-snapshots",
-            params={k: v for k, v in params.items() if v is not None},
-        )
-        return [AccountBalanceSnapshot(**i) for i in data["items"]]
+        paginate = False
+        if page_offset is None:
+            page_offset = 0
+            paginate = True
+        params = {
+            "per-page": per_page,
+            "page-offset": page_offset,
+            "currency": currency,
+            "end-date": end_date,
+            "start-date": start_date,
+            "snapshot-date": snapshot_date,
+            "time-of-day": time_of_day,
+        }
+        snapshots = []
+        while True:
+            response = session.client.get(
+                (f"{session.base_url}/accounts/{self.account_number}/balance-snapshots"),
+                params={
+                    k: v  # type: ignore
+                    for k, v in params.items()
+                    if v is not None
+                },
+            )
+            validate_response(response)
+            json = response.json()
+            snapshots.extend([AccountBalanceSnapshot(**i) for i in json["data"]["items"]])
+            # handle pagination
+            pagination = json["pagination"]
+            if (
+                pagination["page-offset"] >= pagination["total-pages"] - 1
+                or not paginate
+            ):
+                break
+            params["page-offset"] += 1  # type: ignore
+        return snapshots
 
     def get_positions(
         self,
