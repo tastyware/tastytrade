@@ -11,6 +11,7 @@ class TheoPrice(Event):
     you with a formula so you can perform calculations based on values from
     this event.
     """
+
     #: symbol of this event
     eventSymbol: str
     #: time of this event

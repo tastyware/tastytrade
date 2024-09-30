@@ -6,10 +6,10 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'tastytrade'
-copyright = '2024, Graeme Holliday'
-author = 'Graeme Holliday'
-release = '8.4'
+project = "tastytrade"
+copyright = "2024, Graeme Holliday"
+author = "Graeme Holliday"
+release = "8.4"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -22,26 +22,25 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_toolbox.more_autodoc.autotypeddict",
     "enum_tools.autoenum",
-    "sphinxcontrib.autodoc_pydantic"
+    "sphinxcontrib.autodoc_pydantic",
 ]
 
 intersphinx_mapping = {
     "rtd": ("https://docs.readthedocs.io/en/stable/", None),
     "python": ("https://docs.python.org/3/", None),
-    "sphinx": ("https://www.sphinx-doc.org/en/master/", None)
+    "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
 }
 intersphinx_disabled_domains = ["std"]
 
-templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
+templates_path = ["_templates"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_rtd_theme'
-html_static_path = ['_static']
+html_theme = "sphinx_rtd_theme"
+html_static_path = ["_static"]
 
 # -- Options for pydantic -------------------------------------------------
 autodoc_pydantic_model_show_json = True

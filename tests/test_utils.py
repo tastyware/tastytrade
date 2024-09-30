@@ -1,10 +1,16 @@
 from datetime import date
 
-from tastytrade.utils import (get_future_fx_monthly, get_future_grain_monthly,
-                              get_future_index_monthly,
-                              get_future_metal_monthly, get_future_oil_monthly,
-                              get_future_treasury_monthly, get_tasty_monthly,
-                              get_third_friday, today_in_new_york)
+from tastytrade.utils import (
+    get_future_fx_monthly,
+    get_future_grain_monthly,
+    get_future_index_monthly,
+    get_future_metal_monthly,
+    get_future_oil_monthly,
+    get_future_treasury_monthly,
+    get_tasty_monthly,
+    get_third_friday,
+    today_in_new_york,
+)
 
 
 def test_get_third_friday():
@@ -34,7 +40,7 @@ def test_get_future_fx_monthly():
         date(2025, 3, 7),
         date(2025, 6, 6),
         date(2025, 9, 5),
-        date(2025, 12, 5)
+        date(2025, 12, 5),
     ]
     for exp in exps:
         assert get_future_fx_monthly(exp) == exp
@@ -47,7 +53,7 @@ def test_get_future_treasury_monthly():
         date(2024, 4, 26),
         date(2024, 5, 24),
         date(2024, 6, 21),
-        date(2024, 8, 23)
+        date(2024, 8, 23),
     ]
     for exp in exps:
         assert get_future_treasury_monthly(exp) == exp
@@ -67,7 +73,7 @@ def test_get_future_grain_monthly():
         date(2025, 6, 20),
         date(2025, 11, 21),
         date(2026, 6, 26),
-        date(2026, 11, 20)
+        date(2026, 11, 20),
     ]
     for exp in exps:
         assert get_future_grain_monthly(exp) == exp
@@ -103,7 +109,7 @@ def test_get_future_metal_monthly():
         date(2028, 5, 25),
         date(2028, 11, 27),
         date(2029, 5, 24),
-        date(2029, 11, 27)
+        date(2029, 11, 27),
     ]
     for exp in exps:
         assert get_future_metal_monthly(exp) == exp
@@ -131,7 +137,7 @@ def test_get_future_oil_monthly():
         date(2031, 8, 15),
         date(2032, 2, 17),
         date(2033, 4, 14),
-        date(2034, 1, 17)
+        date(2034, 1, 17),
     ]
     for exp in exps:
         assert get_future_oil_monthly(exp) == exp
@@ -148,7 +154,7 @@ def test_get_future_index_monthly():
         date(2024, 9, 30),
         date(2024, 12, 31),
         date(2025, 3, 31),
-        date(2025, 6, 30)
+        date(2025, 6, 30),
     ]
     for exp in exps:
         assert get_future_index_monthly(exp) == exp

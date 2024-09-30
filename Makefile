@@ -5,8 +5,8 @@ install:
 	uv pip install -e .
 
 lint:
-	uv run ruff check tastytrade/
-	uv run ruff check tests/
+	uv run ruff check .
+	uv run ruff format .
 	uv run mypy -p tastytrade
 	uv run mypy -p tests
 

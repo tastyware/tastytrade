@@ -11,6 +11,7 @@ authors = [
 
 dependencies = [
     "fake-useragent>=1.5.1",
+    "httpx>=0.27.2",
     "pandas-market-calendars>=4.4.1",
     "pydantic>=2.9.2",
     "requests>=2.32.3",
@@ -35,6 +36,7 @@ dev-dependencies = [
     "sphinx-toolbox==3.4.0",
     "enum-tools>=0.12.0",
     "autodoc-pydantic>=2.2.0",
+    "jupyter>=1.1.1",
 ]
 
 [tool.setuptools.package-data]
