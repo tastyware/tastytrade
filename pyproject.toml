@@ -1,6 +1,10 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "tastytrade"
-version = "8.5"
+version = "8.4.1"
 description = "An unofficial SDK for Tastytrade!"
 readme = "README.md"
 requires-python = ">=3.8"
