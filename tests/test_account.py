@@ -1,3 +1,4 @@
+import os
 from decimal import Decimal
 from time import sleep
 
@@ -16,25 +17,18 @@ from tastytrade.order import (
 
 
 @pytest.fixture(scope="session")
-def account(session):
-    return Account.get_accounts(session)[0]
+async def account(session, aiolib):
+    account_number = os.getenv("TT_ACCOUNT")
+    assert account_number is not None
+    return Account.get_account(session, account_number)
 
 
-@pytest.fixture
-def cert_session(get_cert_credentials):
-    usr, pwd = get_cert_credentials
-    session = Session(usr, pwd, is_test=True)
-    yield session
-    session.destroy()
+def test_get_account(account):
+    pass
 
 
-def test_cert_accounts(cert_session):
-    assert Account.get_accounts(cert_session) != []
-
-
-def test_get_account(session, account):
-    acc = Account.get_account(session, account.account_number)
-    assert acc == account
+def test_get_accounts(session):
+    assert Account.get_accounts(session) != []
 
 
 def test_get_trading_status(session, account):
@@ -86,7 +80,7 @@ def new_order(session):
         time_in_force=OrderTimeInForce.DAY,
         order_type=OrderType.LIMIT,
         legs=[leg],
-        price=Decimal(3),
+        price=Decimal(2),
         price_effect=PriceEffect.DEBIT,
     )
 
@@ -103,7 +97,7 @@ def test_get_order(session, account, placed_order):
 
 def test_replace_and_delete_order(session, account, new_order, placed_order):
     modified_order = new_order.model_copy()
-    modified_order.price = Decimal("3.01")
+    modified_order.price = Decimal("2.01")
     replaced = account.replace_order(session, placed_order.id, modified_order)
     sleep(3)
     account.delete_order(session, replaced.id)
@@ -122,7 +116,6 @@ def test_get_live_orders(session, account):
 
 
 def test_place_oco_order(session, account):
-    """
     # account must have a share of F for this to work
     symbol = Equity.get_equity(session, 'F')
     closing = symbol.build_leg(Decimal(1), OrderAction.SELL_TO_CLOSE)
@@ -139,7 +132,7 @@ def test_place_oco_order(session, account):
                 time_in_force=OrderTimeInForce.GTC,
                 order_type=OrderType.STOP,
                 legs=[closing],
-                stop_trigger=Decimal('3'),  # will never fill
+                stop_trigger=Decimal('1.5'),  # will never fill
                 price_effect=PriceEffect.CREDIT
             )
         ]
@@ -149,8 +142,6 @@ def test_place_oco_order(session, account):
     # test get complex order
     _ = account.get_complex_order(session, resp2.complex_order.id)
     account.delete_complex_order(session, resp2.complex_order.id)
-    """
-    assert True
 
 
 def test_place_otoco_order(session, account):
@@ -162,7 +153,7 @@ def test_place_otoco_order(session, account):
             time_in_force=OrderTimeInForce.DAY,
             order_type=OrderType.LIMIT,
             legs=[opening],
-            price=Decimal("100"),  # won't fill
+            price=Decimal("2"),  # won't fill
             price_effect=PriceEffect.DEBIT,
         ),
         orders=[
@@ -177,7 +168,7 @@ def test_place_otoco_order(session, account):
                 time_in_force=OrderTimeInForce.GTC,
                 order_type=OrderType.STOP,
                 legs=[closing],
-                stop_trigger=Decimal("25"),  # won't fill
+                stop_trigger=Decimal("1.5"),  # won't fill
                 price_effect=PriceEffect.CREDIT,
             ),
         ],

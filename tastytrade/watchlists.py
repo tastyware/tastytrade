@@ -34,7 +34,7 @@ class PairsWatchlist(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         """
-        data = session.get("/pairs-watchlists")
+        data = session._get("/pairs-watchlists")
         return [cls(**i) for i in data["items"]]
 
     @classmethod
@@ -45,7 +45,7 @@ class PairsWatchlist(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param name: the name of the pairs watchlist to fetch.
         """
-        data = session.get(f"/pairs-watchlists/{name}")
+        data = session._get(f"/pairs-watchlists/{name}")
         return cls(**data)
 
 
@@ -70,7 +70,7 @@ class Watchlist(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param counts_only: whether to only fetch the counts of the watchlists.
         """
-        data = session.get("/public-watchlists", params={"counts-only": counts_only})
+        data = session._get("/public-watchlists", params={"counts-only": counts_only})
         return [cls(**i) for i in data["items"]]
 
     @classmethod
@@ -81,7 +81,7 @@ class Watchlist(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param name: the name of the watchlist to fetch.
         """
-        data = session.get(f"/public-watchlists/{name}")
+        data = session._get(f"/public-watchlists/{name}")
         return cls(**data)
 
     @classmethod
@@ -91,7 +91,7 @@ class Watchlist(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         """
-        data = session.get("/watchlists")
+        data = session._get("/watchlists")
         return [cls(**i) for i in data["items"]]
 
     @classmethod
@@ -102,7 +102,7 @@ class Watchlist(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param name: the name of the watchlist to fetch.
         """
-        data = session.get(f"/watchlists/{name}")
+        data = session._get(f"/watchlists/{name}")
         return cls(**data)
 
     @classmethod
@@ -113,7 +113,7 @@ class Watchlist(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param name: the name of the watchlist to delete.
         """
-        session.delete(f"/watchlists/{name}")
+        session._delete(f"/watchlists/{name}")
 
     def upload_private_watchlist(self, session: Session) -> None:
         """
@@ -121,7 +121,7 @@ class Watchlist(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         """
-        session.post("/watchlists", json=self.model_dump(by_alias=True))
+        session._post("/watchlists", json=self.model_dump(by_alias=True))
 
     def update_private_watchlist(self, session: Session) -> None:
         """
@@ -129,7 +129,7 @@ class Watchlist(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         """
-        session.put(f"/watchlists/{self.name}", json=self.model_dump(by_alias=True))
+        session._put(f"/watchlists/{self.name}", json=self.model_dump(by_alias=True))
 
     def add_symbol(self, symbol: str, instrument_type: InstrumentType) -> None:
         """

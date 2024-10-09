@@ -4,7 +4,6 @@ from decimal import Decimal
 from typing import AsyncGenerator, List, Literal, Optional
 
 import httpx
-from fake_useragent import UserAgent  # type: ignore
 from pydantic import BaseModel, Field
 from pydantic.alias_generators import to_camel
 
@@ -178,7 +177,6 @@ class BacktestSession:
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": UserAgent().random,
         }
         # Pull backtest token
         response = httpx.post(

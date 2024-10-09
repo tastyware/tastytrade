@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import List
+from typing import Any, List
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 
 from tastytrade.utils import TastytradeError
 
@@ -28,9 +28,10 @@ class EventType(str, Enum):
 
 
 class Event(BaseModel):
-    @validator("*", pre=True)
-    def change_nan_to_none(cls, v):
-        if v == "NaN" or v == "Infinity" or v == "-Infinity":
+    @field_validator("*", mode="before")
+    @classmethod
+    def change_nan_to_none(cls, v: Any) -> Any:
+        if v in {"NaN", "Infinity", "-Infinity"}:
             return None
         return v
 

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tastytrade"
-version = "8.5"
+version = "8.6"
 description = "An unofficial SDK for Tastytrade!"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -14,7 +14,6 @@ authors = [
 ]
 
 dependencies = [
-    "fake-useragent>=1.5.1",
     "httpx>=0.27.2",
     "pandas-market-calendars>=4.4.1",
     "pydantic>=2.9.2",
@@ -29,11 +28,12 @@ Documentation = "https://tastyworks-api.readthedocs.io/en/latest"
 dev-dependencies = [
     "mypy>=1.11.2",
     "pytest>=8.3.3",
-    "pytest-asyncio>=0.24.0",
     "pytest-cov>=5.0.0",
     "ruff>=0.6.7",
     "types-pytz>=2024.2.0.20240913",
     "types-requests>=2.32.0.20240914",
+    "jupyter>=1.1.1",
+    "pytest-aio>=1.9.0",
 ]
 
 [tool.setuptools.package-data]
