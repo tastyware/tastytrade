@@ -3,7 +3,7 @@ import logging
 API_URL = "https://api.tastyworks.com"
 BACKTEST_URL = "https://backtester.vast.tastyworks.com"
 CERT_URL = "https://api.cert.tastyworks.com"
-VERSION = "8.6"
+VERSION = "9.0"
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

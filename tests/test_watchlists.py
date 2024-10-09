@@ -86,7 +86,7 @@ async def test_get_private_watchlist_async(session):
 
 
 async def test_update_private_watchlist_async(session, private_wl):
-    private_wl.remove_symbol("AAPL", InstrumentType.EQUITY)
+    private_wl.remove_symbol("MSFT", InstrumentType.EQUITY)
     sleep(1)
     await private_wl.a_update_private_watchlist(session)
 

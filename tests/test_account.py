@@ -250,7 +250,8 @@ def test_get_live_complex_orders(session, account):
 
 @fixture(scope="module")
 async def placed_order_async(session, account, new_order):
-    return await account.a_place_order(session, new_order, dry_run=False).order
+    res = await account.a_place_order(session, new_order, dry_run=False)
+    return res.order
 
 
 async def test_get_order_async(session, account, placed_order_async):
@@ -268,6 +269,7 @@ async def test_replace_and_delete_order_async(session, account, new_order, place
 
 
 async def test_place_complex_order_async(session, account):
+    sleep(3)
     symbol = Equity.get_equity(session, "AAPL")
     opening = symbol.build_leg(Decimal(1), OrderAction.BUY_TO_OPEN)
     closing = symbol.build_leg(Decimal(1), OrderAction.SELL_TO_CLOSE)
