@@ -2,9 +2,9 @@ import os
 from decimal import Decimal
 from time import sleep
 
-import pytest
+from pytest import fixture
 
-from tastytrade import Account, Session
+from tastytrade import Account
 from tastytrade.instruments import Equity
 from tastytrade.order import (
     NewComplexOrder,
@@ -16,10 +16,15 @@ from tastytrade.order import (
 )
 
 
-@pytest.fixture(scope="session")
-async def account(session, aiolib):
+@fixture(scope="module")
+def account_number():
     account_number = os.getenv("TT_ACCOUNT")
     assert account_number is not None
+    return account_number
+
+
+@fixture(scope="module")
+async def account(session, account_number, aiolib):
     return Account.get_account(session, account_number)
 
 
@@ -71,11 +76,83 @@ def test_get_effective_margin_requirements(session, account):
     account.get_effective_margin_requirements(session, "SPY")
 
 
-@pytest.fixture(scope="session")
+def test_get_order_history(session, account):
+    account.get_order_history(session, page_offset=0)
+
+
+def test_get_complex_order_history(session, account):
+    account.get_complex_order_history(session, page_offset=0)
+
+
+def test_get_live_orders(session, account):
+    account.get_live_orders(session)
+
+
+async def test_get_account_async(session, account_number):
+    await Account.a_get_account(session, account_number)
+
+
+async def test_get_accounts_async(session):
+    accounts = await Account.a_get_accounts(session)
+    assert accounts != []
+
+
+async def test_get_trading_status_async(session, account):
+    await account.a_get_trading_status(session)
+
+
+async def test_get_balances_async(session, account):
+    await account.a_get_balances(session)
+
+
+async def test_get_balance_snapshots_async(session, account):
+    await account.a_get_balance_snapshots(session)
+
+
+async def test_get_positions_async(session, account):
+    await account.a_get_positions(session)
+
+
+async def test_get_history_async(session, account):
+    await account.a_get_history(session, page_offset=0)
+
+
+async def test_get_total_fees_async(session, account):
+    await account.a_get_total_fees(session)
+
+
+async def test_get_position_limit_async(session, account):
+    await account.a_get_position_limit(session)
+
+
+async def test_get_margin_requirements_async(session, account):
+    await account.a_get_margin_requirements(session)
+
+
+async def test_get_net_liquidating_value_history_async(session, account):
+    await account.a_get_net_liquidating_value_history(session, time_back="1y")
+
+
+async def test_get_effective_margin_requirements_async(session, account):
+    await account.a_get_effective_margin_requirements(session, "SPY")
+
+
+async def test_get_order_history_async(session, account):
+    await account.a_get_order_history(session, page_offset=0)
+
+
+async def test_get_complex_order_history_async(session, account):
+    await account.a_get_complex_order_history(session, page_offset=0)
+
+
+async def test_get_live_orders_async(session, account):
+    await account.a_get_live_orders(session)
+
+
+@fixture(scope="module")
 def new_order(session):
     symbol = Equity.get_equity(session, "F")
     leg = symbol.build_leg(Decimal(1), OrderAction.BUY_TO_OPEN)
-
     return NewOrder(
         time_in_force=OrderTimeInForce.DAY,
         order_type=OrderType.LIMIT,
@@ -85,7 +162,7 @@ def new_order(session):
     )
 
 
-@pytest.fixture(scope="session")
+@fixture(scope="module")
 def placed_order(session, account, new_order):
     return account.place_order(session, new_order, dry_run=False).order
 
@@ -101,18 +178,6 @@ def test_replace_and_delete_order(session, account, new_order, placed_order):
     replaced = account.replace_order(session, placed_order.id, modified_order)
     sleep(3)
     account.delete_order(session, replaced.id)
-
-
-def test_get_order_history(session, account):
-    account.get_order_history(session, page_offset=0)
-
-
-def test_get_complex_order_history(session, account):
-    account.get_complex_order_history(session, page_offset=0)
-
-
-def test_get_live_orders(session, account):
-    account.get_live_orders(session)
 
 
 def test_place_oco_order(session, account):
@@ -180,4 +245,62 @@ def test_place_otoco_order(session, account):
 
 def test_get_live_complex_orders(session, account):
     orders = account.get_live_complex_orders(session)
+    assert orders != []
+
+
+@fixture(scope="module")
+async def placed_order_async(session, account, new_order):
+    return await account.a_place_order(session, new_order, dry_run=False).order
+
+
+async def test_get_order_async(session, account, placed_order_async):
+    sleep(3)
+    placed = await account.a_get_order(session, placed_order_async.id) 
+    assert placed.id == placed_order_async.id
+
+
+async def test_replace_and_delete_order_async(session, account, new_order, placed_order_async):
+    modified_order = new_order.model_copy()
+    modified_order.price = Decimal("2.01")
+    replaced = await account.a_replace_order(session, placed_order_async.id, modified_order)
+    sleep(3)
+    await account.a_delete_order(session, replaced.id)
+
+
+async def test_place_complex_order_async(session, account):
+    symbol = Equity.get_equity(session, "AAPL")
+    opening = symbol.build_leg(Decimal(1), OrderAction.BUY_TO_OPEN)
+    closing = symbol.build_leg(Decimal(1), OrderAction.SELL_TO_CLOSE)
+    otoco = NewComplexOrder(
+        trigger_order=NewOrder(
+            time_in_force=OrderTimeInForce.DAY,
+            order_type=OrderType.LIMIT,
+            legs=[opening],
+            price=Decimal("2"),  # won't fill
+            price_effect=PriceEffect.DEBIT,
+        ),
+        orders=[
+            NewOrder(
+                time_in_force=OrderTimeInForce.GTC,
+                order_type=OrderType.LIMIT,
+                legs=[closing],
+                price=Decimal("400"),  # won't fill
+                price_effect=PriceEffect.CREDIT,
+            ),
+            NewOrder(
+                time_in_force=OrderTimeInForce.GTC,
+                order_type=OrderType.STOP,
+                legs=[closing],
+                stop_trigger=Decimal("1.5"),  # won't fill
+                price_effect=PriceEffect.CREDIT,
+            ),
+        ],
+    )
+    resp = await account.a_place_complex_order(session, otoco, dry_run=False)
+    sleep(3)
+    await account.a_delete_complex_order(session, resp.complex_order.id)
+
+
+async def test_get_live_complex_orders_async(session, account):
+    orders = await account.a_get_live_complex_orders(session)
     assert orders != []

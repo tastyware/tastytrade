@@ -22,8 +22,7 @@ jobs:
         uv pip install .
     - name: Lint with ruff
       run: |
-        uv run ruff check tastytrade/
-        uv run ruff check tests/
+        uv run ruff check .
     - name: Type check with mypy
       run: |
         uv run mypy -p tastytrade
@@ -34,3 +33,4 @@ jobs:
       env:
         TT_USERNAME: ${{ secrets.TT_USERNAME }}
         TT_PASSWORD: ${{ secrets.TT_PASSWORD }}
+        TT_ACCOUNT: ${{ secrets.TT_ACCOUNT }}

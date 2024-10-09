@@ -17,13 +17,11 @@ async def test_get_2fa_info_async(session):
     await session.a_get_2fa_info()
 
 
-def test_destroy(get_cert_credentials):
-    usr, pwd = get_cert_credentials
-    session = Session(usr, pwd, is_test=True)
+def test_destroy(credentials):
+    session = Session(*credentials)
     session.destroy()
 
 
-async def test_destroy_async(get_cert_credentials):
-    usr, pwd = get_cert_credentials
-    session = Session(usr, pwd, is_test=True)
+async def test_destroy_async(credentials):
+    session = Session(*credentials)
     await session.a_destroy()
