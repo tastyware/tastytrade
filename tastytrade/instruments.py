@@ -197,6 +197,20 @@ class Cryptocurrency(TradeableTastytradeJsonDataclass):
     streamer_symbol: Optional[str] = None
 
     @classmethod
+    async def a_get_cryptocurrencies(
+        cls, session: Session, symbols: List[str] = []
+    ) -> List["Cryptocurrency"]:
+        """
+        Returns a list of cryptocurrency objects from the given symbols.
+
+        :param session: the session to use for the request.
+        :param symbols: the symbols to get the cryptocurrencies for.
+        """
+        params = {"symbol[]": symbols} if symbols else None
+        data = await session._a_get("/instruments/cryptocurrencies", params=params)
+        return [cls(**i) for i in data["items"]]
+
+    @classmethod
     def get_cryptocurrencies(
         cls, session: Session, symbols: List[str] = []
     ) -> List["Cryptocurrency"]:
@@ -207,8 +221,22 @@ class Cryptocurrency(TradeableTastytradeJsonDataclass):
         :param symbols: the symbols to get the cryptocurrencies for.
         """
         params = {"symbol[]": symbols} if symbols else None
-        data = session.get("/instruments/cryptocurrencies", params=params)
+        data = session._get("/instruments/cryptocurrencies", params=params)
         return [cls(**i) for i in data["items"]]
+
+    @classmethod
+    async def a_get_cryptocurrency(
+        cls, session: Session, symbol: str
+    ) -> "Cryptocurrency":
+        """
+        Returns a Cryptocurrency object from the given symbol.
+
+        :param session: the session to use for the request.
+        :param symbol: the symbol to get the cryptocurrency for.
+        """
+        symbol = symbol.replace("/", "%2F")
+        data = await session._a_get(f"/instruments/cryptocurrencies/{symbol}")
+        return cls(**data)
 
     @classmethod
     def get_cryptocurrency(cls, session: Session, symbol: str) -> "Cryptocurrency":
@@ -219,7 +247,7 @@ class Cryptocurrency(TradeableTastytradeJsonDataclass):
         :param symbol: the symbol to get the cryptocurrency for.
         """
         symbol = symbol.replace("/", "%2F")
-        data = session.get(f"/instruments/cryptocurrencies/{symbol}")
+        data = session._get(f"/instruments/cryptocurrencies/{symbol}")
         return cls(**data)
 
 
@@ -249,6 +277,57 @@ class Equity(TradeableTastytradeJsonDataclass):
     is_fractional_quantity_eligible: Optional[bool] = None
     tick_sizes: Optional[List[TickSize]] = None
     option_tick_sizes: Optional[List[TickSize]] = None
+
+    @classmethod
+    async def a_get_active_equities(
+        cls,
+        session: Session,
+        per_page: int = 1000,
+        page_offset: Optional[int] = None,
+        lendability: Optional[str] = None,
+    ) -> List["Equity"]:
+        """
+        Returns a list of actively traded Equity objects.
+
+        :param session: the session to use for the request.
+        :param per_page: the number of equities to get per page.
+        :param page_offset:
+            provide a specific page to get; if not provided, get all pages
+        :param lendability:
+            the lendability of the equities; e.g. 'Easy To Borrow',
+            'Locate Required', 'Preborrow'
+        """
+        # if a specific page is provided, we just get that page;
+        # otherwise, we loop through all pages
+        paginate = False
+        if page_offset is None:
+            page_offset = 0
+            paginate = True
+        params = {
+            "per-page": per_page,
+            "page-offset": page_offset,
+            "lendability": lendability,
+        }
+        # loop through pages and get all active equities
+        equities = []
+        while True:
+            response = await session.async_client.get(
+                "/instruments/equities/active",
+                params={k: v for k, v in params.items() if v is not None},
+            )
+            validate_response(response)
+            json = response.json()
+            equities.extend([cls(**i) for i in json["data"]["items"]])
+            # handle pagination
+            pagination = json["pagination"]
+            if (
+                pagination["page-offset"] >= pagination["total-pages"] - 1
+                or not paginate
+            ):
+                break
+            params["page-offset"] += 1  # type: ignore
+
+        return equities
 
     @classmethod
     def get_active_equities(
@@ -283,7 +362,7 @@ class Equity(TradeableTastytradeJsonDataclass):
         # loop through pages and get all active equities
         equities = []
         while True:
-            response = session.client.get(
+            response = session.sync_client.get(
                 "/instruments/equities/active",
                 params={k: v for k, v in params.items() if v is not None},
             )
@@ -300,6 +379,38 @@ class Equity(TradeableTastytradeJsonDataclass):
             params["page-offset"] += 1  # type: ignore
 
         return equities
+
+    @classmethod
+    async def a_get_equities(
+        cls,
+        session: Session,
+        symbols: Optional[List[str]] = None,
+        lendability: Optional[str] = None,
+        is_index: Optional[bool] = None,
+        is_etf: Optional[bool] = None,
+    ) -> List["Equity"]:
+        """
+        Returns a list of Equity objects from the given symbols.
+
+        :param session: the session to use for the request.
+        :param symbols: the symbols to get the equities for.
+        :param lendability:
+            the lendability of the equities; e.g. 'Easy To Borrow',
+            'Locate Required', 'Preborrow'
+        :param is_index: whether the equities are indexes.
+        :param is_etf: whether the equities are ETFs.
+        """
+        params = {
+            "symbol[]": symbols,
+            "lendability": lendability,
+            "is-index": is_index,
+            "is-etf": is_etf,
+        }
+        data = await session._a_get(
+            "/instruments/equities",
+            params={k: v for k, v in params.items() if v is not None},
+        )
+        return [cls(**i) for i in data["items"]]
 
     @classmethod
     def get_equities(
@@ -327,11 +438,23 @@ class Equity(TradeableTastytradeJsonDataclass):
             "is-index": is_index,
             "is-etf": is_etf,
         }
-        data = session.get(
+        data = session._get(
             "/instruments/equities",
             params={k: v for k, v in params.items() if v is not None},
         )
         return [cls(**i) for i in data["items"]]
+
+    @classmethod
+    async def a_get_equity(cls, session: Session, symbol: str) -> "Equity":
+        """
+        Returns a Equity object from the given symbol.
+
+        :param session: the session to use for the request.
+        :param symbol: the symbol to get the equity for.
+        """
+        symbol = symbol.replace("/", "%2F")
+        data = await session._a_get(f"/instruments/equities/{symbol}")
+        return cls(**data)
 
     @classmethod
     def get_equity(cls, session: Session, symbol: str) -> "Equity":
@@ -342,7 +465,7 @@ class Equity(TradeableTastytradeJsonDataclass):
         :param symbol: the symbol to get the equity for.
         """
         symbol = symbol.replace("/", "%2F")
-        data = session.get(f"/instruments/equities/{symbol}")
+        data = session._get(f"/instruments/equities/{symbol}")
         return cls(**data)
 
 
@@ -379,6 +502,29 @@ class Option(TradeableTastytradeJsonDataclass):
             self._set_streamer_symbol()
 
     @classmethod
+    async def a_get_options(
+        cls,
+        session: Session,
+        symbols: Optional[List[str]] = None,
+        active: Optional[bool] = None,
+        with_expired: Optional[bool] = None,
+    ) -> List["Option"]:
+        """
+        Returns a list of Option objects from the given symbols.
+
+        :param session: the session to use for the request.
+        :param symbols: the OCC symbols to get the options for.
+        :param active: whether the options are active.
+        :param with_expired: whether to include expired options.
+        """
+        params = {"symbol[]": symbols, "active": active, "with-expired": with_expired}
+        data = await session._a_get(
+            "/instruments/equity-options",
+            params={k: v for k, v in params.items() if v is not None},
+        )
+        return [cls(**i) for i in data["items"]]
+
+    @classmethod
     def get_options(
         cls,
         session: Session,
@@ -395,11 +541,28 @@ class Option(TradeableTastytradeJsonDataclass):
         :param with_expired: whether to include expired options.
         """
         params = {"symbol[]": symbols, "active": active, "with-expired": with_expired}
-        data = session.get(
+        data = session._get(
             "/instruments/equity-options",
             params={k: v for k, v in params.items() if v is not None},
         )
         return [cls(**i) for i in data["items"]]
+
+    @classmethod
+    async def a_get_option(
+        cls, session: Session, symbol: str, active: Optional[bool] = None
+    ) -> "Option":
+        """
+        Returns a Option object from the given symbol.
+
+        :param session: the session to use for the request.
+        :param symbol: the symbol to get the option for, OCC format
+        """
+        symbol = symbol.replace("/", "%2F")
+        params = {"active": active} if active is not None else None
+        data = await session._a_get(
+            f"/instruments/equity-options/{symbol}", params=params
+        )
+        return cls(**data)
 
     @classmethod
     def get_option(
@@ -413,7 +576,7 @@ class Option(TradeableTastytradeJsonDataclass):
         """
         symbol = symbol.replace("/", "%2F")
         params = {"active": active} if active is not None else None
-        data = session.get(f"/instruments/equity-options/{symbol}", params=params)
+        data = session._get(f"/instruments/equity-options/{symbol}", params=params)
         return cls(**data)
 
     def _set_streamer_symbol(self) -> None:
@@ -495,6 +658,18 @@ class NestedOptionChain(TastytradeJsonDataclass):
     expirations: List[NestedOptionChainExpiration]
 
     @classmethod
+    async def a_get_chain(cls, session: Session, symbol: str) -> "NestedOptionChain":
+        """
+        Gets the option chain for the given symbol in nested format.
+
+        :param session: the session to use for the request.
+        :param symbol: the symbol to get the option chain for.
+        """
+        symbol = symbol.replace("/", "%2F")
+        data = await session._a_get(f"/option-chains/{symbol}/nested")
+        return cls(**data["items"][0])
+
+    @classmethod
     def get_chain(cls, session: Session, symbol: str) -> "NestedOptionChain":
         """
         Gets the option chain for the given symbol in nested format.
@@ -503,7 +678,7 @@ class NestedOptionChain(TastytradeJsonDataclass):
         :param symbol: the symbol to get the option chain for.
         """
         symbol = symbol.replace("/", "%2F")
-        data = session.get(f"/option-chains/{symbol}/nested")
+        data = session._get(f"/option-chains/{symbol}/nested")
         return cls(**data["items"][0])
 
 
@@ -548,14 +723,40 @@ class FutureProduct(TastytradeJsonDataclass):
     option_products: Optional[List["FutureOptionProduct"]] = None
 
     @classmethod
+    async def a_get_future_products(cls, session: Session) -> List["FutureProduct"]:
+        """
+        Returns a list of FutureProduct objects available.
+
+        :param session: the session to use for the request.
+        """
+        data = await session._a_get("/instruments/future-products")
+        return [cls(**i) for i in data["items"]]
+
+    @classmethod
     def get_future_products(cls, session: Session) -> List["FutureProduct"]:
         """
         Returns a list of FutureProduct objects available.
 
         :param session: the session to use for the request.
         """
-        data = session.get("/instruments/future-products")
+        data = session._get("/instruments/future-products")
         return [cls(**i) for i in data["items"]]
+
+    @classmethod
+    async def a_get_future_product(
+        cls, session: Session, code: str, exchange: str = "CME"
+    ) -> "FutureProduct":
+        """
+        Returns a FutureProduct object from the given symbol.
+
+        :param session: the session to use for the request.
+        :param code: the product code, e.g. 'ES'
+        :param exchange:
+            the exchange to fetch from: 'CME', 'SMALLS', 'CFE', 'CBOED'
+        """
+        code = code.replace("/", "")
+        data = await session._a_get(f"/instruments/future-products/{exchange}/{code}")
+        return cls(**data)
 
     @classmethod
     def get_future_product(
@@ -570,7 +771,7 @@ class FutureProduct(TastytradeJsonDataclass):
             the exchange to fetch from: 'CME', 'SMALLS', 'CFE', 'CBOED'
         """
         code = code.replace("/", "")
-        data = session.get(f"/instruments/future-products/{exchange}/{code}")
+        data = session._get(f"/instruments/future-products/{exchange}/{code}")
         return cls(**data)
 
 
@@ -613,6 +814,31 @@ class Future(TradeableTastytradeJsonDataclass):
     spread_tick_sizes: Optional[List[TickSize]] = None
 
     @classmethod
+    async def a_get_futures(
+        cls,
+        session: Session,
+        symbols: Optional[List[str]] = None,
+        product_codes: Optional[List[str]] = None,
+    ) -> List["Future"]:
+        """
+        Returns a list of Future objects from the given symbols
+        or product codes.
+
+        :param session: the session to use for the request.
+        :param symbols:
+            symbols of the futures, e.g. 'ESZ9', '/ESZ9'.
+        :param product_codes:
+            the product codes of the futures, e.g. 'ES', '6A'. Ignored if
+            symbols are provided.
+        """
+        params = {"symbol[]": symbols, "product-code[]": product_codes}
+        data = await session._a_get(
+            "/instruments/futures",
+            params={k: v for k, v in params.items() if v is not None},
+        )
+        return [cls(**i) for i in data["items"]]
+
+    @classmethod
     def get_futures(
         cls,
         session: Session,
@@ -631,11 +857,23 @@ class Future(TradeableTastytradeJsonDataclass):
             symbols are provided.
         """
         params = {"symbol[]": symbols, "product-code[]": product_codes}
-        data = session.get(
+        data = session._get(
             "/instruments/futures",
             params={k: v for k, v in params.items() if v is not None},
         )
         return [cls(**i) for i in data["items"]]
+
+    @classmethod
+    async def a_get_future(cls, session: Session, symbol: str) -> "Future":
+        """
+        Returns a Future object from the given symbol.
+
+        :param session: the session to use for the request.
+        :param symbol: the symbol to get the future for.
+        """
+        symbol = symbol.replace("/", "")
+        data = await session._a_get(f"/instruments/futures/{symbol}")
+        return cls(**data)
 
     @classmethod
     def get_future(cls, session: Session, symbol: str) -> "Future":
@@ -646,7 +884,7 @@ class Future(TradeableTastytradeJsonDataclass):
         :param symbol: the symbol to get the future for.
         """
         symbol = symbol.replace("/", "")
-        data = session.get(f"/instruments/futures/{symbol}")
+        data = session._get(f"/instruments/futures/{symbol}")
         return cls(**data)
 
 
@@ -676,6 +914,18 @@ class FutureOptionProduct(TastytradeJsonDataclass):
     clearport_code: Optional[str] = None
 
     @classmethod
+    async def a_get_future_option_products(
+        cls, session: Session
+    ) -> List["FutureOptionProduct"]:
+        """
+        Returns a list of FutureOptionProduct objects available.
+
+        :param session: the session to use for the request.
+        """
+        data = await session._a_get("/instruments/future-option-products")
+        return [cls(**i) for i in data["items"]]
+
+    @classmethod
     def get_future_option_products(
         cls, session: Session
     ) -> List["FutureOptionProduct"]:
@@ -684,8 +934,25 @@ class FutureOptionProduct(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         """
-        data = session.get("/instruments/future-option-products")
+        data = session._get("/instruments/future-option-products")
         return [cls(**i) for i in data["items"]]
+
+    @classmethod
+    async def a_get_future_option_product(
+        cls, session: Session, root_symbol: str, exchange: str = "CME"
+    ) -> "FutureOptionProduct":
+        """
+        Returns a FutureOptionProduct object from the given symbol.
+
+        :param session: the session to use for the request.
+        :param code: the root symbol of the future option
+        :param exchange: the exchange to get the product from
+        """
+        root_symbol = root_symbol.replace("/", "")
+        data = await session._a_get(
+            f"/instruments/future-option-products/" f"{exchange}/{root_symbol}"
+        )
+        return cls(**data)
 
     @classmethod
     def get_future_option_product(
@@ -699,7 +966,7 @@ class FutureOptionProduct(TastytradeJsonDataclass):
         :param exchange: the exchange to get the product from
         """
         root_symbol = root_symbol.replace("/", "")
-        data = session.get(
+        data = session._get(
             f"/instruments/future-option-products/" f"{exchange}/{root_symbol}"
         )
         return cls(**data)
@@ -746,6 +1013,43 @@ class FutureOption(TradeableTastytradeJsonDataclass):
     future_option_product: Optional["FutureOptionProduct"] = None
 
     @classmethod
+    async def a_get_future_options(
+        cls,
+        session: Session,
+        symbols: Optional[List[str]] = None,
+        root_symbol: Optional[str] = None,
+        expiration_date: Optional[date] = None,
+        option_type: Optional[OptionType] = None,
+        strike_price: Optional[Decimal] = None,
+    ) -> List["FutureOption"]:
+        """
+        Returns a list of FutureOption objects from the given symbols.
+
+        NOTE: Last I checked, all of the parameters are bugged except
+        for `symbols`.
+
+        :param session: the session to use for the request.
+        :param symbols: the Tastytrade symbols to filter by.
+        :param root_symbol:
+            the root symbol to get the future options for, e.g. 'EW3', 'SO'
+        :param expiration_date: the expiration date for the future options.
+        :param option_type: the option type to filter by.
+        :param strike_price: the strike price to filter by.
+        """
+        params = {
+            "symbol[]": symbols,
+            "option-root-symbol": root_symbol,
+            "expiration-date": expiration_date,
+            "option-type": option_type.value if option_type else None,
+            "strike-price": strike_price,
+        }
+        data = await session._a_get(
+            "/instruments/future-options",
+            params={k: v for k, v in params.items() if v is not None},
+        )
+        return [cls(**i) for i in data["items"]]
+
+    @classmethod
     def get_future_options(
         cls,
         session: Session,
@@ -776,11 +1080,23 @@ class FutureOption(TradeableTastytradeJsonDataclass):
             "option-type": option_type.value if option_type else None,
             "strike-price": strike_price,
         }
-        data = session.get(
+        data = session._get(
             "/instruments/future-options",
             params={k: v for k, v in params.items() if v is not None},
         )
         return [cls(**i) for i in data["items"]]
+
+    @classmethod
+    async def a_get_future_option(cls, session: Session, symbol: str) -> "FutureOption":
+        """
+        Returns a FutureOption object from the given symbol.
+
+        :param session: the session to use for the request.
+        :param symbol: the symbol to get the option for, Tastytrade format
+        """
+        symbol = symbol.replace("/", "%2F").replace(" ", "%20")
+        data = await session._a_get(f"/instruments/future-options/{symbol}")
+        return cls(**data)
 
     @classmethod
     def get_future_option(cls, session: Session, symbol: str) -> "FutureOption":
@@ -791,7 +1107,7 @@ class FutureOption(TradeableTastytradeJsonDataclass):
         :param symbol: the symbol to get the option for, Tastytrade format
         """
         symbol = symbol.replace("/", "%2F").replace(" ", "%20")
-        data = session.get(f"/instruments/future-options/{symbol}")
+        data = session._get(f"/instruments/future-options/{symbol}")
         return cls(**data)
 
 
@@ -821,6 +1137,20 @@ class NestedFutureOptionChain(TastytradeJsonDataclass):
     option_chains: List[NestedFutureOptionSubchain]
 
     @classmethod
+    async def a_get_chain(
+        cls, session: Session, symbol: str
+    ) -> "NestedFutureOptionChain":
+        """
+        Gets the futures option chain for the given symbol in nested format.
+
+        :param session: the session to use for the request.
+        :param symbol: the symbol to get the option chain for.
+        """
+        symbol = symbol.replace("/", "")
+        data = await session._a_get(f"/futures-option-chains/{symbol}/nested")
+        return cls(**data)
+
+    @classmethod
     def get_chain(cls, session: Session, symbol: str) -> "NestedFutureOptionChain":
         """
         Gets the futures option chain for the given symbol in nested format.
@@ -829,7 +1159,7 @@ class NestedFutureOptionChain(TastytradeJsonDataclass):
         :param symbol: the symbol to get the option chain for.
         """
         symbol = symbol.replace("/", "")
-        data = session.get(f"/futures-option-chains/{symbol}/nested")
+        data = session._get(f"/futures-option-chains/{symbol}/nested")
         return cls(**data)
 
 
@@ -848,6 +1178,20 @@ class Warrant(TastytradeJsonDataclass):
     cusip: Optional[str] = None
 
     @classmethod
+    async def a_get_warrants(
+        cls, session: Session, symbols: Optional[List[str]] = None
+    ) -> List["Warrant"]:
+        """
+        Returns a list of Warrant objects from the given symbols.
+
+        :param session: the session to use for the request.
+        :param symbols: symbols of the warrants, e.g. 'NKLAW'
+        """
+        params = {"symbol[]": symbols} if symbols else None
+        data = await session._a_get("/instruments/warrants", params=params)
+        return [cls(**i) for i in data["items"]]
+
+    @classmethod
     def get_warrants(
         cls, session: Session, symbols: Optional[List[str]] = None
     ) -> List["Warrant"]:
@@ -858,8 +1202,19 @@ class Warrant(TastytradeJsonDataclass):
         :param symbols: symbols of the warrants, e.g. 'NKLAW'
         """
         params = {"symbol[]": symbols} if symbols else None
-        data = session.get("/instruments/warrants", params=params)
+        data = session._get("/instruments/warrants", params=params)
         return [cls(**i) for i in data["items"]]
+
+    @classmethod
+    async def a_get_warrant(cls, session: Session, symbol: str) -> "Warrant":
+        """
+        Returns a Warrant object from the given symbol.
+
+        :param session: the session to use for the request.
+        :param symbol: the symbol to get the warrant for.
+        """
+        data = await session._a_get(f"/instruments/warrants/{symbol}")
+        return cls(**data)
 
     @classmethod
     def get_warrant(cls, session: Session, symbol: str) -> "Warrant":
@@ -869,12 +1224,25 @@ class Warrant(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param symbol: the symbol to get the warrant for.
         """
-        data = session.get(f"/instruments/warrants/{symbol}")
+        data = session._get(f"/instruments/warrants/{symbol}")
         return cls(**data)
 
 
 # fix pydantic forward references
-FutureProduct.update_forward_refs()
+FutureProduct.model_rebuild()
+
+
+async def a_get_quantity_decimal_precisions(
+    session: Session,
+) -> List[QuantityDecimalPrecision]:
+    """
+    Returns a list of QuantityDecimalPrecision objects for different
+    types of instruments.
+
+    :param session: the session to use for the request.
+    """
+    data = await session._a_get("/instruments/quantity-decimal-precisions")
+    return [QuantityDecimalPrecision(**i) for i in data["items"]]
 
 
 def get_quantity_decimal_precisions(session: Session) -> List[QuantityDecimalPrecision]:
@@ -884,8 +1252,31 @@ def get_quantity_decimal_precisions(session: Session) -> List[QuantityDecimalPre
 
     :param session: the session to use for the request.
     """
-    data = session.get("/instruments/quantity-decimal-precisions")
+    data = session._get("/instruments/quantity-decimal-precisions")
     return [QuantityDecimalPrecision(**i) for i in data["items"]]
+
+
+async def a_get_option_chain(session: Session, symbol: str) -> Dict[date, List[Option]]:
+    """
+    Returns a mapping of expiration date to a list of option objects
+    representing the options chain for the given symbol.
+
+    In the case that there are two expiries on the same day (e.g. SPXW
+    and SPX AM options), both will be returned in the same list. If you
+    just want one expiry, you'll need to filter the list yourself, or use
+    :class:`NestedOptionChain` instead.
+
+    :param session: the session to use for the request.
+    :param symbol: the symbol to get the option chain for.
+    """
+    symbol = symbol.replace("/", "%2F")
+    data = await session._a_get(f"/option-chains/{symbol}")
+    chain = defaultdict(list)
+    for i in data["items"]:
+        option = Option(**i)
+        chain[option.expiration_date].append(option)
+
+    return chain
 
 
 def get_option_chain(session: Session, symbol: str) -> Dict[date, List[Option]]:
@@ -902,10 +1293,35 @@ def get_option_chain(session: Session, symbol: str) -> Dict[date, List[Option]]:
     :param symbol: the symbol to get the option chain for.
     """
     symbol = symbol.replace("/", "%2F")
-    data = session.get(f"/option-chains/{symbol}")
+    data = session._get(f"/option-chains/{symbol}")
     chain = defaultdict(list)
     for i in data["items"]:
         option = Option(**i)
+        chain[option.expiration_date].append(option)
+
+    return chain
+
+
+async def a_get_future_option_chain(
+    session: Session, symbol: str
+) -> Dict[date, List[FutureOption]]:
+    """
+    Returns a mapping of expiration date to a list of futures options
+    objects representing the options chain for the given symbol.
+
+    In the case that there are two expiries on the same day (e.g. EW
+    and ES options), both will be returned in the same list. If you
+    just want one expiry, you'll need to filter the list yourself, or
+    use :class:`NestedFutureOptionChain` instead.
+
+    :param session: the session to use for the request.
+    :param symbol: the symbol to get the option chain for.
+    """
+    symbol = symbol.replace("/", "")
+    data = await session._a_get(f"/futures-option-chains/{symbol}")
+    chain = defaultdict(list)
+    for i in data["items"]:
+        option = FutureOption(**i)
         chain[option.expiration_date].append(option)
 
     return chain
@@ -927,7 +1343,7 @@ def get_future_option_chain(
     :param symbol: the symbol to get the option chain for.
     """
     symbol = symbol.replace("/", "")
-    data = session.get(f"/futures-option-chains/{symbol}")
+    data = session._get(f"/futures-option-chains/{symbol}")
     chain = defaultdict(list)
     for i in data["items"]:
         option = FutureOption(**i)

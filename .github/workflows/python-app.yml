@@ -11,19 +11,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python 3.12
+    - name: Set up Python 3.8
       uses: actions/setup-python@v4
       with:
-        python-version: '3.12'
+        python-version: '3.8'
     - uses: yezz123/setup-uv@v4
     - name: Setup uv venv
       run: |
         uv sync
-        uv pip install .
     - name: Lint with ruff
       run: |
-        uv run ruff check tastytrade/
-        uv run ruff check tests/
+        uv run ruff check .
     - name: Type check with mypy
       run: |
         uv run mypy -p tastytrade
@@ -34,3 +32,4 @@ jobs:
       env:
         TT_USERNAME: ${{ secrets.TT_USERNAME }}
         TT_PASSWORD: ${{ secrets.TT_PASSWORD }}
+        TT_ACCOUNT: ${{ secrets.TT_ACCOUNT }}

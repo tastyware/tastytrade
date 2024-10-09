@@ -1,25 +1,27 @@
 import os
 
-import pytest
+from pytest import fixture
 
 from tastytrade import Session
 
-CERT_USERNAME = "tastyware"
-CERT_PASSWORD = ":4s-S9/9L&Q~C]@v"
+
+# Run all tests with asyncio only
+@fixture(scope="session")
+def aiolib():
+    return "asyncio"
 
 
-@pytest.fixture(scope="session")
-def get_cert_credentials():
-    return CERT_USERNAME, CERT_PASSWORD
-
-
-@pytest.fixture(scope="session")
-def session():
-    username = os.environ.get("TT_USERNAME", None)
-    password = os.environ.get("TT_PASSWORD", None)
+@fixture(scope="session")
+def credentials():
+    username = os.getenv("TT_USERNAME")
+    password = os.getenv("TT_PASSWORD")
     assert username is not None
     assert password is not None
+    return username, password
 
-    session = Session(username, password)
+
+@fixture(scope="session")
+async def session(credentials, aiolib):
+    session = Session(*credentials)
     yield session
     session.destroy()

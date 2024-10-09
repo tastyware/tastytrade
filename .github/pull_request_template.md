@@ -5,6 +5,7 @@ Fixes ...
 
 ## Pre-merge checklist
 - [ ] Code formatted correctly with `uv run ruff format .`
+- [ ] Code implemented for both sync and async
 - [ ] Passing tests locally
 - [ ] New tests added (if applicable)
 

@@ -1,7 +1,5 @@
 from datetime import timedelta
 
-import pytest
-
 from tastytrade import today_in_new_york
 from tastytrade.backtest import (
     Backtest,
@@ -11,10 +9,7 @@ from tastytrade.backtest import (
     BacktestSession,
 )
 
-pytest_plugins = ("pytest_asyncio",)
 
-
-@pytest.mark.asyncio
 async def test_backtest_simple(session):
     backtest_session = BacktestSession(session)
     backtest = Backtest(
