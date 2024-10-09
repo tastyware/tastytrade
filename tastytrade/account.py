@@ -427,7 +427,9 @@ class Account(TastytradeJsonDataclass):
     submitting_user_id: Optional[str] = None
 
     @classmethod
-    async def a_get_accounts(cls, session: Session, include_closed=False) -> List["Account"]:
+    async def a_get_accounts(
+        cls, session: Session, include_closed=False
+    ) -> List["Account"]:
         """
         Gets all trading accounts associated with the Tastytrade user.
 
@@ -515,69 +517,6 @@ class Account(TastytradeJsonDataclass):
         """
         data = session._get(f"/accounts/{self.account_number}/balances")
         return AccountBalance(**data)
-
-    async def a_get_balance_snapshots(
-        self,
-        session: Session,
-        per_page: int = 250,
-        page_offset: Optional[int] = None,
-        currency: str = "USD",
-        end_date: Optional[date] = None,
-        start_date: Optional[date] = None,
-        snapshot_date: Optional[date] = None,
-        time_of_day: Literal["BOD", "EOD"] = "EOD",
-    ) -> List[AccountBalanceSnapshot]:
-        """
-        Returns a list of balance snapshots. This list will
-        just have a few snapshots if you don't pass a start
-        date; otherwise, it will be each day's balances in
-        the given range.
-
-        :param session: the session to use for the request.
-        :param currency: the currency to show balances in.
-        :param start_date: the starting date of the range.
-        :param end_date: the ending date of the range.
-        :param snapshot_date: the date of the snapshot to get.
-        :param time_of_day:
-            the time of day of the snapshots to get, either 'EOD' (End Of Day) or 'BOD' (Beginning Of Day).
-        """
-        paginate = False
-        if page_offset is None:
-            page_offset = 0
-            paginate = True
-        params = {
-            "per-page": per_page,
-            "page-offset": page_offset,
-            "currency": currency,
-            "end-date": end_date,
-            "start-date": start_date,
-            "snapshot-date": snapshot_date,
-            "time-of-day": time_of_day,
-        }
-        snapshots = []
-        while True:
-            response = await session.async_client.get(
-                f"/accounts/{self.account_number}/balance-snapshots",
-                params={
-                    k: v  # type: ignore
-                    for k, v in params.items()
-                    if v is not None
-                },
-            )
-            validate_response(response)
-            json = response.json()
-            snapshots.extend(
-                [AccountBalanceSnapshot(**i) for i in json["data"]["items"]]
-            )
-            # handle pagination
-            pagination = json["pagination"]
-            if (
-                pagination["page-offset"] >= pagination["total-pages"] - 1
-                or not paginate
-            ):
-                break
-            params["page-offset"] += 1  # type: ignore
-        return snapshots
 
     async def a_get_balance_snapshots(
         self,
@@ -992,7 +931,9 @@ class Account(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param id: the ID of the transaction to fetch.
         """
-        data = await session._a_get(f"/accounts/{self.account_number}/transactions/{id}")
+        data = await session._a_get(
+            f"/accounts/{self.account_number}/transactions/{id}"
+        )
         return Transaction(**data)
 
     def get_transaction(self, session: Session, id: int) -> Transaction:
@@ -1164,7 +1105,9 @@ class Account(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         """
-        data = await session._a_get(f"/margin/accounts/{self.account_number}/requirements")
+        data = await session._a_get(
+            f"/margin/accounts/{self.account_number}/requirements"
+        )
         return MarginReport(**data)
 
     def get_margin_requirements(self, session: Session) -> MarginReport:
@@ -1195,13 +1138,17 @@ class Account(TastytradeJsonDataclass):
         data = session._get(f"/accounts/{self.account_number}/orders/live")
         return [PlacedOrder(**i) for i in data["items"]]
 
-    async def a_get_live_complex_orders(self, session: Session) -> List[PlacedComplexOrder]:
+    async def a_get_live_complex_orders(
+        self, session: Session
+    ) -> List[PlacedComplexOrder]:
         """
         Get complex orders placed today for the account.
 
         :param session: the session to use for the request.
         """
-        data = await session._a_get(f"/accounts/{self.account_number}/complex-orders/live")
+        data = await session._a_get(
+            f"/accounts/{self.account_number}/complex-orders/live"
+        )
         return [PlacedComplexOrder(**i) for i in data["items"]]
 
     def get_live_complex_orders(self, session: Session) -> List[PlacedComplexOrder]:
@@ -1213,7 +1160,9 @@ class Account(TastytradeJsonDataclass):
         data = session._get(f"/accounts/{self.account_number}/complex-orders/live")
         return [PlacedComplexOrder(**i) for i in data["items"]]
 
-    async def a_get_complex_order(self, session: Session, order_id: int) -> PlacedComplexOrder:
+    async def a_get_complex_order(
+        self, session: Session, order_id: int
+    ) -> PlacedComplexOrder:
         """
         Gets a complex order with the given ID.
 
@@ -1244,7 +1193,9 @@ class Account(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param order_id: the ID of the order to fetch.
         """
-        data = await session._a_get(f"/accounts/{self.account_number}/orders/{order_id}")
+        data = await session._a_get(
+            f"/accounts/{self.account_number}/orders/{order_id}"
+        )
         return PlacedOrder(**data)
 
     def get_order(self, session: Session, order_id: int) -> PlacedOrder:
@@ -1264,7 +1215,9 @@ class Account(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param order_id: the ID of the order to delete.
         """
-        await session._a_delete(f"/accounts/{self.account_number}/complex-orders/{order_id}")
+        await session._a_delete(
+            f"/accounts/{self.account_number}/complex-orders/{order_id}"
+        )
 
     def delete_complex_order(self, session: Session, order_id: int) -> None:
         """

@@ -245,6 +245,7 @@ class User(TastytradeJsonDataclass):
     """
     Dataclass containing information about a Tastytrade user.
     """
+
     email: str
     external_id: str
     is_confirmed: bool

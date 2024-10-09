@@ -2093,7 +2093,7 @@ wheels = [
 
 [[package]]
 name = "tastytrade"
-version = "8.6"
+version = "9.0"
 source = { editable = "." }
 dependencies = [
     { name = "httpx", marker = "python_full_version >= '3.10'" },

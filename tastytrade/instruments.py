@@ -225,7 +225,9 @@ class Cryptocurrency(TradeableTastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
     @classmethod
-    async def a_get_cryptocurrency(cls, session: Session, symbol: str) -> "Cryptocurrency":
+    async def a_get_cryptocurrency(
+        cls, session: Session, symbol: str
+    ) -> "Cryptocurrency":
         """
         Returns a Cryptocurrency object from the given symbol.
 
@@ -557,7 +559,9 @@ class Option(TradeableTastytradeJsonDataclass):
         """
         symbol = symbol.replace("/", "%2F")
         params = {"active": active} if active is not None else None
-        data = await session._a_get(f"/instruments/equity-options/{symbol}", params=params)
+        data = await session._a_get(
+            f"/instruments/equity-options/{symbol}", params=params
+        )
         return cls(**data)
 
     @classmethod
@@ -1133,7 +1137,9 @@ class NestedFutureOptionChain(TastytradeJsonDataclass):
     option_chains: List[NestedFutureOptionSubchain]
 
     @classmethod
-    async def a_get_chain(cls, session: Session, symbol: str) -> "NestedFutureOptionChain":
+    async def a_get_chain(
+        cls, session: Session, symbol: str
+    ) -> "NestedFutureOptionChain":
         """
         Gets the futures option chain for the given symbol in nested format.
 
@@ -1226,7 +1232,9 @@ class Warrant(TastytradeJsonDataclass):
 FutureProduct.model_rebuild()
 
 
-async def a_get_quantity_decimal_precisions(session: Session) -> List[QuantityDecimalPrecision]:
+async def a_get_quantity_decimal_precisions(
+    session: Session,
+) -> List[QuantityDecimalPrecision]:
     """
     Returns a list of QuantityDecimalPrecision objects for different
     types of instruments.

@@ -48,7 +48,9 @@ class PairsWatchlist(TastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
     @classmethod
-    async def a_get_pairs_watchlist(cls, session: Session, name: str) -> "PairsWatchlist":
+    async def a_get_pairs_watchlist(
+        cls, session: Session, name: str
+    ) -> "PairsWatchlist":
         """
         Fetches a Tastytrade public pairs watchlist by name.
 
@@ -91,7 +93,9 @@ class Watchlist(TastytradeJsonDataclass):
         :param session: the session to use for the request.
         :param counts_only: whether to only fetch the counts of the watchlists.
         """
-        data = await session._a_get("/public-watchlists", params={"counts-only": counts_only})
+        data = await session._a_get(
+            "/public-watchlists", params={"counts-only": counts_only}
+        )
         return [cls(**i) for i in data["items"]]
 
     @classmethod
@@ -213,7 +217,9 @@ class Watchlist(TastytradeJsonDataclass):
 
         :param session: the session to use for the request.
         """
-        await session._a_put(f"/watchlists/{self.name}", json=self.model_dump(by_alias=True))
+        await session._a_put(
+            f"/watchlists/{self.name}", json=self.model_dump(by_alias=True)
+        )
 
     def update_private_watchlist(self, session: Session) -> None:
         """

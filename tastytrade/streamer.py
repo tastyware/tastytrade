@@ -271,7 +271,9 @@ class AlertStreamer:
         """
         Subscribes to user-level messages, e.g. new account creation.
         """
-        await self._subscribe(SubscriptionType.USER_MESSAGE, value=session.user.external_id)
+        await self._subscribe(
+            SubscriptionType.USER_MESSAGE, value=session.user.external_id
+        )
 
     async def _heartbeat(self) -> None:
         """

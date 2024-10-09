@@ -113,14 +113,18 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     borrow_rate: Optional[Decimal] = None
 
 
-async def a_get_market_metrics(session: Session, symbols: List[str]) -> List[MarketMetricInfo]:
+async def a_get_market_metrics(
+    session: Session, symbols: List[str]
+) -> List[MarketMetricInfo]:
     """
     Retrieves market metrics for the given symbols.
 
     :param session: active user session to use
     :param symbols: list of symbols to retrieve metrics for
     """
-    data = await session._a_get("/market-metrics", params={"symbols": ",".join(symbols)})
+    data = await session._a_get(
+        "/market-metrics", params={"symbols": ",".join(symbols)}
+    )
     return [MarketMetricInfo(**i) for i in data["items"]]
 
 
@@ -163,7 +167,9 @@ def get_dividends(session: Session, symbol: str) -> List[DividendInfo]:
     return [DividendInfo(**i) for i in data["items"]]
 
 
-async def a_get_earnings(session: Session, symbol: str, start_date: date) -> List[EarningsInfo]:
+async def a_get_earnings(
+    session: Session, symbol: str, start_date: date
+) -> List[EarningsInfo]:
     """
     Retrieves earnings information for the given symbol.
 
