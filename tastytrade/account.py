@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, model_validator
+from typing_extensions import Self
 
 from tastytrade.order import (
     InstrumentType,
@@ -11,6 +12,7 @@ from tastytrade.order import (
     OrderAction,
     OrderStatus,
     PlacedComplexOrder,
+    PlacedComplexOrderResponse,
     PlacedOrder,
     PlacedOrderResponse,
 )
@@ -477,9 +479,7 @@ class Account(TastytradeJsonDataclass):
     submitting_user_id: Optional[str] = None
 
     @classmethod
-    async def a_get_accounts(
-        cls, session: Session, include_closed=False
-    ) -> List["Account"]:
+    async def a_get_accounts(cls, session: Session, include_closed=False) -> List[Self]:
         """
         Gets all trading accounts associated with the Tastytrade user.
 
@@ -495,7 +495,7 @@ class Account(TastytradeJsonDataclass):
         ]
 
     @classmethod
-    def get_accounts(cls, session: Session, include_closed=False) -> List["Account"]:
+    def get_accounts(cls, session: Session, include_closed=False) -> List[Self]:
         """
         Gets all trading accounts associated with the Tastytrade user.
 
@@ -511,7 +511,7 @@ class Account(TastytradeJsonDataclass):
         ]
 
     @classmethod
-    async def a_get_account(cls, session: Session, account_number: str) -> "Account":
+    async def a_get_account(cls, session: Session, account_number: str) -> Self:
         """
         Returns the Tastytrade account associated with the given account ID.
 
@@ -522,7 +522,7 @@ class Account(TastytradeJsonDataclass):
         return cls(**data)
 
     @classmethod
-    def get_account(cls, session: Session, account_number: str) -> "Account":
+    def get_account(cls, session: Session, account_number: str) -> Self:
         """
         Returns the Tastytrade account associated with the given account ID.
 
@@ -1572,7 +1572,7 @@ class Account(TastytradeJsonDataclass):
 
     async def a_place_complex_order(
         self, session: Session, order: NewComplexOrder, dry_run: bool = True
-    ) -> PlacedOrderResponse:
+    ) -> PlacedComplexOrderResponse:
         """
         Place the given order.
 
@@ -1585,11 +1585,11 @@ class Account(TastytradeJsonDataclass):
             url += "/dry-run"
         json = order.model_dump_json(exclude_none=True, by_alias=True)
         data = await session._a_post(url, data=json)
-        return PlacedOrderResponse(**data)
+        return PlacedComplexOrderResponse(**data)
 
     def place_complex_order(
         self, session: Session, order: NewComplexOrder, dry_run: bool = True
-    ) -> PlacedOrderResponse:
+    ) -> PlacedComplexOrderResponse:
         """
         Place the given order.
 
@@ -1602,7 +1602,7 @@ class Account(TastytradeJsonDataclass):
             url += "/dry-run"
         json = order.model_dump_json(exclude_none=True, by_alias=True)
         data = session._post(url, data=json)
-        return PlacedOrderResponse(**data)
+        return PlacedComplexOrderResponse(**data)
 
     async def a_replace_order(
         self, session: Session, old_order_id: int, new_order: NewOrder

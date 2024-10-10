@@ -5,6 +5,9 @@ from decimal import Decimal
 from enum import Enum
 from typing import Dict, List, Optional
 
+from pydantic import model_validator
+from typing_extensions import Self
+
 from tastytrade.order import InstrumentType, TradeableTastytradeJsonDataclass
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeJsonDataclass, validate_response
@@ -199,7 +202,7 @@ class Cryptocurrency(TradeableTastytradeJsonDataclass):
     @classmethod
     async def a_get_cryptocurrencies(
         cls, session: Session, symbols: List[str] = []
-    ) -> List["Cryptocurrency"]:
+    ) -> List[Self]:
         """
         Returns a list of cryptocurrency objects from the given symbols.
 
@@ -213,7 +216,7 @@ class Cryptocurrency(TradeableTastytradeJsonDataclass):
     @classmethod
     def get_cryptocurrencies(
         cls, session: Session, symbols: List[str] = []
-    ) -> List["Cryptocurrency"]:
+    ) -> List[Self]:
         """
         Returns a list of cryptocurrency objects from the given symbols.
 
@@ -225,9 +228,7 @@ class Cryptocurrency(TradeableTastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
     @classmethod
-    async def a_get_cryptocurrency(
-        cls, session: Session, symbol: str
-    ) -> "Cryptocurrency":
+    async def a_get_cryptocurrency(cls, session: Session, symbol: str) -> Self:
         """
         Returns a Cryptocurrency object from the given symbol.
 
@@ -239,7 +240,7 @@ class Cryptocurrency(TradeableTastytradeJsonDataclass):
         return cls(**data)
 
     @classmethod
-    def get_cryptocurrency(cls, session: Session, symbol: str) -> "Cryptocurrency":
+    def get_cryptocurrency(cls, session: Session, symbol: str) -> Self:
         """
         Returns a Cryptocurrency object from the given symbol.
 
@@ -285,7 +286,7 @@ class Equity(TradeableTastytradeJsonDataclass):
         per_page: int = 1000,
         page_offset: Optional[int] = None,
         lendability: Optional[str] = None,
-    ) -> List["Equity"]:
+    ) -> List[Self]:
         """
         Returns a list of actively traded Equity objects.
 
@@ -336,7 +337,7 @@ class Equity(TradeableTastytradeJsonDataclass):
         per_page: int = 1000,
         page_offset: Optional[int] = None,
         lendability: Optional[str] = None,
-    ) -> List["Equity"]:
+    ) -> List[Self]:
         """
         Returns a list of actively traded Equity objects.
 
@@ -388,7 +389,7 @@ class Equity(TradeableTastytradeJsonDataclass):
         lendability: Optional[str] = None,
         is_index: Optional[bool] = None,
         is_etf: Optional[bool] = None,
-    ) -> List["Equity"]:
+    ) -> List[Self]:
         """
         Returns a list of Equity objects from the given symbols.
 
@@ -420,7 +421,7 @@ class Equity(TradeableTastytradeJsonDataclass):
         lendability: Optional[str] = None,
         is_index: Optional[bool] = None,
         is_etf: Optional[bool] = None,
-    ) -> List["Equity"]:
+    ) -> List[Self]:
         """
         Returns a list of Equity objects from the given symbols.
 
@@ -445,7 +446,7 @@ class Equity(TradeableTastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
     @classmethod
-    async def a_get_equity(cls, session: Session, symbol: str) -> "Equity":
+    async def a_get_equity(cls, session: Session, symbol: str) -> Self:
         """
         Returns a Equity object from the given symbol.
 
@@ -457,7 +458,7 @@ class Equity(TradeableTastytradeJsonDataclass):
         return cls(**data)
 
     @classmethod
-    def get_equity(cls, session: Session, symbol: str) -> "Equity":
+    def get_equity(cls, session: Session, symbol: str) -> Self:
         """
         Returns a Equity object from the given symbol.
 
@@ -491,15 +492,16 @@ class Option(TradeableTastytradeJsonDataclass):
     days_to_expiration: int
     expires_at: datetime
     is_closing_only: bool
+    streamer_symbol: str = ""
     listed_market: Optional[str] = None
     halted_at: Optional[datetime] = None
     old_security_number: Optional[str] = None
-    streamer_symbol: Optional[str] = None
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        if not self.streamer_symbol:
+    @model_validator(mode="after")
+    def set_streamer_symbol(self) -> Self:
+        if self.streamer_symbol == "":
             self._set_streamer_symbol()
+        return self
 
     @classmethod
     async def a_get_options(
@@ -508,7 +510,7 @@ class Option(TradeableTastytradeJsonDataclass):
         symbols: Optional[List[str]] = None,
         active: Optional[bool] = None,
         with_expired: Optional[bool] = None,
-    ) -> List["Option"]:
+    ) -> List[Self]:
         """
         Returns a list of Option objects from the given symbols.
 
@@ -531,7 +533,7 @@ class Option(TradeableTastytradeJsonDataclass):
         symbols: Optional[List[str]] = None,
         active: Optional[bool] = None,
         with_expired: Optional[bool] = None,
-    ) -> List["Option"]:
+    ) -> List[Self]:
         """
         Returns a list of Option objects from the given symbols.
 
@@ -550,7 +552,7 @@ class Option(TradeableTastytradeJsonDataclass):
     @classmethod
     async def a_get_option(
         cls, session: Session, symbol: str, active: Optional[bool] = None
-    ) -> "Option":
+    ) -> Self:
         """
         Returns a Option object from the given symbol.
 
@@ -567,7 +569,7 @@ class Option(TradeableTastytradeJsonDataclass):
     @classmethod
     def get_option(
         cls, session: Session, symbol: str, active: Optional[bool] = None
-    ) -> "Option":
+    ) -> Self:
         """
         Returns a Option object from the given symbol.
 
@@ -658,7 +660,7 @@ class NestedOptionChain(TastytradeJsonDataclass):
     expirations: List[NestedOptionChainExpiration]
 
     @classmethod
-    async def a_get_chain(cls, session: Session, symbol: str) -> "NestedOptionChain":
+    async def a_get_chain(cls, session: Session, symbol: str) -> Self:
         """
         Gets the option chain for the given symbol in nested format.
 
@@ -670,7 +672,7 @@ class NestedOptionChain(TastytradeJsonDataclass):
         return cls(**data["items"][0])
 
     @classmethod
-    def get_chain(cls, session: Session, symbol: str) -> "NestedOptionChain":
+    def get_chain(cls, session: Session, symbol: str) -> Self:
         """
         Gets the option chain for the given symbol in nested format.
 
@@ -723,7 +725,7 @@ class FutureProduct(TastytradeJsonDataclass):
     option_products: Optional[List["FutureOptionProduct"]] = None
 
     @classmethod
-    async def a_get_future_products(cls, session: Session) -> List["FutureProduct"]:
+    async def a_get_future_products(cls, session: Session) -> List[Self]:
         """
         Returns a list of FutureProduct objects available.
 
@@ -733,7 +735,7 @@ class FutureProduct(TastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
     @classmethod
-    def get_future_products(cls, session: Session) -> List["FutureProduct"]:
+    def get_future_products(cls, session: Session) -> List[Self]:
         """
         Returns a list of FutureProduct objects available.
 
@@ -745,7 +747,7 @@ class FutureProduct(TastytradeJsonDataclass):
     @classmethod
     async def a_get_future_product(
         cls, session: Session, code: str, exchange: str = "CME"
-    ) -> "FutureProduct":
+    ) -> Self:
         """
         Returns a FutureProduct object from the given symbol.
 
@@ -761,7 +763,7 @@ class FutureProduct(TastytradeJsonDataclass):
     @classmethod
     def get_future_product(
         cls, session: Session, code: str, exchange: str = "CME"
-    ) -> "FutureProduct":
+    ) -> Self:
         """
         Returns a FutureProduct object from the given symbol.
 
@@ -799,7 +801,7 @@ class Future(TradeableTastytradeJsonDataclass):
     streamer_exchange_code: str
     back_month_first_calendar_symbol: bool
     instrument_type: InstrumentType = InstrumentType.FUTURE
-    streamer_symbol: Optional[str] = None
+    streamer_symbol: str = ""
     is_tradeable: Optional[bool] = None
     future_product: Optional["FutureProduct"] = None
     contract_size: Optional[Decimal] = None
@@ -819,7 +821,7 @@ class Future(TradeableTastytradeJsonDataclass):
         session: Session,
         symbols: Optional[List[str]] = None,
         product_codes: Optional[List[str]] = None,
-    ) -> List["Future"]:
+    ) -> List[Self]:
         """
         Returns a list of Future objects from the given symbols
         or product codes.
@@ -844,7 +846,7 @@ class Future(TradeableTastytradeJsonDataclass):
         session: Session,
         symbols: Optional[List[str]] = None,
         product_codes: Optional[List[str]] = None,
-    ) -> List["Future"]:
+    ) -> List[Self]:
         """
         Returns a list of Future objects from the given symbols
         or product codes.
@@ -864,7 +866,7 @@ class Future(TradeableTastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
     @classmethod
-    async def a_get_future(cls, session: Session, symbol: str) -> "Future":
+    async def a_get_future(cls, session: Session, symbol: str) -> Self:
         """
         Returns a Future object from the given symbol.
 
@@ -876,7 +878,7 @@ class Future(TradeableTastytradeJsonDataclass):
         return cls(**data)
 
     @classmethod
-    def get_future(cls, session: Session, symbol: str) -> "Future":
+    def get_future(cls, session: Session, symbol: str) -> Self:
         """
         Returns a Future object from the given symbol.
 
@@ -914,9 +916,7 @@ class FutureOptionProduct(TastytradeJsonDataclass):
     clearport_code: Optional[str] = None
 
     @classmethod
-    async def a_get_future_option_products(
-        cls, session: Session
-    ) -> List["FutureOptionProduct"]:
+    async def a_get_future_option_products(cls, session: Session) -> List[Self]:
         """
         Returns a list of FutureOptionProduct objects available.
 
@@ -926,9 +926,7 @@ class FutureOptionProduct(TastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
     @classmethod
-    def get_future_option_products(
-        cls, session: Session
-    ) -> List["FutureOptionProduct"]:
+    def get_future_option_products(cls, session: Session) -> List[Self]:
         """
         Returns a list of FutureOptionProduct objects available.
 
@@ -940,7 +938,7 @@ class FutureOptionProduct(TastytradeJsonDataclass):
     @classmethod
     async def a_get_future_option_product(
         cls, session: Session, root_symbol: str, exchange: str = "CME"
-    ) -> "FutureOptionProduct":
+    ) -> Self:
         """
         Returns a FutureOptionProduct object from the given symbol.
 
@@ -957,7 +955,7 @@ class FutureOptionProduct(TastytradeJsonDataclass):
     @classmethod
     def get_future_option_product(
         cls, session: Session, root_symbol: str, exchange: str = "CME"
-    ) -> "FutureOptionProduct":
+    ) -> Self:
         """
         Returns a FutureOptionProduct object from the given symbol.
 
@@ -1021,7 +1019,7 @@ class FutureOption(TradeableTastytradeJsonDataclass):
         expiration_date: Optional[date] = None,
         option_type: Optional[OptionType] = None,
         strike_price: Optional[Decimal] = None,
-    ) -> List["FutureOption"]:
+    ) -> List[Self]:
         """
         Returns a list of FutureOption objects from the given symbols.
 
@@ -1058,7 +1056,7 @@ class FutureOption(TradeableTastytradeJsonDataclass):
         expiration_date: Optional[date] = None,
         option_type: Optional[OptionType] = None,
         strike_price: Optional[Decimal] = None,
-    ) -> List["FutureOption"]:
+    ) -> List[Self]:
         """
         Returns a list of FutureOption objects from the given symbols.
 
@@ -1087,7 +1085,7 @@ class FutureOption(TradeableTastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
     @classmethod
-    async def a_get_future_option(cls, session: Session, symbol: str) -> "FutureOption":
+    async def a_get_future_option(cls, session: Session, symbol: str) -> Self:
         """
         Returns a FutureOption object from the given symbol.
 
@@ -1099,7 +1097,7 @@ class FutureOption(TradeableTastytradeJsonDataclass):
         return cls(**data)
 
     @classmethod
-    def get_future_option(cls, session: Session, symbol: str) -> "FutureOption":
+    def get_future_option(cls, session: Session, symbol: str) -> Self:
         """
         Returns a FutureOption object from the given symbol.
 
@@ -1137,9 +1135,7 @@ class NestedFutureOptionChain(TastytradeJsonDataclass):
     option_chains: List[NestedFutureOptionSubchain]
 
     @classmethod
-    async def a_get_chain(
-        cls, session: Session, symbol: str
-    ) -> "NestedFutureOptionChain":
+    async def a_get_chain(cls, session: Session, symbol: str) -> Self:
         """
         Gets the futures option chain for the given symbol in nested format.
 
@@ -1151,7 +1147,7 @@ class NestedFutureOptionChain(TastytradeJsonDataclass):
         return cls(**data)
 
     @classmethod
-    def get_chain(cls, session: Session, symbol: str) -> "NestedFutureOptionChain":
+    def get_chain(cls, session: Session, symbol: str) -> Self:
         """
         Gets the futures option chain for the given symbol in nested format.
 
@@ -1180,7 +1176,7 @@ class Warrant(TastytradeJsonDataclass):
     @classmethod
     async def a_get_warrants(
         cls, session: Session, symbols: Optional[List[str]] = None
-    ) -> List["Warrant"]:
+    ) -> List[Self]:
         """
         Returns a list of Warrant objects from the given symbols.
 
@@ -1194,7 +1190,7 @@ class Warrant(TastytradeJsonDataclass):
     @classmethod
     def get_warrants(
         cls, session: Session, symbols: Optional[List[str]] = None
-    ) -> List["Warrant"]:
+    ) -> List[Self]:
         """
         Returns a list of Warrant objects from the given symbols.
 
@@ -1206,7 +1202,7 @@ class Warrant(TastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
     @classmethod
-    async def a_get_warrant(cls, session: Session, symbol: str) -> "Warrant":
+    async def a_get_warrant(cls, session: Session, symbol: str) -> Self:
         """
         Returns a Warrant object from the given symbol.
 
@@ -1217,7 +1213,7 @@ class Warrant(TastytradeJsonDataclass):
         return cls(**data)
 
     @classmethod
-    def get_warrant(cls, session: Session, symbol: str) -> "Warrant":
+    def get_warrant(cls, session: Session, symbol: str) -> Self:
         """
         Returns a Warrant object from the given symbol.
 

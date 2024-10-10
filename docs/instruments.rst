@@ -88,8 +88,7 @@ This makes placing new trades across a wide variety of instruments surprisingly 
            put.build_leg(Decimal(1), OrderAction.SELL_TO_OPEN),
            call.build_leg(Decimal(1), OrderAction.SELL_TO_OPEN)
        ],
-       price=Decimal('1.25'),  # price is always per quantity, not total
-       price_effect=PriceEffect.CREDIT
+       price=Decimal('1.25')  # price is always per quantity, not total
    )
    # assuming an initialized account
    account.place_order(session, order, dry_run=False)

@@ -48,6 +48,13 @@ Summary
    :members:
    :show-inheritance:
 
+TimeAndSale
+-----------
+
+.. automodule:: tastytrade.dxfeed.timeandsale
+   :members:
+   :show-inheritance:
+
 TheoPrice
 ---------
 
@@ -59,5 +66,12 @@ Trade
 -----
 
 .. automodule:: tastytrade.dxfeed.trade
+   :members:
+   :show-inheritance:
+
+Underlying
+----------
+
+.. automodule:: tastytrade.dxfeed.underlying
    :members:
    :show-inheritance:

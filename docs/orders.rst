@@ -19,8 +19,7 @@ Placing an order
        time_in_force=OrderTimeInForce.DAY,
        order_type=OrderType.LIMIT,
        legs=[leg],  # you can have multiple legs in an order
-       price=Decimal('10'),  # limit price, $10/share for a total value of $50
-       price_effect=PriceEffect.DEBIT
+       price=Decimal('-10')  # limit price, $10/share debit for a total value of $50
    )
    response = account.place_order(session, order, dry_run=True)  # a test order
    print(response)
@@ -29,7 +28,7 @@ Placing an order
 
 Notice the use of the ``dry_run`` parameter in the call to ``place_order``. This is used to calculate the effects that an order would have on the account's buying power and the fees that would be charged without actually placing the order. This is typically used to provide an order confirmation screen before sending the order.
 To send the order, pass ``dry_run=False``, and the response will be populated with a ``PlacedOrderResponse``, which contains information about the order and account.
-Also, due to the quirks of the Tastytrade API, the limit price for a stock order is the price per share, whereas the limit price for an options order is the total price.
+Also, rather than using an explicit credit/debit toggle like the Tastytrade platform, the SDK simply assumes negative numbers are debits and positive ones are credits.
 
 Managing orders
 ---------------
@@ -38,7 +37,7 @@ Once we've placed an order, it's often necessary to modify or cancel the order f
 
 .. code-block:: python
 
-   previous_order.price = Decimal('10.05')  # let's increase the price to get a fill!
+   previous_order.price = Decimal('-10.05')  # let's pay more to get a fill!
    response = account.replace_order(session, previous_response.order.id, previous_order)
 
 Cancelling an order is similar:
@@ -81,23 +80,20 @@ To create an OTOCO order, you need an entry point order, a stop loss order, and 
            time_in_force=OrderTimeInForce.DAY,
            order_type=OrderType.LIMIT,
            legs=[opening],
-           price=Decimal('180'),
-           price_effect=PriceEffect.DEBIT
+           price=Decimal('-180')  # open for $180 debit
        ),
        orders=[
            NewOrder(
                time_in_force=OrderTimeInForce.GTC,
                order_type=OrderType.LIMIT,
                legs=[closing],
-               price=Decimal('200'),  # take profits
-               price_effect=PriceEffect.CREDIT
+               price=Decimal('200')  # take profits
            ),
            NewOrder(
                time_in_force=OrderTimeInForce.GTC,
                order_type=OrderType.STOP,
                legs=[closing],
-               stop_trigger=Decimal('160'),  # stop loss
-               price_effect=PriceEffect.CREDIT
+               stop_trigger=Decimal('160')  # stop loss
            )
        ]
    )

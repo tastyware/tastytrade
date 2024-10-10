@@ -1,5 +1,5 @@
 from .candle import Candle
-from .event import Event, EventType
+from .event import Event
 from .greeks import Greeks
 from .profile import Profile
 from .quote import Quote
@@ -12,7 +12,6 @@ from .underlying import Underlying
 __all__ = [
     "Candle",
     "Event",
-    "EventType",
     "Greeks",
     "Profile",
     "Quote",

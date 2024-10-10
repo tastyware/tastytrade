@@ -281,6 +281,7 @@ class PlacedOrder(TastytradeJsonDataclass):
     """
 
     account_number: str
+    id: int
     time_in_force: OrderTimeInForce
     order_type: OrderType
     underlying_symbol: str
@@ -292,7 +293,6 @@ class PlacedOrder(TastytradeJsonDataclass):
     updated_at: datetime
     legs: List[Leg]
     size: Optional[Decimal] = None
-    id: Optional[int] = None
     price: Optional[Decimal] = None
     gtc_date: Optional[date] = None
     value: Optional[Decimal] = None
@@ -328,9 +328,9 @@ class PlacedComplexOrder(TastytradeJsonDataclass):
     """
 
     account_number: str
+    id: int
     type: str
     orders: List[PlacedOrder]
-    id: Optional[Union[str, int]] = None
     trigger_order: Optional[PlacedOrder] = None
     terminal_at: Optional[str] = None
     ratio_price_threshold: Optional[Decimal] = None
@@ -395,15 +395,26 @@ class FeeCalculation(TastytradeJsonDataclass):
         )
 
 
+class PlacedComplexOrderResponse(TastytradeJsonDataclass):
+    """
+    Dataclass grouping together information about a placed complex order.
+    """
+
+    buying_power_effect: BuyingPowerEffect
+    complex_order: PlacedComplexOrder
+    fee_calculation: Optional[FeeCalculation] = None
+    warnings: Optional[List[Message]] = None
+    errors: Optional[List[Message]] = None
+
+
 class PlacedOrderResponse(TastytradeJsonDataclass):
     """
     Dataclass grouping together information about a placed order.
     """
 
     buying_power_effect: BuyingPowerEffect
+    order: PlacedOrder
     fee_calculation: Optional[FeeCalculation] = None
-    order: Optional[PlacedOrder] = None
-    complex_order: Optional[PlacedComplexOrder] = None
     warnings: Optional[List[Message]] = None
     errors: Optional[List[Message]] = None
 

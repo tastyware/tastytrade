@@ -33,7 +33,10 @@ If you want to build the documentation (usually not necessary):
 
 ::
 
-   $ make docs
+   $ source .venv/bin/activate
+   $ cd docs
+   $ uv pip install -r requirements.txt
+   $ make html
 
 Windows
 -------
