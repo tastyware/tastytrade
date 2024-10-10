@@ -31,13 +31,13 @@ The streamer is a websocket connection to dxfeed (the Tastytrade data provider) 
 
 ```python
 from tastytrade import DXLinkStreamer
-from tastytrade.dxfeed import EventType
+from tastytrade.dxfeed import Quote
 
 async with DXLinkStreamer(session) as streamer:
     subs_list = ['SPY']  # list of symbols to subscribe to
-    await streamer.subscribe(EventType.QUOTE, subs_list)
+    await streamer.subscribe(Quote, subs_list)
     # this example fetches quotes once, then exits
-    quote = await streamer.get_event(EventType.QUOTE)
+    quote = await streamer.get_event(Quote)
     print(quote)
 ```
 
@@ -67,7 +67,7 @@ print(positions[0])
 from decimal import Decimal
 from tastytrade import Account
 from tastytrade.instruments import Equity
-from tastytrade.order import NewOrder, OrderAction, OrderTimeInForce, OrderType, PriceEffect
+from tastytrade.order import NewOrder, OrderAction, OrderTimeInForce, OrderType
 
 account = Account.get_account(session, '5WX01234')
 symbol = Equity.get_equity(session, 'USO')
@@ -77,8 +77,7 @@ order = NewOrder(
     time_in_force=OrderTimeInForce.DAY,
     order_type=OrderType.LIMIT,
     legs=[leg],  # you can have multiple legs in an order
-    price=Decimal('10'),  # limit price, $10/share for a total value of $50
-    price_effect=PriceEffect.DEBIT
+    price=Decimal('-10')  # limit price, $10/share debit for a total value of $50
 )
 response = account.place_order(session, order, dry_run=True)  # a test order
 print(response)
@@ -92,6 +91,7 @@ print(response)
 
 ```python
 from tastytrade import DXLinkStreamer
+from tastytrade.dxfeed import Greeks
 from tastytrade.instruments import get_option_chain
 from tastytrade.utils import get_tasty_monthly
 
@@ -100,8 +100,8 @@ exp = get_tasty_monthly()  # 45 DTE expiration!
 subs_list = [chain[exp][0].streamer_symbol]
 
 async with DXLinkStreamer(session) as streamer:
-    await streamer.subscribe(EventType.GREEKS, subs_list)
-    greeks = await streamer.get_event(EventType.GREEKS)
+    await streamer.subscribe(Greeks, subs_list)
+    greeks = await streamer.get_event(Greeks)
     print(greeks)
 ```
 
@@ -110,7 +110,7 @@ async with DXLinkStreamer(session) as streamer:
 ```
 
 For more examples, check out the [documentation](https://tastyworks-api.readthedocs.io/en/latest/).
-        
+
 ## Disclaimer
 
 This is an unofficial SDK for Tastytrade. There is no implied warranty for any actions and results which arise from using it.

@@ -24,13 +24,13 @@ Once you've created the streamer, you can subscribe/unsubscribe to events, like 
 
 .. code-block:: python
 
-   from tastytrade.dxfeed import EventType
+   from tastytrade.dxfeed import Quote
    subs_list = ['SPY', 'SPX']
 
    async with DXLinkStreamer(session) as streamer:
-       await streamer.subscribe(EventType.QUOTE, subs_list)
+       await streamer.subscribe(Quote, subs_list)
        quotes = {}
-       async for quote in streamer.listen(EventType.QUOTE):
+       async for quote in streamer.listen(Quote):
            quotes[quote.eventSymbol] = quote
            if len(quotes) >= len(subs_list):
                break
@@ -45,20 +45,21 @@ Note that these are ``asyncio`` calls, so you'll need to run this code asynchron
    import asyncio
    async def main(session):
        async with DXLinkStreamer(session) as streamer:
-           await streamer.subscribe(EventType.QUOTE, subs_list)
-           quote = await streamer.get_event(EventType.QUOTE)
+           await streamer.subscribe(Quote, subs_list)
+           quote = await streamer.get_event(Quote)
            print(quote)
 
    asyncio.run(main(session))
 
 >>> [Quote(eventSymbol='SPY', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='Q', bidPrice=411.58, bidSize=400.0, askTime=0, askExchangeCode='Q', askPrice=411.6, askSize=1313.0), Quote(eventSymbol='SPX', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='\x00', bidPrice=4122.49, bidSize='NaN', askTime=0, askExchangeCode='\x00', askPrice=4123.65, askSize='NaN')]
 
-Alternatively, you can do testing in a Jupyter notebook, which allows you to make async calls directly.
+Alternatively, you can do testing in a Jupyter notebook, which allows you to make async calls directly, or run a python shell like this: `python -m asyncio`.
 
 We can also use the streamer to stream greeks for options symbols:
 
 .. code-block:: python
 
+   from tastytrade.dxfeed import Greeks
    from tastytrade.instruments import get_option_chain
    from tastytrade.utils import get_tasty_monthly
 
@@ -67,8 +68,8 @@ We can also use the streamer to stream greeks for options symbols:
    subs_list = [chain[exp][0].streamer_symbol]
 
    async with DXLinkStreamer(session) as streamer:
-       await streamer.subscribe(EventType.GREEKS, subs_list)
-       greeks = await streamer.get_event(EventType.GREEKS)
+       await streamer.subscribe(Greeks, subs_list)
+       greeks = await streamer.get_event(Greeks)
        print(greeks)
 
 >>> [Greeks(eventSymbol='.SPLG230616C23', eventTime=0, eventFlags=0, index=7235129486797176832, time=1684559855338, sequence=0, price=26.3380972233688, volatility=0.396983376650804, delta=0.999999999996191, gamma=4.81989763184255e-12, theta=-2.5212017514875e-12, rho=0.01834504287973133, vega=3.7003015672215e-12)]
@@ -111,8 +112,8 @@ For example, we can use the streamer to create an option chain that will continu
 
            streamer = await DXLinkStreamer.create(session)
            # subscribe to quotes and greeks for all options on that date
-           await streamer.subscribe(EventType.QUOTE, [symbol] + streamer_symbols)
-           await streamer.subscribe(EventType.GREEKS, streamer_symbols)
+           await streamer.subscribe(Quote, [symbol] + streamer_symbols)
+           await streamer.subscribe(Greeks, streamer_symbols)
          
            puts = [o for o in options if o.option_type == OptionType.PUT]
            calls = [o for o in options if o.option_type == OptionType.CALL]
@@ -129,11 +130,11 @@ For example, we can use the streamer to create an option chain that will continu
            return self
 
        async def _update_greeks(self):
-           async for e in self.streamer.listen(EventType.GREEKS):
+           async for e in self.streamer.listen(Greeks):
                self.greeks[e.eventSymbol] = e
       
        async def _update_quotes(self):
-           async for e in self.streamer.listen(EventType.QUOTE):
+           async for e in self.streamer.listen(Quote):
                self.quotes[e.eventSymbol] = e
 
 Now, we can access the quotes and greeks at any time, and they'll be up-to-date with the live prices from the streamer:

@@ -138,6 +138,7 @@ MAP_EVENTS = {
     "Trade": Trade,
     "Underlying": Underlying,
 }
+MAP_EVENTS_REVERSE = {v: k for k, v in MAP_EVENTS.items()}
 #: List of all possible types to stream with the data streamer
 EventType = Union[
     Candle,
@@ -234,7 +235,7 @@ class AlertStreamer:
                 if type_str is not None:
                     await self._map_message(type_str, data["data"])
 
-    async def listen(self, alert_class: T) -> AsyncIterator[T]:
+    async def listen(self, alert_class: Type[T]) -> AsyncIterator[T]:
         """
         Iterate over non-heartbeat messages received from the streamer,
         mapping them to their appropriate data class and yielding them.
@@ -242,8 +243,7 @@ class AlertStreamer:
         This is designed to be friendly for type checking; the return
         type will be the same class you pass in.
 
-        :param alert_class: the type of alert to listen for, should be
-        of `~tastytrade.streamer.AlertType`
+        :param alert_class: the type of alert to listen for, should be of :any:`AlertType`
         """
         cls_str = next(k for k, v in MAP_ALERTS.items() if v == alert_class)
         while True:
@@ -254,7 +254,9 @@ class AlertStreamer:
         I'm not sure what the user-status messages look like, so they're absent.
         """
         if type_str not in MAP_ALERTS:
-            raise NotImplementedError("This message type isn't supported! Please open an issue.")
+            raise NotImplementedError(
+                f"Unknown message type {type_str} received: {data}"
+            )
         await self._queues[type_str].put(MAP_ALERTS[type_str](**data))
 
     async def subscribe_accounts(self, accounts: List[Account]) -> None:
@@ -323,13 +325,13 @@ class DXLinkStreamer:
     Example usage::
 
         from tastytrade import DXLinkStreamer
-        from tastytrade.dxfeed import EventType
+        from tastytrade.dxfeed import Quote
 
         # must be a production session
         async with DXLinkStreamer(session) as streamer:
             subs = ['SPY']  # list of quotes to subscribe to
-            await streamer.subscribe(EventType.QUOTE, subs)
-            quote = await streamer.get_event(EventType.QUOTE)
+            await streamer.subscribe(Quote, subs)
+            quote = await streamer.get_event(Quote)
             print(quote)
 
     """
@@ -351,9 +353,7 @@ class DXLinkStreamer:
             "Trade": 15,
             "Underlying": 17,
         }
-        self._subscription_state: Dict[str, str] = defaultdict(
-            lambda: "CHANNEL_CLOSED"
-        )
+        self._subscription_state: Dict[str, str] = defaultdict(lambda: "CHANNEL_CLOSED")
 
         #: The unique client identifier received from the server
         self._session = session
@@ -420,7 +420,12 @@ class DXLinkStreamer:
                         k for k, v in self._channels.items() if v == message["channel"]
                     )
                     self._subscription_state[channel] = message["type"]
+                    logger.debug("Channel opened: %s", message)
                 elif message["type"] == "CHANNEL_CLOSED":
+                    channel = next(
+                        k for k, v in self._channels.items() if v == message["channel"]
+                    )
+                    self._subscription_state[channel] = message["type"]
                     logger.debug("Channel closed: %s", message)
                 elif message["type"] == "FEED_CONFIG":
                     logger.debug("Feed configured: %s", message)
@@ -449,39 +454,48 @@ class DXLinkStreamer:
         }
         await self._websocket.send(json.dumps(message))
 
-    async def listen(self, event_class: T) -> AsyncIterator[T]:
+    async def listen(self, event_class: Type[T]) -> AsyncIterator[T]:
         """
         Using the existing subscriptions, pulls events of the given type and
         yield returns them. Never exits unless there's an error or the channel
         is closed.
 
-        :param event_type: the type of event to listen for
+        This is designed to be friendly for type checking; the return
+        type will be the same class you pass in.
+
+        :param event_class: the type of alert to listen for, should be of :any:`EventType`
         """
-        cls_str = next(k for k, v in MAP_EVENTS.items() if v == event_class)
+        cls_str = MAP_EVENTS_REVERSE[event_class]
         while True:
             yield await self._queues[cls_str].get()
 
-    def get_event_nowait(self, event_class: T) -> Optional[T]:
+    def get_event_nowait(self, event_class: Type[T]) -> Optional[T]:
         """
         Using the existing subscriptions, pulls an event of the given type and
         returns it. If the queue is empty None is returned.
 
-        :param event_type: the type of event to get
+        This is designed to be friendly for type checking; the return
+        type will be the same class you pass in.
+
+        :param event_class: the type of alert to listen for, should be of :any:`EventType`
         """
-        cls_str = next(k for k, v in MAP_EVENTS.items() if v == event_class)
+        cls_str = MAP_EVENTS_REVERSE[event_class]
         try:
             return self._queues[cls_str].get_nowait()
         except QueueEmpty:
             return None
 
-    async def get_event(self, event_class: T) -> T:
+    async def get_event(self, event_class: Type[T]) -> T:
         """
         Using the existing subscription, pulls an event of the given type and
         returns it.
 
-        :param event_type: the type of event to get
+        This is designed to be friendly for type checking; the return
+        type will be the same class you pass in.
+
+        :param event_class: the type of alert to listen for, should be of :any:`EventType`
         """
-        cls_str = next(k for k, v in MAP_EVENTS.items() if v == event_class)
+        cls_str = MAP_EVENTS_REVERSE[event_class]
         return await self._queues[cls_str].get()
 
     async def _heartbeat(self) -> None:
@@ -507,7 +521,7 @@ class DXLinkStreamer:
         `~tastytrade.streamer.EventType`
         :param symbols: list of symbols to subscribe for
         """
-        cls_str = next(k for k, v in MAP_EVENTS.items() if v == event_class)
+        cls_str = MAP_EVENTS_REVERSE[event_class]
         if self._subscription_state[cls_str] != "CHANNEL_OPENED":
             await self._channel_request(cls_str)
         message = {
@@ -518,16 +532,15 @@ class DXLinkStreamer:
         logger.debug("sending subscription: %s", message)
         await self._websocket.send(json.dumps(message))
 
-    async def cancel_channel(self, event_class: Type[EventType]) -> None:
+    async def unsubscribe_all(self, event_class: Type[EventType]) -> None:
         """
-        Cancels the channel for the belonging event_type
+        Unsubscribes to all events of the given event type.
 
-        :param event_type: cancel the channel for this event
+        :param event_class: type of event to unsubscribe from.
         """
-        cls_str = next(k for k, v in MAP_EVENTS.items() if v == event_class)
         message = {
             "type": "CHANNEL_CANCEL",
-            "channel": self._channels[cls_str],
+            "channel": self._channels[MAP_EVENTS_REVERSE[event_class]],
         }
         logger.debug("sending channel cancel: %s", message)
         await self._websocket.send(json.dumps(message))
@@ -571,7 +584,9 @@ class DXLinkStreamer:
         logger.debug("setting up feed: %s", message)
         await self._websocket.send(json.dumps(message))
 
-    async def unsubscribe(self, event_class: Type[EventType], symbols: List[str]) -> None:
+    async def unsubscribe(
+        self, event_class: Type[EventType], symbols: List[str]
+    ) -> None:
         """
         Removes existing subscription for given list of symbols.
         For candles, use :meth:`unsubscribe_candle` instead.
@@ -581,15 +596,11 @@ class DXLinkStreamer:
         """
         if not self._authenticated:
             raise TastytradeError("Stream not authenticated")
-        cls_str = next(k for k, v in MAP_EVENTS.items() if v == event_class)
-        #event_type_str = str(event_type).split(".")[1].capitalize()
-        # TODO: what did this even do?
+        cls_str = MAP_EVENTS_REVERSE[event_class]
         message = {
             "type": "FEED_SUBSCRIPTION",
             "channel": self._channels[cls_str],
-            "remove": [
-                {"symbol": symbol, "type": cls_str} for symbol in symbols
-            ],
+            "remove": [{"symbol": symbol, "type": cls_str} for symbol in symbols],
         }
         logger.debug("sending subscription: %s", message)
         await self._websocket.send(json.dumps(message))
@@ -681,7 +692,9 @@ class DXLinkStreamer:
         data = message[1]
         # parse type or warn for unknown type
         if msg_type not in MAP_EVENTS:
-            raise NotImplementedError(f"Unknown message type received: {message}")
+            raise NotImplementedError(
+                f"Unknown message type {msg_type} received: {data}"
+            )
         cls = MAP_EVENTS[msg_type]
         results = cls.from_stream(data)
         for r in results:

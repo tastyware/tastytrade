@@ -1,4 +1,4 @@
-.PHONY: install lint test docs
+.PHONY: install lint test
 
 install:
 	uv sync
@@ -10,6 +10,3 @@ lint:
 
 test:
 	uv run pytest --cov=tastytrade --cov-report=term-missing tests/ --cov-fail-under=95
-
-docs:
-	cd docs; uv pip install -r requirements.txt; make html
