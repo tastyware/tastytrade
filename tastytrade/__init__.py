@@ -23,7 +23,16 @@ from .backtest import (
     BacktestStatistics,
     BacktestTrial,
 )
-from .dxfeed import EventType
+from .dxfeed import (
+    Candle,
+    Greeks,
+    Profile,
+    Quote,
+    Summary,
+    TimeAndSale,
+    Trade,
+    Underlying,
+)
 from .instruments import (
     Cryptocurrency,
     Equity,
@@ -54,7 +63,7 @@ from .order import (
 )
 from .search import symbol_search
 from .session import Session
-from .streamer import AlertStreamer, AlertType, DXLinkStreamer
+from .streamer import AlertStreamer, DXLinkStreamer
 from .utils import (
     get_future_fx_monthly,
     get_future_grain_monthly,
@@ -72,7 +81,6 @@ from .watchlists import PairsWatchlist, Watchlist
 __all__ = [
     "Account",
     "AlertStreamer",
-    "AlertType",
     "Backtest",
     "BacktestEntry",
     "BacktestExit",
@@ -83,15 +91,16 @@ __all__ = [
     "BacktestSnapshot",
     "BacktestStatistics",
     "BacktestTrial",
+    "Candle",
     "ComplexOrderType",
     "Cryptocurrency",
     "DXLinkStreamer",
     "Equity",
-    "EventType",
     "Future",
     "FutureOption",
     "FutureOptionProduct",
     "FutureProduct",
+    "Greeks",
     "InstrumentType",
     "NestedFutureOptionChain",
     "NestedOptionChain",
@@ -105,7 +114,13 @@ __all__ = [
     "OrderType",
     "PairsWatchlist",
     "PriceEffect",
+    "Profile",
+    "Quote",
     "Session",
+    "Summary",
+    "TimeAndSale",
+    "Trade",
+    "Underlying",
     "Warrant",
     "Watchlist",
     "get_dividends",

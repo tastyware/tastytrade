@@ -1,30 +1,8 @@
-from enum import Enum
 from typing import Any, List
 
 from pydantic import BaseModel, field_validator
 
 from tastytrade.utils import TastytradeError
-
-
-class EventType(str, Enum):
-    """
-    This is an :class:`~enum.Enum` that contains the valid subscription types
-    for the data streamer.
-
-    Information on different types of events, their uses and their properties
-    can be found at the `dxfeed Knowledge Base.
-    <https://kb.dxfeed.com/en/data-model/dxfeed-api-market-events.html>`_.
-    """
-
-    CANDLE = "Candle"
-    GREEKS = "Greeks"
-    PROFILE = "Profile"
-    QUOTE = "Quote"
-    SUMMARY = "Summary"
-    THEO_PRICE = "TheoPrice"
-    TIME_AND_SALE = "TimeAndSale"
-    TRADE = "Trade"
-    UNDERLYING = "Underlying"
 
 
 class Event(BaseModel):
@@ -36,7 +14,7 @@ class Event(BaseModel):
         return v
 
     @classmethod
-    def from_stream(cls, data: list) -> List["Event"]:  # pragma: no cover
+    def from_stream(cls, data: list) -> List["Event"]:
         """
         Makes a list of event objects from a list of raw trade data fetched by
         a :class:`~tastyworks.streamer.DXFeedStreamer`.
