@@ -9,6 +9,7 @@ from ssl import SSLContext, create_default_context
 from typing import Any, AsyncIterator, Dict, List, Optional, Union
 
 import websockets
+from pydantic import model_validator
 from websockets import WebSocketClientProtocol
 
 from tastytrade import logger
@@ -31,10 +32,9 @@ from tastytrade.order import (
     OrderChain,
     PlacedComplexOrder,
     PlacedOrder,
-    PriceEffect,
 )
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeError, TastytradeJsonDataclass
+from tastytrade.utils import TastytradeError, TastytradeJsonDataclass, _set_sign_for
 from tastytrade.watchlists import Watchlist
 
 CERT_STREAMER_URL = "wss://streamer.cert.tastyworks.com"
@@ -73,13 +73,22 @@ class UnderlyingYearGainSummary(TastytradeJsonDataclass):
     symbol: str
     instrument_type: InstrumentType
     fees: Decimal
-    fees_effect: PriceEffect
     commissions: Decimal
-    commissions_effect: PriceEffect
     yearly_realized_gain: Decimal
-    yearly_realized_gain_effect: PriceEffect
     realized_lot_gain: Decimal
-    realized_lot_gain_effect: PriceEffect
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_price_effects(cls, data: Any) -> Any:
+        return _set_sign_for(
+            data,
+            [
+                "fees",
+                "commissions",
+                "yearly_realized_gain",
+                "realized_lot_gain",
+            ],
+        )
 
 
 class SubscriptionType(str, Enum):

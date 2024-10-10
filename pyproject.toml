@@ -25,12 +25,12 @@ Documentation = "https://tastyworks-api.readthedocs.io/en/latest"
 
 [tool.uv]
 dev-dependencies = [
-    "mypy>=1.11.2",
     "pytest>=8.3.3",
     "pytest-aio>=1.5.0",
     "pytest-cov>=5.0.0",
     "ruff>=0.6.9",
     "types-pytz>=2024.2.0.20241003",
+    "pyright>=1.1.384",
 ]
 
 [tool.setuptools.package-data]

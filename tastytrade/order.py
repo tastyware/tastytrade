@@ -1,10 +1,17 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+
+from pydantic import computed_field, field_serializer, model_validator
 
 from tastytrade import VERSION
-from tastytrade.utils import TastytradeJsonDataclass
+from tastytrade.utils import (
+    PriceEffect,
+    TastytradeJsonDataclass,
+    _get_sign,
+    _set_sign_for,
+)
 
 
 class InstrumentType(str, Enum):
@@ -99,17 +106,6 @@ class ComplexOrderType(str, Enum):
 
     OCO = "OCO"
     OTOCO = "OTOCO"
-
-
-class PriceEffect(str, Enum):
-    """
-    This is an :class:`~enum.Enum` that shows the sign of a price effect, since
-    Tastytrade is apparently against negative numbers.
-    """
-
-    CREDIT = "Credit"
-    DEBIT = "Debit"
-    NONE = "None"
 
 
 class FillInfo(TastytradeJsonDataclass):
@@ -236,14 +232,29 @@ class NewOrder(TastytradeJsonDataclass):
     source: str = f"tastyware/tastytrade:v{VERSION}"
     legs: List[Leg]
     gtc_date: Optional[date] = None
+    #: For a stop/stop limit order. If the latter, use price for the limit price
     stop_trigger: Optional[Decimal] = None
-    price: Optional[Decimal] = None  # optional for market orders
-    price_effect: Optional[PriceEffect] = None
+    #: The price of the order; negative = debit, positive = credit
+    price: Optional[Decimal] = None
+    #: The actual notional value of the order. Only for notional market orders!
     value: Optional[Decimal] = None
-    value_effect: Optional[PriceEffect] = None
     partition_key: Optional[str] = None
     preflight_id: Optional[str] = None
     rules: Optional[OrderRule] = None
+
+    @computed_field
+    @property
+    def price_effect(self) -> Optional[PriceEffect]:
+        return _get_sign(self.price)
+
+    @computed_field
+    @property
+    def value_effect(self) -> Optional[PriceEffect]:
+        return _get_sign(self.value)
+
+    @field_serializer("price", "value")
+    def serialize_fields(self, field: Optional[Decimal]) -> Optional[Decimal]:
+        return abs(field) if field else None
 
 
 class NewComplexOrder(TastytradeJsonDataclass):
@@ -283,10 +294,8 @@ class PlacedOrder(TastytradeJsonDataclass):
     size: Optional[Decimal] = None
     id: Optional[int] = None
     price: Optional[Decimal] = None
-    price_effect: Optional[PriceEffect] = None
     gtc_date: Optional[date] = None
     value: Optional[Decimal] = None
-    value_effect: Optional[PriceEffect] = None
     stop_trigger: Optional[str] = None
     contingent_status: Optional[str] = None
     confirmation_status: Optional[str] = None
@@ -306,6 +315,11 @@ class PlacedOrder(TastytradeJsonDataclass):
     complex_order_tag: Optional[str] = None
     preflight_id: Optional[Union[str, int]] = None
     order_rule: Optional[OrderRule] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_price_effects(cls, data: Any) -> Any:
+        return _set_sign_for(data, ["price", "value"])
 
 
 class PlacedComplexOrder(TastytradeJsonDataclass):
@@ -332,18 +346,27 @@ class BuyingPowerEffect(TastytradeJsonDataclass):
     """
 
     change_in_margin_requirement: Decimal
-    change_in_margin_requirement_effect: PriceEffect
     change_in_buying_power: Decimal
-    change_in_buying_power_effect: PriceEffect
     current_buying_power: Decimal
-    current_buying_power_effect: PriceEffect
     new_buying_power: Decimal
-    new_buying_power_effect: PriceEffect
     isolated_order_margin_requirement: Decimal
-    isolated_order_margin_requirement_effect: PriceEffect
     is_spread: bool
     impact: Decimal
     effect: PriceEffect
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_price_effects(cls, data: Any) -> Any:
+        return _set_sign_for(
+            data,
+            [
+                "change_in_margin_requirement",
+                "change_in_buying_power",
+                "current_buying_power",
+                "new_buying_power",
+                "isolated_order_margin_requirement",
+            ],
+        )
 
 
 class FeeCalculation(TastytradeJsonDataclass):
@@ -352,15 +375,24 @@ class FeeCalculation(TastytradeJsonDataclass):
     """
 
     regulatory_fees: Decimal
-    regulatory_fees_effect: PriceEffect
     clearing_fees: Decimal
-    clearing_fees_effect: PriceEffect
     commission: Decimal
-    commission_effect: PriceEffect
     proprietary_index_option_fees: Decimal
-    proprietary_index_option_fees_effect: PriceEffect
     total_fees: Decimal
-    total_fees_effect: PriceEffect
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_price_effects(cls, data: Any) -> Any:
+        return _set_sign_for(
+            data,
+            [
+                "regulatory_fees",
+                "clearing_fees",
+                "commission",
+                "proprietary_index_option_fees",
+                "total_fees",
+            ],
+        )
 
 
 class PlacedOrderResponse(TastytradeJsonDataclass):
@@ -411,16 +443,25 @@ class OrderChainNode(TastytradeJsonDataclass):
     description: str
     occurred_at: Optional[datetime] = None
     total_fees: Optional[Decimal] = None
-    total_fees_effect: Optional[PriceEffect] = None
     total_fill_cost: Optional[Decimal] = None
-    total_fill_cost_effect: Optional[PriceEffect] = None
     gcd_quantity: Optional[Decimal] = None
     fill_cost_per_quantity: Optional[Decimal] = None
-    fill_cost_per_quantity_effect: Optional[PriceEffect] = None
     order_fill_count: Optional[int] = None
     roll: Optional[bool] = None
     legs: Optional[List[OrderChainLeg]] = None
     entries: Optional[List[OrderChainEntry]] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_price_effects(cls, data: Any) -> Any:
+        return _set_sign_for(
+            data,
+            [
+                "total_fees",
+                "total_fill_cost",
+                "fill_cost_per_quantity",
+            ],
+        )
 
 
 class ComputedData(TastytradeJsonDataclass):
@@ -431,13 +472,9 @@ class ComputedData(TastytradeJsonDataclass):
     open: bool
     updated_at: datetime
     total_fees: Decimal
-    total_fees_effect: PriceEffect
     total_commissions: Decimal
-    total_commissions_effect: PriceEffect
     realized_gain: Decimal
-    realized_gain_effect: PriceEffect
     realized_gain_with_fees: Decimal
-    realized_gain_with_fees_effect: PriceEffect
     winner_realized_and_closed: bool
     winner_realized: bool
     winner_realized_with_fees: bool
@@ -447,16 +484,29 @@ class ComputedData(TastytradeJsonDataclass):
     started_at_days_to_expiration: int
     duration: int
     total_opening_cost: Decimal
-    total_opening_cost_effect: PriceEffect
     total_closing_cost: Decimal
-    total_closing_cost_effect: PriceEffect
     total_cost: Decimal
-    total_cost_effect: PriceEffect
     gcd_open_quantity: Decimal
     fees_missing: bool
     open_entries: List[OrderChainEntry]
     total_cost_per_unit: Optional[Decimal] = None
-    total_cost_per_unit_effect: Optional[PriceEffect] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_price_effects(cls, data: Any) -> Any:
+        return _set_sign_for(
+            data,
+            [
+                "total_fees",
+                "total_commissions",
+                "realized_gain",
+                "realized_gain_with_fees",
+                "total_opening_cost",
+                "total_closing_cost",
+                "total_cost",
+                "total_cost_per_unit",
+            ],
+        )
 
 
 class OrderChain(TastytradeJsonDataclass):

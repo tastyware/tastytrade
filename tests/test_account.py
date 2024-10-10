@@ -12,7 +12,6 @@ from tastytrade.order import (
     OrderAction,
     OrderTimeInForce,
     OrderType,
-    PriceEffect,
 )
 
 
@@ -157,14 +156,17 @@ def new_order(session):
         time_in_force=OrderTimeInForce.DAY,
         order_type=OrderType.LIMIT,
         legs=[leg],
-        price=Decimal(2),
-        price_effect=PriceEffect.DEBIT,
+        price=Decimal(-2),
     )
 
 
 @fixture(scope="module")
 def placed_order(session, account, new_order):
     return account.place_order(session, new_order, dry_run=False).order
+
+
+def test_place_order(placed_order):
+    pass
 
 
 def test_get_order(session, account, placed_order):
@@ -174,7 +176,7 @@ def test_get_order(session, account, placed_order):
 
 def test_replace_and_delete_order(session, account, new_order, placed_order):
     modified_order = new_order.model_copy()
-    modified_order.price = Decimal("2.01")
+    modified_order.price = Decimal("-2.01")
     replaced = account.replace_order(session, placed_order.id, modified_order)
     sleep(3)
     account.delete_order(session, replaced.id)
@@ -191,14 +193,12 @@ def test_place_oco_order(session, account):
                 order_type=OrderType.LIMIT,
                 legs=[closing],
                 price=Decimal("100"),  # will never fill
-                price_effect=PriceEffect.CREDIT,
             ),
             NewOrder(
                 time_in_force=OrderTimeInForce.GTC,
                 order_type=OrderType.STOP,
                 legs=[closing],
                 stop_trigger=Decimal("1.5"),  # will never fill
-                price_effect=PriceEffect.CREDIT,
             ),
         ]
     )
@@ -218,8 +218,7 @@ def test_place_otoco_order(session, account):
             time_in_force=OrderTimeInForce.DAY,
             order_type=OrderType.LIMIT,
             legs=[opening],
-            price=Decimal("2"),  # won't fill
-            price_effect=PriceEffect.DEBIT,
+            price=Decimal("-2"),  # won't fill
         ),
         orders=[
             NewOrder(
@@ -227,14 +226,12 @@ def test_place_otoco_order(session, account):
                 order_type=OrderType.LIMIT,
                 legs=[closing],
                 price=Decimal("400"),  # won't fill
-                price_effect=PriceEffect.CREDIT,
             ),
             NewOrder(
                 time_in_force=OrderTimeInForce.GTC,
                 order_type=OrderType.STOP,
                 legs=[closing],
                 stop_trigger=Decimal("1.5"),  # won't fill
-                price_effect=PriceEffect.CREDIT,
             ),
         ],
     )
@@ -254,6 +251,10 @@ async def placed_order_async(session, account, new_order):
     return res.order
 
 
+async def test_place_order_async(placed_order_async):
+    pass
+
+
 async def test_get_order_async(session, account, placed_order_async):
     sleep(3)
     placed = await account.a_get_order(session, placed_order_async.id)
@@ -264,7 +265,7 @@ async def test_replace_and_delete_order_async(
     session, account, new_order, placed_order_async
 ):
     modified_order = new_order.model_copy()
-    modified_order.price = Decimal("2.01")
+    modified_order.price = Decimal("-2.01")
     replaced = await account.a_replace_order(
         session, placed_order_async.id, modified_order
     )
@@ -282,8 +283,7 @@ async def test_place_complex_order_async(session, account):
             time_in_force=OrderTimeInForce.DAY,
             order_type=OrderType.LIMIT,
             legs=[opening],
-            price=Decimal("2"),  # won't fill
-            price_effect=PriceEffect.DEBIT,
+            price=Decimal("-2"),  # won't fill
         ),
         orders=[
             NewOrder(
@@ -291,14 +291,12 @@ async def test_place_complex_order_async(session, account):
                 order_type=OrderType.LIMIT,
                 legs=[closing],
                 price=Decimal("400"),  # won't fill
-                price_effect=PriceEffect.CREDIT,
             ),
             NewOrder(
                 time_in_force=OrderTimeInForce.GTC,
                 order_type=OrderType.STOP,
                 legs=[closing],
                 stop_trigger=Decimal("1.5"),  # won't fill
-                price_effect=PriceEffect.CREDIT,
             ),
         ],
     )
