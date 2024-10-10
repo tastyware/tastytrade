@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, model_validator
+from typing_extensions import Self
 
 from tastytrade.order import (
     InstrumentType,
@@ -478,9 +479,7 @@ class Account(TastytradeJsonDataclass):
     submitting_user_id: Optional[str] = None
 
     @classmethod
-    async def a_get_accounts(
-        cls, session: Session, include_closed=False
-    ) -> List["Account"]:
+    async def a_get_accounts(cls, session: Session, include_closed=False) -> List[Self]:
         """
         Gets all trading accounts associated with the Tastytrade user.
 
@@ -496,7 +495,7 @@ class Account(TastytradeJsonDataclass):
         ]
 
     @classmethod
-    def get_accounts(cls, session: Session, include_closed=False) -> List["Account"]:
+    def get_accounts(cls, session: Session, include_closed=False) -> List[Self]:
         """
         Gets all trading accounts associated with the Tastytrade user.
 
@@ -512,7 +511,7 @@ class Account(TastytradeJsonDataclass):
         ]
 
     @classmethod
-    async def a_get_account(cls, session: Session, account_number: str) -> "Account":
+    async def a_get_account(cls, session: Session, account_number: str) -> Self:
         """
         Returns the Tastytrade account associated with the given account ID.
 
@@ -523,7 +522,7 @@ class Account(TastytradeJsonDataclass):
         return cls(**data)
 
     @classmethod
-    def get_account(cls, session: Session, account_number: str) -> "Account":
+    def get_account(cls, session: Session, account_number: str) -> Self:
         """
         Returns the Tastytrade account associated with the given account ID.
 

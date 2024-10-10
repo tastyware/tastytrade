@@ -1,5 +1,7 @@
 from typing import Any, Dict, List, Optional
 
+from typing_extensions import Self
+
 from tastytrade.instruments import InstrumentType
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeJsonDataclass
@@ -28,7 +30,7 @@ class PairsWatchlist(TastytradeJsonDataclass):
     pairs_equations: List[Pair]
 
     @classmethod
-    async def a_get_pairs_watchlists(cls, session: Session) -> List["PairsWatchlist"]:
+    async def a_get_pairs_watchlists(cls, session: Session) -> List[Self]:
         """
         Fetches a list of all Tastytrade public pairs watchlists.
 
@@ -38,7 +40,7 @@ class PairsWatchlist(TastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
     @classmethod
-    def get_pairs_watchlists(cls, session: Session) -> List["PairsWatchlist"]:
+    def get_pairs_watchlists(cls, session: Session) -> List[Self]:
         """
         Fetches a list of all Tastytrade public pairs watchlists.
 
@@ -48,9 +50,7 @@ class PairsWatchlist(TastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
     @classmethod
-    async def a_get_pairs_watchlist(
-        cls, session: Session, name: str
-    ) -> "PairsWatchlist":
+    async def a_get_pairs_watchlist(cls, session: Session, name: str) -> Self:
         """
         Fetches a Tastytrade public pairs watchlist by name.
 
@@ -61,7 +61,7 @@ class PairsWatchlist(TastytradeJsonDataclass):
         return cls(**data)
 
     @classmethod
-    def get_pairs_watchlist(cls, session: Session, name: str) -> "PairsWatchlist":
+    def get_pairs_watchlist(cls, session: Session, name: str) -> Self:
         """
         Fetches a Tastytrade public pairs watchlist by name.
 
@@ -86,7 +86,7 @@ class Watchlist(TastytradeJsonDataclass):
     @classmethod
     async def a_get_public_watchlists(
         cls, session: Session, counts_only: bool = False
-    ) -> List["Watchlist"]:
+    ) -> List[Self]:
         """
         Fetches a list of all Tastytrade public watchlists.
 
@@ -101,7 +101,7 @@ class Watchlist(TastytradeJsonDataclass):
     @classmethod
     def get_public_watchlists(
         cls, session: Session, counts_only: bool = False
-    ) -> List["Watchlist"]:
+    ) -> List[Self]:
         """
         Fetches a list of all Tastytrade public watchlists.
 
@@ -112,7 +112,7 @@ class Watchlist(TastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
     @classmethod
-    async def a_get_public_watchlist(cls, session: Session, name: str) -> "Watchlist":
+    async def a_get_public_watchlist(cls, session: Session, name: str) -> Self:
         """
         Fetches a Tastytrade public watchlist by name.
 
@@ -123,7 +123,7 @@ class Watchlist(TastytradeJsonDataclass):
         return cls(**data)
 
     @classmethod
-    def get_public_watchlist(cls, session: Session, name: str) -> "Watchlist":
+    def get_public_watchlist(cls, session: Session, name: str) -> Self:
         """
         Fetches a Tastytrade public watchlist by name.
 
@@ -134,7 +134,7 @@ class Watchlist(TastytradeJsonDataclass):
         return cls(**data)
 
     @classmethod
-    async def a_get_private_watchlists(cls, session: Session) -> List["Watchlist"]:
+    async def a_get_private_watchlists(cls, session: Session) -> List[Self]:
         """
         Fetches a the user's private watchlists.
 
@@ -144,7 +144,7 @@ class Watchlist(TastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
     @classmethod
-    def get_private_watchlists(cls, session: Session) -> List["Watchlist"]:
+    def get_private_watchlists(cls, session: Session) -> List[Self]:
         """
         Fetches a the user's private watchlists.
 
@@ -154,7 +154,7 @@ class Watchlist(TastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
     @classmethod
-    async def a_get_private_watchlist(cls, session: Session, name: str) -> "Watchlist":
+    async def a_get_private_watchlist(cls, session: Session, name: str) -> Self:
         """
         Fetches a user's watchlist by name.
 
@@ -165,7 +165,7 @@ class Watchlist(TastytradeJsonDataclass):
         return cls(**data)
 
     @classmethod
-    def get_private_watchlist(cls, session: Session, name: str) -> "Watchlist":
+    def get_private_watchlist(cls, session: Session, name: str) -> Self:
         """
         Fetches a user's watchlist by name.
 
