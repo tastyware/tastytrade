@@ -165,6 +165,10 @@ def placed_order(session, account, new_order):
     return account.place_order(session, new_order, dry_run=False).order
 
 
+def test_place_order(placed_order):
+    pass
+
+
 def test_get_order(session, account, placed_order):
     sleep(3)
     assert account.get_order(session, placed_order.id).id == placed_order.id
@@ -172,7 +176,7 @@ def test_get_order(session, account, placed_order):
 
 def test_replace_and_delete_order(session, account, new_order, placed_order):
     modified_order = new_order.model_copy()
-    modified_order.price = Decimal("2.01")
+    modified_order.price = Decimal("-2.01")
     replaced = account.replace_order(session, placed_order.id, modified_order)
     sleep(3)
     account.delete_order(session, replaced.id)
@@ -247,6 +251,10 @@ async def placed_order_async(session, account, new_order):
     return res.order
 
 
+async def test_place_order_async(placed_order_async):
+    pass
+
+
 async def test_get_order_async(session, account, placed_order_async):
     sleep(3)
     placed = await account.a_get_order(session, placed_order_async.id)
@@ -257,7 +265,7 @@ async def test_replace_and_delete_order_async(
     session, account, new_order, placed_order_async
 ):
     modified_order = new_order.model_copy()
-    modified_order.price = Decimal("2.01")
+    modified_order.price = Decimal("-2.01")
     replaced = await account.a_replace_order(
         session, placed_order_async.id, modified_order
     )
