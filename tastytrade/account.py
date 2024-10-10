@@ -11,6 +11,7 @@ from tastytrade.order import (
     OrderAction,
     OrderStatus,
     PlacedComplexOrder,
+    PlacedComplexOrderResponse,
     PlacedOrder,
     PlacedOrderResponse,
 )
@@ -1572,7 +1573,7 @@ class Account(TastytradeJsonDataclass):
 
     async def a_place_complex_order(
         self, session: Session, order: NewComplexOrder, dry_run: bool = True
-    ) -> PlacedOrderResponse:
+    ) -> PlacedComplexOrderResponse:
         """
         Place the given order.
 
@@ -1585,11 +1586,11 @@ class Account(TastytradeJsonDataclass):
             url += "/dry-run"
         json = order.model_dump_json(exclude_none=True, by_alias=True)
         data = await session._a_post(url, data=json)
-        return PlacedOrderResponse(**data)
+        return PlacedComplexOrderResponse(**data)
 
     def place_complex_order(
         self, session: Session, order: NewComplexOrder, dry_run: bool = True
-    ) -> PlacedOrderResponse:
+    ) -> PlacedComplexOrderResponse:
         """
         Place the given order.
 
@@ -1602,7 +1603,7 @@ class Account(TastytradeJsonDataclass):
             url += "/dry-run"
         json = order.model_dump_json(exclude_none=True, by_alias=True)
         data = session._post(url, data=json)
-        return PlacedOrderResponse(**data)
+        return PlacedComplexOrderResponse(**data)
 
     async def a_replace_order(
         self, session: Session, old_order_id: int, new_order: NewOrder

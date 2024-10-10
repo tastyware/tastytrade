@@ -1,12 +1,12 @@
 import asyncio
 import json
-from asyncio import Lock, Queue
+from asyncio import Lock, Queue, QueueEmpty
 from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from ssl import SSLContext, create_default_context
-from typing import Any, AsyncIterator, Dict, List, Optional, Union
+from typing import Any, AsyncIterator, Dict, List, Optional, Type, TypeVar, Union
 
 import websockets
 from pydantic import model_validator
@@ -16,8 +16,6 @@ from tastytrade import logger
 from tastytrade.account import Account, AccountBalance, CurrentPosition, TradingStatus
 from tastytrade.dxfeed import (
     Candle,
-    Event,
-    EventType,
     Greeks,
     Profile,
     Quote,
@@ -41,6 +39,7 @@ CERT_STREAMER_URL = "wss://streamer.cert.tastyworks.com"
 STREAMER_URL = "wss://streamer.tastyworks.com"
 
 DXLINK_VERSION = "0.1-js/1.0.0-beta.4"
+T = TypeVar("T")
 
 
 class QuoteAlert(TastytradeJsonDataclass):
@@ -104,21 +103,53 @@ class SubscriptionType(str, Enum):
     USER_MESSAGE = "user-message-subscribe"
 
 
-class AlertType(str, Enum):
-    """
-    This is an :class:`~enum.Enum` that contains the event types
-    for the account streamer.
-    """
+MAP_ALERTS = {
+    "AccountBalance": AccountBalance,
+    "ComplexOrder": PlacedComplexOrder,
+    "Order": PlacedOrder,
+    "OrderChain": OrderChain,
+    "CurrentPosition": CurrentPosition,
+    "QuoteAlert": QuoteAlert,
+    "TradingStatus": TradingStatus,
+    "UnderlyingYearGainSummary": UnderlyingYearGainSummary,
+    "PublicWatchlists": Watchlist,
+}
+#: List of all possible types to stream with the alert streamer
+AlertType = Union[
+    AccountBalance,
+    PlacedComplexOrder,
+    PlacedOrder,
+    OrderChain,
+    CurrentPosition,
+    QuoteAlert,
+    TradingStatus,
+    UnderlyingYearGainSummary,
+    Watchlist,
+]
 
-    ACCOUNT_BALANCE = "AccountBalance"
-    COMPLEX_ORDER = "ComplexOrder"
-    ORDER = "Order"
-    ORDER_CHAIN = "OrderChain"
-    POSITION = "CurrentPosition"
-    QUOTE_ALERT = "QuoteAlert"
-    TRADING_STATUS = "TradingStatus"
-    UNDERLYING_SUMMARY = "UnderlyingYearGainSummary"
-    WATCHLIST = "PublicWatchlists"
+MAP_EVENTS = {
+    "Candle": Candle,
+    "Greeks": Greeks,
+    "Profile": Profile,
+    "Quote": Quote,
+    "Summary": Summary,
+    "TheoPrice": TheoPrice,
+    "TimeAndSale": TimeAndSale,
+    "Trade": Trade,
+    "Underlying": Underlying,
+}
+#: List of all possible types to stream with the data streamer
+EventType = Union[
+    Candle,
+    Greeks,
+    Profile,
+    Quote,
+    Summary,
+    TheoPrice,
+    TimeAndSale,
+    Trade,
+    Underlying,
+]
 
 
 class AlertStreamer:
@@ -131,6 +162,7 @@ class AlertStreamer:
     Example usage::
 
         from tastytrade import Account, AlertStreamer
+        from tastytrade.order import PlacedOrder
 
         async with AlertStreamer(session) as streamer:
             accounts = Account.get_accounts(session)
@@ -142,8 +174,8 @@ class AlertStreamer:
             # quote alerts configured by the user
             await streamer.subscribe_quote_alerts()
 
-            async for data in streamer.listen():
-                print(data)
+            async for order in streamer.listen(PlacedOrder):
+                print(order)
 
     """
 
@@ -153,7 +185,7 @@ class AlertStreamer:
         #: The base url for the streamer websocket
         self.base_url: str = CERT_STREAMER_URL if session.is_test else STREAMER_URL
 
-        self._queues: Dict[AlertType, Queue] = defaultdict(Queue)
+        self._queues: Dict[str, Queue] = defaultdict(Queue)
         self._websocket: Optional[WebSocketClientProtocol] = None
         self._connect_task = asyncio.create_task(self._connect())
 
@@ -202,57 +234,28 @@ class AlertStreamer:
                 if type_str is not None:
                     await self._map_message(type_str, data["data"])
 
-    async def listen(
-        self, event_type: AlertType
-    ) -> AsyncIterator[
-        Union[
-            AccountBalance,
-            CurrentPosition,
-            PlacedComplexOrder,
-            PlacedOrder,
-            OrderChain,
-            QuoteAlert,
-            TradingStatus,
-            UnderlyingYearGainSummary,
-            Watchlist,
-        ]
-    ]:
+    async def listen(self, alert_class: T) -> AsyncIterator[T]:
         """
         Iterate over non-heartbeat messages received from the streamer,
         mapping them to their appropriate data class and yielding them.
-        """
-        while True:
-            yield await self._queues[event_type].get()
 
-    async def _map_message(self, type_str: str, data: dict):  # pragma: no cover
+        This is designed to be friendly for type checking; the return
+        type will be the same class you pass in.
+
+        :param alert_class: the type of alert to listen for, should be
+        of `~tastytrade.streamer.AlertType`
         """
-        I'm not sure what the user-status messages look like,
-        so they're absent.
+        cls_str = next(k for k, v in MAP_ALERTS.items() if v == alert_class)
+        while True:
+            yield await self._queues[cls_str].get()
+
+    async def _map_message(self, type_str: str, data: dict):
         """
-        if type_str == AlertType.ACCOUNT_BALANCE:
-            await self._queues[AlertType.ACCOUNT_BALANCE].put(AccountBalance(**data))
-        elif type_str == AlertType.POSITION:
-            await self._queues[AlertType.POSITION].put(CurrentPosition(**data))
-        elif type_str == AlertType.COMPLEX_ORDER:
-            await self._queues[AlertType.COMPLEX_ORDER].put(PlacedComplexOrder(**data))
-        elif type_str == AlertType.ORDER:
-            await self._queues[AlertType.ORDER].put(PlacedOrder(**data))
-        elif type_str == AlertType.ORDER_CHAIN:
-            await self._queues[AlertType.ORDER_CHAIN].put(OrderChain(**data))
-        elif type_str == AlertType.QUOTE_ALERT:
-            await self._queues[AlertType.QUOTE_ALERT].put(QuoteAlert(**data))
-        elif type_str == AlertType.TRADING_STATUS:
-            await self._queues[AlertType.TRADING_STATUS].put(TradingStatus(**data))
-        elif type_str == AlertType.UNDERLYING_SUMMARY:
-            await self._queues[AlertType.UNDERLYING_SUMMARY].put(
-                UnderlyingYearGainSummary(**data)
-            )
-        elif type_str == AlertType.WATCHLIST:
-            await self._queues[AlertType.WATCHLIST].put(Watchlist(**data))
-        else:
-            logger.error(
-                f"Unknown message type {type_str}! Please open an " f"issue.\n{data}"
-            )
+        I'm not sure what the user-status messages look like, so they're absent.
+        """
+        if type_str not in MAP_ALERTS:
+            raise NotImplementedError("This message type isn't supported! Please open an issue.")
+        await self._queues[type_str].put(MAP_ALERTS[type_str](**data))
 
     async def subscribe_accounts(self, accounts: List[Account]) -> None:
         """
@@ -336,19 +339,19 @@ class DXLinkStreamer:
     ):
         self._counter = 0
         self._lock: Lock = Lock()
-        self._queues: Dict[EventType, Queue] = defaultdict(Queue)
-        self._channels: Dict[EventType, int] = {
-            EventType.CANDLE: 1,
-            EventType.GREEKS: 3,
-            EventType.PROFILE: 5,
-            EventType.QUOTE: 7,
-            EventType.SUMMARY: 9,
-            EventType.THEO_PRICE: 11,
-            EventType.TIME_AND_SALE: 13,
-            EventType.TRADE: 15,
-            EventType.UNDERLYING: 17,
+        self._queues: Dict[str, Queue] = defaultdict(Queue)
+        self._channels: Dict[str, int] = {
+            "Candle": 1,
+            "Greeks": 3,
+            "Profile": 5,
+            "Quote": 7,
+            "Summary": 9,
+            "TheoPrice": 11,
+            "TimeAndSale": 13,
+            "Trade": 15,
+            "Underlying": 17,
         }
-        self._subscription_state: Dict[EventType, str] = defaultdict(
+        self._subscription_state: Dict[str, str] = defaultdict(
             lambda: "CHANNEL_CLOSED"
         )
 
@@ -446,7 +449,7 @@ class DXLinkStreamer:
         }
         await self._websocket.send(json.dumps(message))
 
-    async def listen(self, event_type: EventType) -> AsyncIterator[Event]:
+    async def listen(self, event_class: T) -> AsyncIterator[T]:
         """
         Using the existing subscriptions, pulls events of the given type and
         yield returns them. Never exits unless there's an error or the channel
@@ -454,29 +457,32 @@ class DXLinkStreamer:
 
         :param event_type: the type of event to listen for
         """
+        cls_str = next(k for k, v in MAP_EVENTS.items() if v == event_class)
         while True:
-            yield await self._queues[event_type].get()
+            yield await self._queues[cls_str].get()
 
-    def get_event_nowait(self, event_type: EventType) -> Optional[Event]:
+    def get_event_nowait(self, event_class: T) -> Optional[T]:
         """
         Using the existing subscriptions, pulls an event of the given type and
         returns it. If the queue is empty None is returned.
 
         :param event_type: the type of event to get
         """
-        if not self._queues[event_type].empty():
-            return self._queues[event_type].get_nowait()
-        else:
+        cls_str = next(k for k, v in MAP_EVENTS.items() if v == event_class)
+        try:
+            return self._queues[cls_str].get_nowait()
+        except QueueEmpty:
             return None
 
-    async def get_event(self, event_type: EventType) -> Event:
+    async def get_event(self, event_class: T) -> T:
         """
         Using the existing subscription, pulls an event of the given type and
         returns it.
 
         :param event_type: the type of event to get
         """
-        return await self._queues[event_type].get()
+        cls_str = next(k for k, v in MAP_EVENTS.items() if v == event_class)
+        return await self._queues[cls_str].get()
 
     async def _heartbeat(self) -> None:
         """
@@ -491,39 +497,42 @@ class DXLinkStreamer:
             # send the heartbeat every 30 seconds
             await asyncio.sleep(30)
 
-    async def subscribe(self, event_type: EventType, symbols: List[str]) -> None:
+    async def subscribe(self, event_class: Type[EventType], symbols: List[str]) -> None:
         """
         Subscribes to quotes for given list of symbols. Used for recurring data
         feeds.
         For candles, use :meth:`subscribe_candle` instead.
 
-        :param event_type: type of subscription to add
+        :param event_class: type of subscription to add, should be of
+        `~tastytrade.streamer.EventType`
         :param symbols: list of symbols to subscribe for
         """
-        if self._subscription_state[event_type] != "CHANNEL_OPENED":
-            await self._channel_request(event_type)
+        cls_str = next(k for k, v in MAP_EVENTS.items() if v == event_class)
+        if self._subscription_state[cls_str] != "CHANNEL_OPENED":
+            await self._channel_request(cls_str)
         message = {
             "type": "FEED_SUBSCRIPTION",
-            "channel": self._channels[event_type],
-            "add": [{"symbol": symbol, "type": event_type} for symbol in symbols],
+            "channel": self._channels[cls_str],
+            "add": [{"symbol": symbol, "type": cls_str} for symbol in symbols],
         }
         logger.debug("sending subscription: %s", message)
         await self._websocket.send(json.dumps(message))
 
-    async def cancel_channel(self, event_type: EventType) -> None:
+    async def cancel_channel(self, event_class: Type[EventType]) -> None:
         """
         Cancels the channel for the belonging event_type
 
         :param event_type: cancel the channel for this event
         """
+        cls_str = next(k for k, v in MAP_EVENTS.items() if v == event_class)
         message = {
             "type": "CHANNEL_CANCEL",
-            "channel": self._channels[event_type],
+            "channel": self._channels[cls_str],
         }
         logger.debug("sending channel cancel: %s", message)
         await self._websocket.send(json.dumps(message))
 
-    async def _channel_request(self, event_type: EventType) -> None:
+    async def _channel_request(self, event_type: str) -> None:
         message = {
             "type": "CHANNEL_REQUEST",
             "channel": self._channels[event_type],
@@ -543,7 +552,7 @@ class DXLinkStreamer:
         # setup the feed
         await self._channel_setup(event_type)
 
-    async def _channel_setup(self, event_type: EventType) -> None:
+    async def _channel_setup(self, event_type: str) -> None:
         message = {
             "type": "FEED_SETUP",
             "channel": self._channels[event_type],
@@ -555,30 +564,14 @@ class DXLinkStreamer:
             schema = event_class.schema()
             return {schema["title"]: list(schema["properties"].keys())}
 
-        if event_type == EventType.CANDLE:
-            accept = dict_from_schema(Candle)
-        elif event_type == EventType.GREEKS:
-            accept = dict_from_schema(Greeks)
-        elif event_type == EventType.PROFILE:
-            accept = dict_from_schema(Profile)
-        elif event_type == EventType.QUOTE:
-            accept = dict_from_schema(Quote)
-        elif event_type == EventType.SUMMARY:
-            accept = dict_from_schema(Summary)
-        elif event_type == EventType.THEO_PRICE:
-            accept = dict_from_schema(TheoPrice)
-        elif event_type == EventType.TIME_AND_SALE:
-            accept = dict_from_schema(TimeAndSale)
-        elif event_type == EventType.TRADE:
-            accept = dict_from_schema(Trade)
-        elif event_type == EventType.UNDERLYING:
-            accept = dict_from_schema(Underlying)
+        cls = MAP_EVENTS[event_type]
+        accept = dict_from_schema(cls)
         message["acceptEventFields"] = accept
         # send message
         logger.debug("setting up feed: %s", message)
         await self._websocket.send(json.dumps(message))
 
-    async def unsubscribe(self, event_type: EventType, symbols: List[str]) -> None:
+    async def unsubscribe(self, event_class: Type[EventType], symbols: List[str]) -> None:
         """
         Removes existing subscription for given list of symbols.
         For candles, use :meth:`unsubscribe_candle` instead.
@@ -588,12 +581,14 @@ class DXLinkStreamer:
         """
         if not self._authenticated:
             raise TastytradeError("Stream not authenticated")
-        event_type_str = str(event_type).split(".")[1].capitalize()
+        cls_str = next(k for k, v in MAP_EVENTS.items() if v == event_class)
+        #event_type_str = str(event_type).split(".")[1].capitalize()
+        # TODO: what did this even do?
         message = {
             "type": "FEED_SUBSCRIPTION",
-            "channel": self._channels[event_type],
+            "channel": self._channels[cls_str],
             "remove": [
-                {"symbol": symbol, "type": event_type_str} for symbol in symbols
+                {"symbol": symbol, "type": cls_str} for symbol in symbols
             ],
         }
         logger.debug("sending subscription: %s", message)
@@ -618,11 +613,12 @@ class DXLinkStreamer:
         :param end_time: ending time for the data range
         :param extended_trading_hours: whether to include extended trading
         """
-        if self._subscription_state[EventType.CANDLE] != "CHANNEL_OPENED":
-            await self._channel_request(EventType.CANDLE)
+        cls_str = "Candle"
+        if self._subscription_state[cls_str] != "CHANNEL_OPENED":
+            await self._channel_request(cls_str)
         message = {
             "type": "FEED_SUBSCRIPTION",
-            "channel": self._channels[EventType.CANDLE],
+            "channel": self._channels[cls_str],
             "add": [
                 {
                     "symbol": (
@@ -656,7 +652,7 @@ class DXLinkStreamer:
         """
         message = {
             "type": "FEED_SUBSCRIPTION",
-            "channel": self._channels[EventType.CANDLE],
+            "channel": self._channels["Candle"],
             "remove": [
                 {
                     "symbol": (
@@ -684,41 +680,9 @@ class DXLinkStreamer:
             msg_type = message[0][0]
         data = message[1]
         # parse type or warn for unknown type
-        if msg_type == EventType.CANDLE:
-            candles = Candle.from_stream(data)
-            for candle in candles:
-                await self._queues[EventType.CANDLE].put(candle)
-        elif msg_type == EventType.GREEKS:
-            greeks = Greeks.from_stream(data)
-            for greek in greeks:
-                await self._queues[EventType.GREEKS].put(greek)
-        elif msg_type == EventType.PROFILE:
-            profiles = Profile.from_stream(data)
-            for profile in profiles:
-                await self._queues[EventType.PROFILE].put(profile)
-        elif msg_type == EventType.QUOTE:
-            quotes = Quote.from_stream(data)
-            for quote in quotes:
-                await self._queues[EventType.QUOTE].put(quote)
-        elif msg_type == EventType.SUMMARY:
-            summaries = Summary.from_stream(data)
-            for summary in summaries:
-                await self._queues[EventType.SUMMARY].put(summary)
-        elif msg_type == EventType.THEO_PRICE:
-            theo_prices = TheoPrice.from_stream(data)
-            for theo_price in theo_prices:
-                await self._queues[EventType.THEO_PRICE].put(theo_price)
-        elif msg_type == EventType.TIME_AND_SALE:
-            time_and_sales = TimeAndSale.from_stream(data)
-            for tas in time_and_sales:
-                await self._queues[EventType.TIME_AND_SALE].put(tas)
-        elif msg_type == EventType.TRADE:
-            trades = Trade.from_stream(data)
-            for trade in trades:
-                await self._queues[EventType.TRADE].put(trade)
-        elif msg_type == EventType.UNDERLYING:
-            underlyings = Underlying.from_stream(data)
-            for underlying in underlyings:
-                await self._queues[EventType.UNDERLYING].put(underlying)
-        else:
-            raise TastytradeError(f"Unknown message type received: {message}")
+        if msg_type not in MAP_EVENTS:
+            raise NotImplementedError(f"Unknown message type received: {message}")
+        cls = MAP_EVENTS[msg_type]
+        results = cls.from_stream(data)
+        for r in results:
+            await self._queues[msg_type].put(r)
