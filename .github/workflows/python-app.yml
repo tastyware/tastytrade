@@ -21,11 +21,10 @@ jobs:
         uv sync
     - name: Lint with ruff
       run: |
-        uv run ruff check .
-    - name: Type check with mypy
+        uv run ruff check tastytrade/ tests/
+    - name: Type check with pyright
       run: |
-        uv run mypy -p tastytrade
-        uv run mypy -p tests
+        uv run pyright tastytrade/ tests/
     - name: Test with pytest
       run: |
         uv run pytest --cov=tastytrade --cov-report=term-missing tests/ --cov-fail-under=95

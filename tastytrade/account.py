@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, computed_field, field_serializer, model_validator
+from pydantic import BaseModel, model_validator
 
 from tastytrade.order import (
     InstrumentType,
@@ -19,7 +19,6 @@ from tastytrade.utils import (
     PriceEffect,
     TastytradeError,
     TastytradeJsonDataclass,
-    _get_sign,
     _set_sign_for,
     today_in_new_york,
     validate_response,
@@ -66,8 +65,7 @@ class AccountBalance(TastytradeJsonDataclass):
     long_cryptocurrency_value: Decimal
     short_cryptocurrency_value: Decimal
     cryptocurrency_margin_requirement: Decimal
-    unsettled_cryptocurrency_fiat_amount: Decimal  # TODO: work with _amount suffix
-    unsettled_cryptocurrency_fiat_effect: PriceEffect
+    unsettled_cryptocurrency_fiat_amount: Decimal
     closed_loop_available_balance: Decimal
     equity_offering_margin_requirement: Decimal
     long_bond_value: Decimal
@@ -82,22 +80,17 @@ class AccountBalance(TastytradeJsonDataclass):
     updated_at: datetime
     apex_starting_day_margin_equity: Optional[Decimal] = None
     buying_power_adjustment: Optional[Decimal] = None
-    buying_power_adjustment_effect: Optional[PriceEffect] = None
     time_of_day: Optional[str] = None
-
-    @computed_field
-    @property
-    def pending_cash_effect(self) -> PriceEffect:
-        return _get_sign(self.pending_cash)
 
     @model_validator(mode="before")
     @classmethod
-    def validate_pending_cash(cls, data: Any) -> Any:
-        return _set_sign_for(data, "pending_cash")
-
-    @field_serializer("pending_cash")
-    def serialize_pending_cash(self, price: Decimal) -> Decimal:
-        return abs(price)
+    def validate_price_effects(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            key = "unsettled-cryptocurrency-fiat-amount"
+            effect = data.get("unsettled-cryptocurrency-fiat-effect")
+            if effect == PriceEffect.DEBIT:
+                data[key] = -abs(Decimal(data[key]))
+        return _set_sign_for(data, ["pending_cash", "buying_power_adjustment"])
 
 
 class AccountBalanceSnapshot(TastytradeJsonDataclass):
@@ -132,18 +125,26 @@ class AccountBalanceSnapshot(TastytradeJsonDataclass):
     cash_available_to_withdraw: Decimal
     day_trade_excess: Decimal
     pending_cash: Decimal
-    pending_cash_effect: PriceEffect
     snapshot_date: date
     time_of_day: Optional[str] = None
     long_cryptocurrency_value: Optional[Decimal] = None
     short_cryptocurrency_value: Optional[Decimal] = None
     cryptocurrency_margin_requirement: Optional[Decimal] = None
     unsettled_cryptocurrency_fiat_amount: Optional[Decimal] = None
-    unsettled_cryptocurrency_fiat_effect: Optional[PriceEffect] = None
     closed_loop_available_balance: Optional[Decimal] = None
     equity_offering_margin_requirement: Optional[Decimal] = None
     long_bond_value: Optional[Decimal] = None
     bond_margin_requirement: Optional[Decimal] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_price_effects(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            key = "unsettled-cryptocurrency-fiat-amount"
+            effect = data.get("unsettled-cryptocurrency-fiat-effect")
+            if effect == PriceEffect.DEBIT:
+                data[key] = -abs(Decimal(data[key]))
+        return _set_sign_for(data, ["pending_cash"])
 
 
 class CurrentPosition(TastytradeJsonDataclass):
@@ -176,15 +177,22 @@ class CurrentPosition(TastytradeJsonDataclass):
     deliverable_type: Optional[str] = None
     average_yearly_market_close_price: Optional[Decimal] = None
     average_daily_market_close_price: Optional[Decimal] = None
-    realized_day_gain_effect: Optional[PriceEffect] = None
     realized_day_gain_date: Optional[date] = None
-    realized_today_effect: Optional[PriceEffect] = None
     realized_today_date: Optional[date] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_price_effects(cls, data: Any) -> Any:
+        return _set_sign_for(data, ["realized_day_gain", "realized_today"])
 
 
 class FeesInfo(TastytradeJsonDataclass):
     total_fees: Decimal
-    total_fees_effect: PriceEffect
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_price_effects(cls, data: Any) -> Any:
+        return _set_sign_for(data, ["total_fees"])
 
 
 class Lot(TastytradeJsonDataclass):
@@ -210,22 +218,31 @@ class MarginReportEntry(TastytradeJsonDataclass):
     description: str
     code: str
     buying_power: Decimal
-    buying_power_effect: PriceEffect
     margin_calculation_type: str
     margin_requirement: Decimal
-    margin_requirement_effect: PriceEffect
     expected_price_range_up_percent: Optional[Decimal] = None
     expected_price_range_down_percent: Optional[Decimal] = None
     groups: Optional[List[Dict[str, Any]]] = None
     initial_requirement: Optional[Decimal] = None
-    initial_requirement_effect: Optional[PriceEffect] = None
     maintenance_requirement: Optional[Decimal] = None
-    maintenance_requirement_effect: Optional[PriceEffect] = None
     point_of_no_return_percent: Optional[Decimal] = None
     price_increase_percent: Optional[Decimal] = None
     price_decrease_percent: Optional[Decimal] = None
     underlying_symbol: Optional[str] = None
     underlying_type: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_price_effects(cls, data: Any) -> Any:
+        return _set_sign_for(
+            data,
+            [
+                "buying_power",
+                "margin_requirement",
+                "initial_requirement",
+                "maintenance_requirement",
+            ],
+        )
 
 
 class MarginReport(TastytradeJsonDataclass):
@@ -238,23 +255,32 @@ class MarginReport(TastytradeJsonDataclass):
     margin_calculation_type: str
     option_level: str
     margin_requirement: Decimal
-    margin_requirement_effect: PriceEffect
     maintenance_requirement: Decimal
-    maintenance_requirement_effect: PriceEffect
     margin_equity: Decimal
-    margin_equity_effect: PriceEffect
     option_buying_power: Decimal
-    option_buying_power_effect: PriceEffect
     reg_t_margin_requirement: Decimal
-    reg_t_margin_requirement_effect: PriceEffect
     reg_t_option_buying_power: Decimal
-    reg_t_option_buying_power_effect: PriceEffect
     maintenance_excess: Decimal
-    maintenance_excess_effect: PriceEffect
     last_state_timestamp: int
     groups: List[Union[MarginReportEntry, EmptyDict]]
     initial_requirement: Optional[Decimal] = None
-    initial_requirement_effect: Optional[PriceEffect] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_price_effects(cls, data: Any) -> Any:
+        return _set_sign_for(
+            data,
+            [
+                "maintenance_requirement",
+                "margin_requirement",
+                "margin_equity",
+                "maintenance_excess",
+                "option_buying_power",
+                "reg_t_margin_requirement",
+                "reg_t_option_buying_power",
+                "initial_requirement",
+            ],
+        )
 
 
 class MarginRequirement(TastytradeJsonDataclass):
@@ -370,9 +396,7 @@ class Transaction(TastytradeJsonDataclass):
     executed_at: datetime
     transaction_date: date
     value: Decimal
-    value_effect: PriceEffect
     net_value: Decimal
-    net_value_effect: PriceEffect
     is_estimated_fee: bool
     symbol: Optional[str] = None
     instrument_type: Optional[InstrumentType] = None
@@ -381,13 +405,9 @@ class Transaction(TastytradeJsonDataclass):
     quantity: Optional[Decimal] = None
     price: Optional[Decimal] = None
     regulatory_fees: Optional[Decimal] = None
-    regulatory_fees_effect: Optional[PriceEffect] = None
     clearing_fees: Optional[Decimal] = None
-    clearing_fees_effect: Optional[PriceEffect] = None
     commission: Optional[Decimal] = None
-    commission_effect: Optional[PriceEffect] = None
     proprietary_index_option_fees: Optional[Decimal] = None
-    proprietary_index_option_fees_effect: Optional[PriceEffect] = None
     ext_exchange_order_number: Optional[str] = None
     ext_global_order_number: Optional[int] = None
     ext_group_id: Optional[str] = None
@@ -400,13 +420,28 @@ class Transaction(TastytradeJsonDataclass):
     leg_count: Optional[int] = None
     destination_venue: Optional[str] = None
     other_charge: Optional[Decimal] = None
-    other_charge_effect: Optional[PriceEffect] = None
     other_charge_description: Optional[str] = None
     reverses_id: Optional[int] = None
     cost_basis_reconciliation_date: Optional[date] = None
     lots: Optional[List[Lot]] = None
     agency_price: Optional[Decimal] = None
     principal_price: Optional[Decimal] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_price_effects(cls, data: Any) -> Any:
+        return _set_sign_for(
+            data,
+            [
+                "value",
+                "net_value",
+                "regulatory_fees",
+                "clearing_fees",
+                "proprietary_index_option_fees",
+                "commission",
+                "other_charge",
+            ],
+        )
 
 
 class Account(TastytradeJsonDataclass):

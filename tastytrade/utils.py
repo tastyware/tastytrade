@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from enum import Enum
-from typing import Any
+from typing import Any, List, Optional
 
 import pandas_market_calendars as mcal  # type: ignore
 import pytz
@@ -242,20 +242,23 @@ def validate_response(response: Response) -> None:
         raise TastytradeError(error_message)
 
 
-def _get_sign(value: Decimal) -> PriceEffect:
+def _get_sign(value: Optional[Decimal]) -> Optional[PriceEffect]:
+    if not value:
+        return None
     return PriceEffect.DEBIT if value < 0 else PriceEffect.CREDIT
 
 
-def _set_sign_for(data: Any, property: str) -> Any:
+def _set_sign_for(data: Any, properties: List[str]) -> Any:
     """
     Handles setting the sign of a number using the associated "-effect" field.
 
     :param data: the raw, unprocessed model object
-    :param property: the name of the number field
+    :param properties: the name of the number fields to set
     """
     if isinstance(data, dict):
-        key = _dasherize(property)
-        effect = data.get(f"{key}-effect")
-        if effect == PriceEffect.DEBIT:
-            data[key] = -abs(Decimal(data[key]))
+        for property in properties:
+            key = _dasherize(property)
+            effect = data.get(f"{key}-effect")
+            if effect == PriceEffect.DEBIT:
+                data[key] = -abs(Decimal(data[key]))
     return data
