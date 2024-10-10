@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Dict, List, Optional, Union
 
 from tastytrade import VERSION
-from tastytrade.utils import TastytradeJsonDataclass
+from tastytrade.utils import PriceEffect, TastytradeJsonDataclass
 
 
 class InstrumentType(str, Enum):
@@ -99,17 +99,6 @@ class ComplexOrderType(str, Enum):
 
     OCO = "OCO"
     OTOCO = "OTOCO"
-
-
-class PriceEffect(str, Enum):
-    """
-    This is an :class:`~enum.Enum` that shows the sign of a price effect, since
-    Tastytrade is apparently against negative numbers.
-    """
-
-    CREDIT = "Credit"
-    DEBIT = "Debit"
-    NONE = "None"
 
 
 class FillInfo(TastytradeJsonDataclass):

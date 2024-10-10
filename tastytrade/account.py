@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field, field_serializer, model_validator
 
 from tastytrade.order import (
     InstrumentType,
@@ -13,12 +13,14 @@ from tastytrade.order import (
     PlacedComplexOrder,
     PlacedOrder,
     PlacedOrderResponse,
-    PriceEffect,
 )
 from tastytrade.session import Session
 from tastytrade.utils import (
+    PriceEffect,
     TastytradeError,
     TastytradeJsonDataclass,
+    _get_sign,
+    _set_sign_for,
     today_in_new_york,
     validate_response,
 )
@@ -61,11 +63,10 @@ class AccountBalance(TastytradeJsonDataclass):
     cash_available_to_withdraw: Decimal
     day_trade_excess: Decimal
     pending_cash: Decimal
-    pending_cash_effect: PriceEffect
     long_cryptocurrency_value: Decimal
     short_cryptocurrency_value: Decimal
     cryptocurrency_margin_requirement: Decimal
-    unsettled_cryptocurrency_fiat_amount: Decimal
+    unsettled_cryptocurrency_fiat_amount: Decimal  # TODO: work with _amount suffix
     unsettled_cryptocurrency_fiat_effect: PriceEffect
     closed_loop_available_balance: Decimal
     equity_offering_margin_requirement: Decimal
@@ -83,6 +84,20 @@ class AccountBalance(TastytradeJsonDataclass):
     buying_power_adjustment: Optional[Decimal] = None
     buying_power_adjustment_effect: Optional[PriceEffect] = None
     time_of_day: Optional[str] = None
+
+    @computed_field
+    @property
+    def pending_cash_effect(self) -> PriceEffect:
+        return _get_sign(self.pending_cash)
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_pending_cash(cls, data: Any) -> Any:
+        return _set_sign_for(data, "pending_cash")
+
+    @field_serializer("pending_cash")
+    def serialize_pending_cash(self, price: Decimal) -> Decimal:
+        return abs(price)
 
 
 class AccountBalanceSnapshot(TastytradeJsonDataclass):
