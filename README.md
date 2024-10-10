@@ -114,3 +114,5 @@ For more examples, check out the [documentation](https://tastyworks-api.readthed
 ## Disclaimer
 
 This is an unofficial SDK for Tastytrade. There is no implied warranty for any actions and results which arise from using it.
+
+![Alt](https://repobeats.axiom.co/api/embed/292b0cb5dd25a26e9abc6e5f8d8e180461d9faf8.svg "Repobeats analytics image")
