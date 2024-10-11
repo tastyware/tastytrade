@@ -27,4 +27,5 @@ async def test_dxlink_streamer(session):
         async for _ in streamer.listen(Quote):
             break
         await streamer.unsubscribe_candle(subs[0], "1d")
-        await streamer.unsubscribe(Quote, subs)
+        await streamer.unsubscribe(Quote, [subs[0]])
+        await streamer.unsubscribe_all(Quote)

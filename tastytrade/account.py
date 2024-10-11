@@ -2,14 +2,17 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Literal, Optional, Union
 
+import httpx
 from pydantic import BaseModel, model_validator
 from typing_extensions import Self
 
+from tastytrade import VAST_URL
 from tastytrade.order import (
     InstrumentType,
     NewComplexOrder,
     NewOrder,
     OrderAction,
+    OrderChain,
     OrderStatus,
     PlacedComplexOrder,
     PlacedComplexOrderResponse,
@@ -25,6 +28,8 @@ from tastytrade.utils import (
     today_in_new_york,
     validate_response,
 )
+
+TT_DATE_FMT = "%Y-%m-%dT%H:%M:%SZ"
 
 
 class EmptyDict(BaseModel):
@@ -1049,7 +1054,7 @@ class Account(TastytradeJsonDataclass):
         params = {}
         if start_time:
             # format to Tastytrade DateTime format
-            params = {"start-time": start_time.strftime("%Y-%m-%dT%H:%M:%SZ")}
+            params = {"start-time": start_time.strftime(TT_DATE_FMT)}
         elif not time_back:
             msg = "Either time_back or start_time must be specified."
             raise TastytradeError(msg)
@@ -1083,7 +1088,7 @@ class Account(TastytradeJsonDataclass):
         params = {}
         if start_time:
             # format to Tastytrade DateTime format
-            params = {"start-time": start_time.strftime("%Y-%m-%dT%H:%M:%SZ")}
+            params = {"start-time": start_time.strftime(TT_DATE_FMT)}
         elif not time_back:
             msg = "Either time_back or start_time must be specified."
             raise TastytradeError(msg)
@@ -1641,3 +1646,80 @@ class Account(TastytradeJsonDataclass):
             ),
         )
         return PlacedOrder(**data)
+
+    async def a_get_order_chains(
+        self,
+        session: Session,
+        symbol: str,
+        start_time: datetime,
+        end_time: datetime,
+    ) -> List[OrderChain]:
+        """
+        Get a list of order chains (open + rolls + close) for given symbol
+        over the given time frame, with total P/L, commissions, etc.
+
+        :param session: the session to use for the request.
+        :param symbol: the underlying symbol for the chains.
+        :param start_time: the beginning time of the query.
+        :param end_time: the ending time of the query.
+        """
+        params = {
+            "account-numbers[]": self.account_number,
+            "underlying-symbols[]": symbol,
+            "start-at": start_time.strftime(TT_DATE_FMT),
+            "end-at": end_time.strftime(TT_DATE_FMT),
+            "defer-open-winner-loser-filtering-to-frontend": False,
+            "per-page": 250,
+        }
+        headers = {
+            "Authorization": session.session_token,
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{VAST_URL}/order-chains",
+                headers=headers,
+                params=params,
+            )
+            validate_response(response)
+            chains = response.json()["data"]["items"]
+            return [OrderChain(**i) for i in chains]
+
+    def get_order_chains(
+        self,
+        session: Session,
+        symbol: str,
+        start_time: datetime,
+        end_time: datetime,
+    ) -> List[OrderChain]:
+        """
+        Get a list of order chains (open + rolls + close) for given symbol
+        over the given time frame, with total P/L, commissions, etc.
+
+        :param session: the session to use for the request.
+        :param symbol: the underlying symbol for the chains.
+        :param start_time: the beginning time of the query.
+        :param end_time: the ending time of the query.
+        """
+        params = {
+            "account-numbers[]": self.account_number,
+            "underlying-symbols[]": symbol,
+            "start-at": start_time.strftime(TT_DATE_FMT),
+            "end-at": end_time.strftime(TT_DATE_FMT),
+            "defer-open-winner-loser-filtering-to-frontend": False,
+            "per-page": 250,
+        }
+        headers = {
+            "Authorization": session.session_token,
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
+        response = httpx.get(
+            f"{VAST_URL}/order-chains",
+            headers=headers,
+            params=params,
+        )
+        validate_response(response)
+        chains = response.json()["data"]["items"]
+        return [OrderChain(**i) for i in chains]

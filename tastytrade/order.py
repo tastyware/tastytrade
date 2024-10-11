@@ -528,11 +528,11 @@ class OrderChain(TastytradeJsonDataclass):
     """
 
     id: int
-    updated_at: datetime
-    created_at: datetime
     account_number: str
     description: str
     underlying_symbol: str
     computed_data: ComputedData
-    lite_nodes_sizes: int
     lite_nodes: List[OrderChainNode]
+    lite_nodes_sizes: Optional[int] = None
+    updated_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
