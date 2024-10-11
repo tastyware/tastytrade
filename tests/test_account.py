@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from decimal import Decimal
 from time import sleep
 
@@ -146,6 +147,20 @@ async def test_get_complex_order_history_async(session, account):
 
 async def test_get_live_orders_async(session, account):
     await account.a_get_live_orders(session)
+
+
+def test_get_order_chains(session, account):
+    start_time = datetime(2024, 1, 1, 0, 0, 0)
+    end_time = datetime.now()
+    account.get_order_chains(session, "F", start_time=start_time, end_time=end_time)
+
+
+async def test_get_order_chains_async(session, account):
+    start_time = datetime(2024, 1, 1, 0, 0, 0)
+    end_time = datetime.now()
+    await account.a_get_order_chains(
+        session, "F", start_time=start_time, end_time=end_time
+    )
 
 
 @fixture(scope="module")

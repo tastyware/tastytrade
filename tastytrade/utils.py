@@ -41,6 +41,19 @@ def today_in_new_york() -> date:
     return now_in_new_york().date()
 
 
+def is_market_open_on(day: date = today_in_new_york()) -> bool:
+    """
+    Returns whether the market was/is/will be open at ANY point
+    during the given day.
+
+    :param day: date to check
+
+    :return: whether the market opens on given day
+    """
+    date_range = NYSE.valid_days(day, day)
+    return len(date_range) != 0
+
+
 def get_third_friday(day: date = today_in_new_york()) -> date:
     """
     Gets the monthly expiration associated with the month of the given date,
