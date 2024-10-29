@@ -1,7 +1,7 @@
 [![Docs](https://readthedocs.org/projects/tastyworks-api/badge/?version=latest)](https://tastyworks-api.readthedocs.io/en/latest/?badge=latest)
 [![PyPI](https://img.shields.io/pypi/v/tastytrade)](https://pypi.org/project/tastytrade)
 [![Downloads](https://static.pepy.tech/badge/tastytrade)](https://pepy.tech/project/tastytrade)
-[![Release)](https://img.shields.io/github/v/release/tastyware/tastytrade)](https://github.com/tastyware/tastytrade/releases/latest)
+[![Release)](https://img.shields.io/github/v/release/tastyware/tastytrade?label=release%20notes)](https://github.com/tastyware/tastytrade/releases/latest)
 
 # Tastytrade Python SDK
 
