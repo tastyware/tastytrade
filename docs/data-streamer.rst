@@ -25,7 +25,7 @@ Once you've created the streamer, you can subscribe/unsubscribe to events, like 
 .. code-block:: python
 
    from tastytrade.dxfeed import Quote
-   subs_list = ['SPY', 'SPX']
+   subs_list = ['SPY']  # you can add more symbols here!
 
    async with DXLinkStreamer(session) as streamer:
        await streamer.subscribe(Quote, subs_list)
@@ -36,7 +36,7 @@ Once you've created the streamer, you can subscribe/unsubscribe to events, like 
                break
        print(quotes)
 
->>> {'SPY': Quote(eventSymbol='SPY', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='Q', bidPrice=411.58, bidSize=400.0, askTime=0, askExchangeCode='Q', askPrice=411.6, askSize=1313.0), 'SPX': Quote(eventSymbol='SPX', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='\x00', bidPrice=4122.49, bidSize='NaN', askTime=0, askExchangeCode='\x00', askPrice=4123.65, askSize='NaN')}
+>>> [{'SPY': Quote(eventSymbol='SPY', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='Q', bidPrice=411.58, bidSize=400.0, askTime=0, askExchangeCode='Q', askPrice=411.6, askSize=1313.0), 'SPX': Quote(eventSymbol='SPX', eventTime=0, sequence=0, timeNanoPart=0, bidTime=0, bidExchangeCode='\x00', bidPrice=4122.49, bidSize='NaN', askTime=0, askExchangeCode='\x00', askPrice=4123.65, askSize='NaN')}]
 
 Note that these are ``asyncio`` calls, so you'll need to run this code asynchronously. Here's an example:
 

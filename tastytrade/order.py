@@ -281,7 +281,6 @@ class PlacedOrder(TastytradeJsonDataclass):
     """
 
     account_number: str
-    id: int
     time_in_force: OrderTimeInForce
     order_type: OrderType
     underlying_symbol: str
@@ -292,6 +291,8 @@ class PlacedOrder(TastytradeJsonDataclass):
     edited: bool
     updated_at: datetime
     legs: List[Leg]
+    #: the ID of the order; test orders placed with dry_run don't have an ID
+    id: int = -1
     size: Optional[Decimal] = None
     price: Optional[Decimal] = None
     gtc_date: Optional[date] = None
@@ -328,9 +329,10 @@ class PlacedComplexOrder(TastytradeJsonDataclass):
     """
 
     account_number: str
-    id: int
     type: str
     orders: List[PlacedOrder]
+    #: the ID of the order; test orders placed with dry_run don't have an ID
+    id: int = -1
     trigger_order: Optional[PlacedOrder] = None
     terminal_at: Optional[str] = None
     ratio_price_threshold: Optional[Decimal] = None
