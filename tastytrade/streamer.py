@@ -205,7 +205,7 @@ class AlertStreamer:
         self = cls(session)
         return await self.__aenter__()
 
-    async def __aexit__(self, exc_type, exc, tb):
+    async def __aexit__(self, *exc):
         await self.close()
 
     async def close(self):
@@ -381,7 +381,7 @@ class DXLinkStreamer:
         self = cls(session, ssl_context=ssl_context)
         return await self.__aenter__()
 
-    async def __aexit__(self, exc_type, exc, tb):
+    async def __aexit__(self, *exc):
         await self.close()
 
     async def close(self):
