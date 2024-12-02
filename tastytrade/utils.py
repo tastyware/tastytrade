@@ -1,15 +1,15 @@
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from enum import Enum
-from typing import Any, List, Optional
+from typing import Any, Optional
+from zoneinfo import ZoneInfo
 
 import pandas_market_calendars as mcal  # type: ignore
-import pytz
 from httpx._models import Response
 from pydantic import BaseModel
 
 NYSE = mcal.get_calendar("NYSE")
-TZ = pytz.timezone("US/Eastern")
+TZ = ZoneInfo("US/Eastern")
 
 
 class PriceEffect(str, Enum):
@@ -51,7 +51,7 @@ def is_market_open_on(day: date = today_in_new_york()) -> bool:
     :return: whether the market opens on given day
     """
     date_range = NYSE.valid_days(day, day)
-    return len(date_range) != 0
+    return not date_range.empty
 
 
 def get_third_friday(day: date = today_in_new_york()) -> date:
@@ -261,7 +261,7 @@ def _get_sign(value: Optional[Decimal]) -> Optional[PriceEffect]:
     return PriceEffect.DEBIT if value < 0 else PriceEffect.CREDIT
 
 
-def _set_sign_for(data: Any, properties: List[str]) -> Any:
+def _set_sign_for(data: Any, properties: list[str]) -> Any:
     """
     Handles setting the sign of a number using the associated "-effect" field.
 

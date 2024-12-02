@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 import httpx
 from pydantic import BaseModel, model_validator
@@ -229,7 +229,7 @@ class MarginReportEntry(TastytradeJsonDataclass):
     margin_requirement: Decimal
     expected_price_range_up_percent: Optional[Decimal] = None
     expected_price_range_down_percent: Optional[Decimal] = None
-    groups: Optional[List[Dict[str, Any]]] = None
+    groups: Optional[list[dict[str, Any]]] = None
     initial_requirement: Optional[Decimal] = None
     maintenance_requirement: Optional[Decimal] = None
     point_of_no_return_percent: Optional[Decimal] = None
@@ -269,7 +269,7 @@ class MarginReport(TastytradeJsonDataclass):
     reg_t_option_buying_power: Decimal
     maintenance_excess: Decimal
     last_state_timestamp: int
-    groups: List[Union[MarginReportEntry, EmptyDict]]
+    groups: list[Union[MarginReportEntry, EmptyDict]]
     initial_requirement: Optional[Decimal] = None
 
     @model_validator(mode="before")
@@ -430,7 +430,7 @@ class Transaction(TastytradeJsonDataclass):
     other_charge_description: Optional[str] = None
     reverses_id: Optional[int] = None
     cost_basis_reconciliation_date: Optional[date] = None
-    lots: Optional[List[Lot]] = None
+    lots: Optional[list[Lot]] = None
     agency_price: Optional[Decimal] = None
     principal_price: Optional[Decimal] = None
 
@@ -484,7 +484,7 @@ class Account(TastytradeJsonDataclass):
     submitting_user_id: Optional[str] = None
 
     @classmethod
-    async def a_get_accounts(cls, session: Session, include_closed=False) -> List[Self]:
+    async def a_get_accounts(cls, session: Session, include_closed=False) -> list[Self]:
         """
         Gets all trading accounts associated with the Tastytrade user.
 
@@ -500,7 +500,7 @@ class Account(TastytradeJsonDataclass):
         ]
 
     @classmethod
-    def get_accounts(cls, session: Session, include_closed=False) -> List[Self]:
+    def get_accounts(cls, session: Session, include_closed=False) -> list[Self]:
         """
         Gets all trading accounts associated with the Tastytrade user.
 
@@ -583,7 +583,7 @@ class Account(TastytradeJsonDataclass):
         start_date: Optional[date] = None,
         snapshot_date: Optional[date] = None,
         time_of_day: Literal["BOD", "EOD"] = "EOD",
-    ) -> List[AccountBalanceSnapshot]:
+    ) -> list[AccountBalanceSnapshot]:
         """
         Returns a list of balance snapshots. This list will
         just have a few snapshots if you don't pass a start
@@ -646,7 +646,7 @@ class Account(TastytradeJsonDataclass):
         start_date: Optional[date] = None,
         snapshot_date: Optional[date] = None,
         time_of_day: Literal["BOD", "EOD"] = "EOD",
-    ) -> List[AccountBalanceSnapshot]:
+    ) -> list[AccountBalanceSnapshot]:
         """
         Returns a list of balance snapshots. This list will
         just have a few snapshots if you don't pass a start
@@ -702,15 +702,15 @@ class Account(TastytradeJsonDataclass):
     async def a_get_positions(
         self,
         session: Session,
-        underlying_symbols: Optional[List[str]] = None,
+        underlying_symbols: Optional[list[str]] = None,
         symbol: Optional[str] = None,
         instrument_type: Optional[InstrumentType] = None,
         include_closed: Optional[bool] = None,
         underlying_product_code: Optional[str] = None,
-        partition_keys: Optional[List[str]] = None,
+        partition_keys: Optional[list[str]] = None,
         net_positions: Optional[bool] = None,
         include_marks: Optional[bool] = None,
-    ) -> List[CurrentPosition]:
+    ) -> list[CurrentPosition]:
         """
         Get the current positions of the account.
 
@@ -747,15 +747,15 @@ class Account(TastytradeJsonDataclass):
     def get_positions(
         self,
         session: Session,
-        underlying_symbols: Optional[List[str]] = None,
+        underlying_symbols: Optional[list[str]] = None,
         symbol: Optional[str] = None,
         instrument_type: Optional[InstrumentType] = None,
         include_closed: Optional[bool] = None,
         underlying_product_code: Optional[str] = None,
-        partition_keys: Optional[List[str]] = None,
+        partition_keys: Optional[list[str]] = None,
         net_positions: Optional[bool] = None,
         include_marks: Optional[bool] = None,
-    ) -> List[CurrentPosition]:
+    ) -> list[CurrentPosition]:
         """
         Get the current positions of the account.
 
@@ -796,8 +796,8 @@ class Account(TastytradeJsonDataclass):
         page_offset: Optional[int] = None,
         sort: str = "Desc",
         type: Optional[str] = None,
-        types: Optional[List[str]] = None,
-        sub_types: Optional[List[str]] = None,
+        types: Optional[list[str]] = None,
+        sub_types: Optional[list[str]] = None,
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
         instrument_type: Optional[InstrumentType] = None,
@@ -808,7 +808,7 @@ class Account(TastytradeJsonDataclass):
         futures_symbol: Optional[str] = None,
         start_at: Optional[datetime] = None,
         end_at: Optional[datetime] = None,
-    ) -> List[Transaction]:
+    ) -> list[Transaction]:
         """
         Get transaction history of the account.
 
@@ -891,8 +891,8 @@ class Account(TastytradeJsonDataclass):
         page_offset: Optional[int] = None,
         sort: str = "Desc",
         type: Optional[str] = None,
-        types: Optional[List[str]] = None,
-        sub_types: Optional[List[str]] = None,
+        types: Optional[list[str]] = None,
+        sub_types: Optional[list[str]] = None,
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
         instrument_type: Optional[InstrumentType] = None,
@@ -903,7 +903,7 @@ class Account(TastytradeJsonDataclass):
         futures_symbol: Optional[str] = None,
         start_at: Optional[datetime] = None,
         end_at: Optional[datetime] = None,
-    ) -> List[Transaction]:
+    ) -> list[Transaction]:
         """
         Get transaction history of the account.
 
@@ -1036,7 +1036,7 @@ class Account(TastytradeJsonDataclass):
         session: Session,
         time_back: Optional[str] = None,
         start_time: Optional[datetime] = None,
-    ) -> List[NetLiqOhlc]:
+    ) -> list[NetLiqOhlc]:
         """
         Returns a list of account net liquidating value snapshots over the
         specified time period.
@@ -1070,7 +1070,7 @@ class Account(TastytradeJsonDataclass):
         session: Session,
         time_back: Optional[str] = None,
         start_time: Optional[datetime] = None,
-    ) -> List[NetLiqOhlc]:
+    ) -> list[NetLiqOhlc]:
         """
         Returns a list of account net liquidating value snapshots over the
         specified time period.
@@ -1175,7 +1175,7 @@ class Account(TastytradeJsonDataclass):
         data = session._get(f"/margin/accounts/{self.account_number}/requirements")
         return MarginReport(**data)
 
-    async def a_get_live_orders(self, session: Session) -> List[PlacedOrder]:
+    async def a_get_live_orders(self, session: Session) -> list[PlacedOrder]:
         """
         Get orders placed today for the account.
 
@@ -1184,7 +1184,7 @@ class Account(TastytradeJsonDataclass):
         data = await session._a_get(f"/accounts/{self.account_number}/orders/live")
         return [PlacedOrder(**i) for i in data["items"]]
 
-    def get_live_orders(self, session: Session) -> List[PlacedOrder]:
+    def get_live_orders(self, session: Session) -> list[PlacedOrder]:
         """
         Get orders placed today for the account.
 
@@ -1195,7 +1195,7 @@ class Account(TastytradeJsonDataclass):
 
     async def a_get_live_complex_orders(
         self, session: Session
-    ) -> List[PlacedComplexOrder]:
+    ) -> list[PlacedComplexOrder]:
         """
         Get complex orders placed today for the account.
 
@@ -1206,7 +1206,7 @@ class Account(TastytradeJsonDataclass):
         )
         return [PlacedComplexOrder(**i) for i in data["items"]]
 
-    def get_live_complex_orders(self, session: Session) -> List[PlacedComplexOrder]:
+    def get_live_complex_orders(self, session: Session) -> list[PlacedComplexOrder]:
         """
         Get complex orders placed today for the account.
 
@@ -1309,13 +1309,13 @@ class Account(TastytradeJsonDataclass):
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
         underlying_symbol: Optional[str] = None,
-        statuses: Optional[List[OrderStatus]] = None,
+        statuses: Optional[list[OrderStatus]] = None,
         futures_symbol: Optional[str] = None,
         underlying_instrument_type: Optional[InstrumentType] = None,
         sort: Optional[str] = None,
         start_at: Optional[datetime] = None,
         end_at: Optional[datetime] = None,
-    ) -> List[PlacedOrder]:
+    ) -> list[PlacedOrder]:
         """
         Get order history of the account.
 
@@ -1390,13 +1390,13 @@ class Account(TastytradeJsonDataclass):
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
         underlying_symbol: Optional[str] = None,
-        statuses: Optional[List[OrderStatus]] = None,
+        statuses: Optional[list[OrderStatus]] = None,
         futures_symbol: Optional[str] = None,
         underlying_instrument_type: Optional[InstrumentType] = None,
         sort: Optional[str] = None,
         start_at: Optional[datetime] = None,
         end_at: Optional[datetime] = None,
-    ) -> List[PlacedOrder]:
+    ) -> list[PlacedOrder]:
         """
         Get order history of the account.
 
@@ -1465,7 +1465,7 @@ class Account(TastytradeJsonDataclass):
 
     async def a_get_complex_order_history(
         self, session: Session, per_page: int = 50, page_offset: Optional[int] = None
-    ) -> List[PlacedComplexOrder]:
+    ) -> list[PlacedComplexOrder]:
         """
         Get order history of the account.
 
@@ -1504,7 +1504,7 @@ class Account(TastytradeJsonDataclass):
 
     def get_complex_order_history(
         self, session: Session, per_page: int = 50, page_offset: Optional[int] = None
-    ) -> List[PlacedComplexOrder]:
+    ) -> list[PlacedComplexOrder]:
         """
         Get order history of the account.
 
@@ -1653,7 +1653,7 @@ class Account(TastytradeJsonDataclass):
         symbol: str,
         start_time: datetime,
         end_time: datetime,
-    ) -> List[OrderChain]:
+    ) -> list[OrderChain]:
         """
         Get a list of order chains (open + rolls + close) for given symbol
         over the given time frame, with total P/L, commissions, etc.
@@ -1692,7 +1692,7 @@ class Account(TastytradeJsonDataclass):
         symbol: str,
         start_time: datetime,
         end_time: datetime,
-    ) -> List[OrderChain]:
+    ) -> list[OrderChain]:
         """
         Get a list of order chains (open + rolls + close) for given symbol
         over the given time frame, with total P/L, commissions, etc.

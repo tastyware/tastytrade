@@ -1,7 +1,7 @@
 import asyncio
 from datetime import date, datetime
 from decimal import Decimal
-from typing import AsyncGenerator, List, Literal, Optional
+from typing import AsyncGenerator, Literal, Optional
 
 import httpx
 from pydantic import BaseModel, Field
@@ -71,7 +71,7 @@ class Backtest(BacktestJsonDataclass):
     symbol: str
     entry_conditions: BacktestEntry
     exit_conditions: BacktestExit
-    legs: List[BacktestLeg]
+    legs: list[BacktestLeg]
     start_date: date
     end_date: date = date(2024, 7, 31)
     status: str = "pending"
@@ -138,9 +138,9 @@ class BacktestResults(BacktestJsonDataclass):
     Dataclass containing partial or finished results of a backtest.
     """
 
-    snapshots: Optional[List[BacktestSnapshot]]
+    snapshots: Optional[list[BacktestSnapshot]]
     statistics: Optional[BacktestStatistics]
-    trials: Optional[List[BacktestTrial]]
+    trials: Optional[list[BacktestTrial]]
 
 
 class BacktestResponse(Backtest):

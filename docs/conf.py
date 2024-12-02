@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.abspath(".."))
 project = "tastytrade"
 copyright = "2024, Graeme Holliday"
 author = "Graeme Holliday"
-release = "9.1"
+release = "9.2"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -23,7 +23,7 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
-    "sphinx.ext.intersphinx",
+    # "sphinx.ext.intersphinx",
     "sphinx_toolbox.more_autodoc.autotypeddict",
     "enum_tools.autoenum",
     "sphinxcontrib.autodoc_pydantic",

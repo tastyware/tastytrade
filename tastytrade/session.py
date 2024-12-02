@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 import httpx
 
@@ -95,7 +95,7 @@ class CustomerAccountType(TastytradeJsonDataclass):
     is_tax_advantaged: bool
     is_publicly_available: bool
     has_multiple_owners: bool
-    margin_types: List[CustomerAccountMarginType]
+    margin_types: list[CustomerAccountMarginType]
 
 
 class CustomerEntity(TastytradeJsonDataclass):
@@ -107,7 +107,7 @@ class CustomerEntity(TastytradeJsonDataclass):
     address: Address
     business_nature: str
     email: str
-    entity_officers: List[EntityOfficer]
+    entity_officers: list[EntityOfficer]
     entity_suitability: EntitySuitability
     entity_type: str
     foreign_institution: str
@@ -207,7 +207,7 @@ class Customer(TastytradeJsonDataclass):
     has_delayed_quotes: bool
     has_pending_or_approved_application: bool
     is_professional: bool
-    permitted_account_types: List[CustomerAccountType]
+    permitted_account_types: list[CustomerAccountType]
     created_at: datetime
     identifiable_type: str
     person: CustomerPerson
@@ -341,11 +341,11 @@ class Session:
         #: URL for dxfeed websocket
         self.dxlink_url = data["dxlink-url"]
 
-    async def _a_get(self, url, **kwargs) -> Dict[str, Any]:
+    async def _a_get(self, url, **kwargs) -> dict[str, Any]:
         response = await self.async_client.get(url, timeout=30, **kwargs)
         return self._validate_and_parse(response)
 
-    def _get(self, url, **kwargs) -> Dict[str, Any]:
+    def _get(self, url, **kwargs) -> dict[str, Any]:
         response = self.sync_client.get(url, timeout=30, **kwargs)
         return self._validate_and_parse(response)
 
@@ -357,23 +357,23 @@ class Session:
         response = self.sync_client.delete(url, **kwargs)
         validate_response(response)
 
-    async def _a_post(self, url, **kwargs) -> Dict[str, Any]:
+    async def _a_post(self, url, **kwargs) -> dict[str, Any]:
         response = await self.async_client.post(url, **kwargs)
         return self._validate_and_parse(response)
 
-    def _post(self, url, **kwargs) -> Dict[str, Any]:
+    def _post(self, url, **kwargs) -> dict[str, Any]:
         response = self.sync_client.post(url, **kwargs)
         return self._validate_and_parse(response)
 
-    async def _a_put(self, url, **kwargs) -> Dict[str, Any]:
+    async def _a_put(self, url, **kwargs) -> dict[str, Any]:
         response = await self.async_client.put(url, **kwargs)
         return self._validate_and_parse(response)
 
-    def _put(self, url, **kwargs) -> Dict[str, Any]:
+    def _put(self, url, **kwargs) -> dict[str, Any]:
         response = self.sync_client.put(url, **kwargs)
         return self._validate_and_parse(response)
 
-    def _validate_and_parse(self, response: httpx._models.Response) -> Dict[str, Any]:
+    def _validate_and_parse(self, response: httpx._models.Response) -> dict[str, Any]:
         validate_response(response)
         return response.json()["data"]
 

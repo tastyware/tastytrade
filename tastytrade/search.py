@@ -1,5 +1,3 @@
-from typing import List
-
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeJsonDataclass
 
@@ -13,7 +11,7 @@ class SymbolData(TastytradeJsonDataclass):
     description: str
 
 
-async def a_symbol_search(session: Session, symbol: str) -> List[SymbolData]:
+async def a_symbol_search(session: Session, symbol: str) -> list[SymbolData]:
     """
     Performs a symbol search using the Tastytrade API and returns a
     list of symbols that are similar to the given search phrase.
@@ -31,7 +29,7 @@ async def a_symbol_search(session: Session, symbol: str) -> List[SymbolData]:
         return [SymbolData(**i) for i in data["items"]]
 
 
-def symbol_search(session: Session, symbol: str) -> List[SymbolData]:
+def symbol_search(session: Session, symbol: str) -> list[SymbolData]:
     """
     Performs a symbol search using the Tastytrade API and returns a
     list of symbols that are similar to the given search phrase.

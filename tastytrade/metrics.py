@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import List, Optional
+from typing import Optional
 
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeJsonDataclass
@@ -84,7 +84,7 @@ class MarketMetricInfo(TastytradeJsonDataclass):
     liquidity_rating: Optional[int] = None
     updated_at: datetime
     option_expiration_implied_volatilities: Optional[
-        List[OptionExpirationImpliedVolatility]
+        list[OptionExpirationImpliedVolatility]
     ] = None  # noqa: E501
     beta: Optional[Decimal] = None
     corr_spy_3month: Optional[Decimal] = None
@@ -114,8 +114,8 @@ class MarketMetricInfo(TastytradeJsonDataclass):
 
 
 async def a_get_market_metrics(
-    session: Session, symbols: List[str]
-) -> List[MarketMetricInfo]:
+    session: Session, symbols: list[str]
+) -> list[MarketMetricInfo]:
     """
     Retrieves market metrics for the given symbols.
 
@@ -128,7 +128,7 @@ async def a_get_market_metrics(
     return [MarketMetricInfo(**i) for i in data["items"]]
 
 
-def get_market_metrics(session: Session, symbols: List[str]) -> List[MarketMetricInfo]:
+def get_market_metrics(session: Session, symbols: list[str]) -> list[MarketMetricInfo]:
     """
     Retrieves market metrics for the given symbols.
 
@@ -139,7 +139,7 @@ def get_market_metrics(session: Session, symbols: List[str]) -> List[MarketMetri
     return [MarketMetricInfo(**i) for i in data["items"]]
 
 
-async def a_get_dividends(session: Session, symbol: str) -> List[DividendInfo]:
+async def a_get_dividends(session: Session, symbol: str) -> list[DividendInfo]:
     """
     Retrieves dividend information for the given symbol.
 
@@ -153,7 +153,7 @@ async def a_get_dividends(session: Session, symbol: str) -> List[DividendInfo]:
     return [DividendInfo(**i) for i in data["items"]]
 
 
-def get_dividends(session: Session, symbol: str) -> List[DividendInfo]:
+def get_dividends(session: Session, symbol: str) -> list[DividendInfo]:
     """
     Retrieves dividend information for the given symbol.
 
@@ -169,7 +169,7 @@ def get_dividends(session: Session, symbol: str) -> List[DividendInfo]:
 
 async def a_get_earnings(
     session: Session, symbol: str, start_date: date
-) -> List[EarningsInfo]:
+) -> list[EarningsInfo]:
     """
     Retrieves earnings information for the given symbol.
 
@@ -186,7 +186,7 @@ async def a_get_earnings(
     return [EarningsInfo(**i) for i in data["items"]]
 
 
-def get_earnings(session: Session, symbol: str, start_date: date) -> List[EarningsInfo]:
+def get_earnings(session: Session, symbol: str, start_date: date) -> list[EarningsInfo]:
     """
     Retrieves earnings information for the given symbol.
 

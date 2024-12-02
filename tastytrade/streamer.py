@@ -6,7 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from ssl import SSLContext, create_default_context
-from typing import Any, AsyncIterator, Dict, List, Optional, Type, TypeVar, Union
+from typing import Any, AsyncIterator, Optional, Type, TypeVar, Union
 
 import websockets
 from pydantic import model_validator
@@ -39,7 +39,6 @@ CERT_STREAMER_URL = "wss://streamer.cert.tastyworks.com"
 STREAMER_URL = "wss://streamer.tastyworks.com"
 
 DXLINK_VERSION = "0.1-js/1.0.0-beta.4"
-T = TypeVar("T")
 
 
 class QuoteAlert(TastytradeJsonDataclass):
@@ -126,6 +125,7 @@ AlertType = Union[
     UnderlyingYearGainSummary,
     Watchlist,
 ]
+T = TypeVar("T", bound=AlertType)
 
 MAP_EVENTS = {
     "Candle": Candle,
@@ -151,6 +151,7 @@ EventType = Union[
     Trade,
     Underlying,
 ]
+U = TypeVar("U", bound=EventType)
 
 
 class AlertStreamer:
@@ -186,7 +187,7 @@ class AlertStreamer:
         #: The base url for the streamer websocket
         self.base_url: str = CERT_STREAMER_URL if session.is_test else STREAMER_URL
 
-        self._queues: Dict[str, Queue] = defaultdict(Queue)
+        self._queues: dict[str, Queue] = defaultdict(Queue)
         self._websocket: Optional[WebSocketClientProtocol] = None
         self._connect_task = asyncio.create_task(self._connect())
 
@@ -259,7 +260,7 @@ class AlertStreamer:
             )
         await self._queues[type_str].put(MAP_ALERTS[type_str](**data))
 
-    async def subscribe_accounts(self, accounts: List[Account]) -> None:
+    async def subscribe_accounts(self, accounts: list[Account]) -> None:
         """
         Subscribes to account-level updates (balances, orders, positions).
 
@@ -302,13 +303,13 @@ class AlertStreamer:
     async def _subscribe(
         self,
         subscription: SubscriptionType,
-        value: Union[Optional[str], List[str]] = "",
+        value: Union[Optional[str], list[str]] = "",
     ) -> None:
         """
         Subscribes to a :class:`SubscriptionType`. Depending on the kind of
         subscription, the value parameter may be required.
         """
-        message: Dict[str, Any] = {"auth-token": self.token, "action": subscription}
+        message: dict[str, Any] = {"auth-token": self.token, "action": subscription}
         if value:
             message["value"] = value
         logger.debug("sending alert subscription: %s", message)
@@ -341,8 +342,8 @@ class DXLinkStreamer:
     ):
         self._counter = 0
         self._lock: Lock = Lock()
-        self._queues: Dict[str, Queue] = defaultdict(Queue)
-        self._channels: Dict[str, int] = {
+        self._queues: dict[str, Queue] = defaultdict(Queue)
+        self._channels: dict[str, int] = {
             "Candle": 1,
             "Greeks": 3,
             "Profile": 5,
@@ -353,7 +354,7 @@ class DXLinkStreamer:
             "Trade": 15,
             "Underlying": 17,
         }
-        self._subscription_state: Dict[str, str] = defaultdict(lambda: "CHANNEL_CLOSED")
+        self._subscription_state: dict[str, str] = defaultdict(lambda: "CHANNEL_CLOSED")
 
         #: The unique client identifier received from the server
         self._session = session
@@ -454,7 +455,7 @@ class DXLinkStreamer:
         }
         await self._websocket.send(json.dumps(message))
 
-    async def listen(self, event_class: Type[T]) -> AsyncIterator[T]:
+    async def listen(self, event_class: Type[U]) -> AsyncIterator[U]:
         """
         Using the existing subscriptions, pulls events of the given type and
         yield returns them. Never exits unless there's an error or the channel
@@ -469,7 +470,7 @@ class DXLinkStreamer:
         while True:
             yield await self._queues[cls_str].get()
 
-    def get_event_nowait(self, event_class: Type[T]) -> Optional[T]:
+    def get_event_nowait(self, event_class: Type[U]) -> Optional[U]:
         """
         Using the existing subscriptions, pulls an event of the given type and
         returns it. If the queue is empty None is returned.
@@ -485,7 +486,7 @@ class DXLinkStreamer:
         except QueueEmpty:
             return None
 
-    async def get_event(self, event_class: Type[T]) -> T:
+    async def get_event(self, event_class: Type[U]) -> U:
         """
         Using the existing subscription, pulls an event of the given type and
         returns it.
@@ -511,14 +512,13 @@ class DXLinkStreamer:
             # send the heartbeat every 30 seconds
             await asyncio.sleep(30)
 
-    async def subscribe(self, event_class: Type[EventType], symbols: List[str]) -> None:
+    async def subscribe(self, event_class: Type[EventType], symbols: list[str]) -> None:
         """
         Subscribes to quotes for given list of symbols. Used for recurring data
         feeds.
         For candles, use :meth:`subscribe_candle` instead.
 
-        :param event_class: type of subscription to add, should be of
-        `~tastytrade.streamer.EventType`
+        :param event_class: type of subscription to add, should be of :any:`EventType`
         :param symbols: list of symbols to subscribe for
         """
         cls_str = MAP_EVENTS_REVERSE[event_class]
@@ -585,7 +585,7 @@ class DXLinkStreamer:
         await self._websocket.send(json.dumps(message))
 
     async def unsubscribe(
-        self, event_class: Type[EventType], symbols: List[str]
+        self, event_class: Type[EventType], symbols: list[str]
     ) -> None:
         """
         Removes existing subscription for given list of symbols.
@@ -607,7 +607,7 @@ class DXLinkStreamer:
 
     async def subscribe_candle(
         self,
-        symbols: List[str],
+        symbols: list[str],
         interval: str,
         start_time: datetime,
         end_time: Optional[datetime] = None,

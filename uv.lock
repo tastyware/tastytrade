@@ -586,7 +586,7 @@ wheels = [
 
 [[package]]
 name = "tastytrade"
-version = "9.1"
+version = "9.2"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },
@@ -602,7 +602,6 @@ dev = [
     { name = "pytest-aio" },
     { name = "pytest-cov" },
     { name = "ruff" },
-    { name = "types-pytz" },
 ]
 
 [package.metadata]
@@ -620,7 +619,6 @@ dev = [
     { name = "pytest-aio", specifier = ">=1.5.0" },
     { name = "pytest-cov", specifier = ">=5.0.0" },
     { name = "ruff", specifier = ">=0.6.9" },
-    { name = "types-pytz", specifier = ">=2024.2.0.20241003" },
 ]
 
 [[package]]
@@ -639,15 +637,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/8a/0b/d80dfa675bf592f636d1ea0b835eab4ec8df6e9415d8cfd766df54456123/toolz-1.0.0.tar.gz", hash = "sha256:2c86e3d9a04798ac556793bced838816296a2f085017664e4995cb40a1047a02", size = 66790 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/03/98/eb27cc78ad3af8e302c9d8ff4977f5026676e130d28dd7578132a457170c/toolz-1.0.0-py3-none-any.whl", hash = "sha256:292c8f1c4e7516bf9086f8850935c799a874039c8bcf959d47b600e4c44a6236", size = 56383 },
-]
-
-[[package]]
-name = "types-pytz"
-version = "2024.2.0.20241003"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/66/d0/73aa3063a9ef9881bd7103cb4ae379bfd8fafda0e86b01b694d676313a4b/types-pytz-2024.2.0.20241003.tar.gz", hash = "sha256:575dc38f385a922a212bac00a7d6d2e16e141132a3c955078f4a4fd13ed6cb44", size = 5474 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/86/60/2a2977ce0f91255bbb668350b127a801a06ad37c326a2e5bfd52f03e0784/types_pytz-2024.2.0.20241003-py3-none-any.whl", hash = "sha256:3e22df1336c0c6ad1d29163c8fda82736909eb977281cb823c57f8bae07118b7", size = 5245 },
 ]
 
 [[package]]
