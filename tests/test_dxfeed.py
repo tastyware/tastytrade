@@ -24,9 +24,9 @@ def test_parse_infinities_and_nan():
     ]
     summary = Summary.from_stream(summary_data)[0]
     summary = cast(Summary, summary)
-    assert summary.dayOpenPrice is None
-    assert summary.dayClosePrice is None
-    assert summary.dayHighPrice is None
+    assert summary.day_open_price is None
+    assert summary.day_close_price is None
+    assert summary.day_high_price is None
 
 
 def test_malformatted_data():

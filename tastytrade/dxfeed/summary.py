@@ -15,31 +15,27 @@ class Summary(Event):
     Before opening the bidding, the values are reset to N/A or NaN.
     """
 
-    #: symbol of this event
-    eventSymbol: str
-    #: time of this event
-    eventTime: int
     #: identifier of the day that this summary represents
-    dayId: int
+    day_id: int
     #: the price type of the last (close) price for the day
     #: possible values are FINAL | INDICATIVE | PRELIMINARY | REGULAR
-    dayClosePriceType: str
+    day_close_price_type: str
     #: identifier of the previous day that this summary represents
-    prevDayId: int
+    prev_day_id: int
     #: the price type of the last (close) price for the previous day
     #: possible values are FINAL | INDICATIVE | PRELIMINARY | REGULAR
-    prevDayClosePriceType: str
+    prev_day_close_price_type: str
     #: open interest of the symbol as the number of open contracts
-    openInterest: int
+    open_interest: int
     #: the first (open) price for the day
-    dayOpenPrice: Optional[Decimal] = None
+    day_open_price: Optional[Decimal] = None
     #: the maximal (high) price for the day
-    dayHighPrice: Optional[Decimal] = None
+    day_high_price: Optional[Decimal] = None
     #: the minimal (low) price for the day
-    dayLowPrice: Optional[Decimal] = None
+    day_low_price: Optional[Decimal] = None
     #: the last (close) price for the day
-    dayClosePrice: Optional[Decimal] = None
+    day_close_price: Optional[Decimal] = None
     #: the last (close) price for the previous day
-    prevDayClosePrice: Optional[Decimal] = None
+    prev_day_close_price: Optional[Decimal] = None
     #: total volume traded for the previous day
-    prevDayVolume: Optional[Decimal] = None
+    prev_day_volume: Optional[Decimal] = None

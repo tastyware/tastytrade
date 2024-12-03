@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 
 import pandas_market_calendars as mcal  # type: ignore
 from httpx._models import Response
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 NYSE = mcal.get_calendar("NYSE")
 TZ = ZoneInfo("US/Eastern")
@@ -230,9 +230,7 @@ class TastytradeJsonDataclass(BaseModel):
     and performs type validation and coercion.
     """
 
-    class Config:
-        alias_generator = _dasherize
-        populate_by_name = True
+    model_config = ConfigDict(alias_generator=_dasherize, populate_by_name=True)
 
 
 def validate_response(response: Response) -> None:

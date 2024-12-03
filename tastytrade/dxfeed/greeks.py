@@ -13,12 +13,8 @@ class Greeks(Event):
     portfolio has a risky sensitivity in this parameter.
     """
 
-    #: symbol of this event
-    eventSymbol: str
-    #: time of this event
-    eventTime: int
     #: transactional event flags
-    eventFlags: int
+    event_flags: int
     #: unique per-symbol index of this event
     index: int
     #: timestamp of this event in milliseconds

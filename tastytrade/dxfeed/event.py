@@ -1,12 +1,20 @@
 from typing import Any, List
 
-from pydantic import BaseModel, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
+from pydantic.alias_generators import to_camel
 
 from tastytrade import logger
 from tastytrade.utils import TastytradeError
 
 
 class Event(BaseModel):
+    #: symbol of this event
+    event_symbol: str
+    #: time of this event
+    event_time: int
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     @field_validator("*", mode="before")
     @classmethod
     def change_nan_to_none(cls, v: Any) -> Any:

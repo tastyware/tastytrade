@@ -13,25 +13,21 @@ class Trade(Event):
     instrument.
     """
 
-    #: symbol of this event
-    eventSymbol: str
-    #: time of this event
-    eventTime: int
     #: time of the last trade
     time: int
     #: microseconds and nanoseconds time part of the last trade
-    timeNanoPart: int
+    time_nano_part: int
     #: sequence of the last trade
     sequence: int
     #: exchange code of the last trade
-    exchangeCode: str
+    exchange_code: str
     #: identifier of the current trading day
-    dayId: int
+    day_id: int
     #: tick direction of the last trade
     #: possible values are DOWN | UNDEFINED | UP | ZERO | ZERO_DOWN | ZERO_UP
-    tickDirection: str
+    tick_direction: str
     #: whether the last trade was in extended trading hours
-    extendedTradingHours: bool
+    extended_trading_hours: bool
     #: price of the last trade
     price: Decimal
     #: change of the last trade
@@ -39,6 +35,6 @@ class Trade(Event):
     #: size of the last trade as integer number (rounded toward zero)
     size: Optional[int] = None
     #: total vlume traded for a day as integer number (rounded toward zero)
-    dayVolume: Optional[int] = None
+    day_volume: Optional[int] = None
     #: total turnover traded for a day
-    dayTurnover: Optional[Decimal] = None
+    day_turnover: Optional[Decimal] = None

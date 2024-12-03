@@ -11,43 +11,39 @@ class Profile(Event):
     traded security on the market at any given moment of time.
     """
 
-    #: symbol of this event
-    eventSymbol: str
-    #: time of this event
-    eventTime: int
     #: description of the security instrument
     description: str
     #: short sale restriction of the security instrument
     #: possible values are ACTIVE | INACTIVE | UNDEFINED
-    shortSaleRestriction: str
+    short_sale_restriction: str
     #: trading status of the security instrument
     #: possible values are ACTIVE | HALTED | UNDEFINED
-    tradingStatus: str
+    trading_status: str
     #: starting time of the trading halt interval
-    haltStartTime: int
+    halt_start_time: int
     #: ending time of the trading halt interval
-    haltEndTime: int
+    halt_end_time: int
     #: identifier of the ex-dividend date
-    exDividendDayId: int
+    ex_dividend_day_id: int
     #: description of the reason that trading was halted
-    statusReason: Optional[str] = None
+    status_reason: Optional[str] = None
     #: maximal (high) price in last 52 weeks
-    high52WeekPrice: Optional[Decimal] = None
+    high_52_week_price: Optional[Decimal] = None
     #: minimal (low) price in last 52 weeks
-    low52WeekPrice: Optional[Decimal] = None
+    low_52_week_price: Optional[Decimal] = None
     #: the correlation coefficient of the instrument to the S&P500 index
     beta: Optional[Decimal] = None
     #: shares outstanding
     shares: Optional[Decimal] = None
     #: maximal (high) allowed price
-    highLimitPrice: Optional[Decimal] = None
+    high_limit_price: Optional[Decimal] = None
     #: minimal (low) allowed price
-    lowLimitPrice: Optional[Decimal] = None
+    low_limit_price: Optional[Decimal] = None
     #: earnings per share
-    earningsPerShare: Optional[Decimal] = None
+    earnings_per_share: Optional[Decimal] = None
     #: the amount of the last paid dividend
-    exDividendAmount: Optional[Decimal] = None
+    ex_dividend_amount: Optional[Decimal] = None
     #: frequency of cash dividends payments per year (calculated)
-    dividendFrequency: Optional[Decimal] = None
+    dividend_frequency: Optional[Decimal] = None
     #: the number of shares that are available to the public for trade
-    freeFloat: Optional[Decimal] = None
+    free_float: Optional[Decimal] = None

@@ -11,12 +11,8 @@ class Candle(Event):
     specified price type with data taken from a specified exchange.
     """
 
-    #: symbol of this event
-    eventSymbol: str
-    #: time of this event
-    eventTime: int
     #: transactional event flags
-    eventFlags: int
+    event_flags: int
     #: unique per-symbol index of this candle event
     index: int
     #: timestamp of the candle in milliseconds
@@ -38,10 +34,10 @@ class Candle(Event):
     #: volume-weighted average price
     vwap: Optional[Decimal] = None
     #: bid volume in the candle
-    bidVolume: Optional[Decimal] = None
+    bid_volume: Optional[Decimal] = None
     #: ask volume in the candle
-    askVolume: Optional[Decimal] = None
+    ask_volume: Optional[Decimal] = None
     #: implied volatility in the candle
-    impVolatility: Optional[Decimal] = None
+    imp_volatility: Optional[Decimal] = None
     #: open interest in the candle
-    openInterest: Optional[int] = None
+    open_interest: Optional[int] = None

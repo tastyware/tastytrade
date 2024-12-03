@@ -11,12 +11,8 @@ class Underlying(Event):
     corresponding values on the market at any given moment of time.
     """
 
-    #: symbol of this event
-    eventSymbol: str
-    #: time of this event
-    eventTime: int
     #: transactional event flags
-    eventFlags: int
+    event_flags: int
     #: unique per-symbol index of this event
     index: int
     #: timestamp of this event in milliseconds
@@ -26,14 +22,14 @@ class Underlying(Event):
     #: 30-day implied volatility for this underlying based on VIX methodology
     volatility: Decimal
     #: front month implied volatility for the underlying using VIX methodology
-    frontVolatility: Decimal
+    front_volatility: Decimal
     #: back month implied volatility for the underlying using VIX methodology
-    backVolatility: Decimal
+    back_volatility: Decimal
     #: call options traded volume for a day
-    callVolume: int
+    call_volume: int
     #: put options traded volume for a day
-    putVolume: int
+    put_volume: int
     #: options traded volume for a day
-    optionVolume: int
+    option_volume: int
     #: ratio of put options volume to call options volume for a day
-    putCallRatio: Decimal
+    put_call_ratio: Decimal

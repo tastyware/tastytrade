@@ -13,42 +13,38 @@ class TimeAndSale(Event):
     correction/cancellation processing.
     """
 
-    #: symbol of this event
-    eventSymbol: str
-    #: time of this event
-    eventTime: int
     #: transactional event flags
-    eventFlags: int
+    event_flags: int
     #: unique per-symbol index of this time and sale event
     index: int
     #: timestamp of the original event
     time: int
     #: microseconds and nanoseconds part of time of the last bid or ask change
-    timeNanoPart: int
+    time_nano_part: int
     #: sequence of this quote
     sequence: int
     #: exchange code of this time and sale event
-    exchangeCode: str
+    exchange_code: str
     #: price of this time and sale event
     price: Decimal
     #: size of this time and sale event as integer number (rounded toward zero)
     size: int
     #: the bid price on the market when this time and sale event occured
-    bidPrice: Decimal
+    bid_price: Decimal
     #: the ask price on the market when this time and sale event occured
-    askPrice: Decimal
+    ask_price: Decimal
     #: sale conditions provided for this event by data feed
-    exchangeSaleConditions: str
+    exchange_sale_conditions: str
     #: transaction is concluded by exempting from compliance with some rule
-    tradeThroughExempt: str
+    trade_through_exempt: str
     #: initiator of the trade
-    aggressorSide: str
+    aggressor_side: str
     #: whether this transaction is a part of a multi-leg order
-    spreadLeg: bool
+    spread_leg: bool
     #: whether this transaction is completed during extended trading hours
-    extendedTradingHours: bool
+    extended_trading_hours: bool
     #: normalized SaleCondition flag
-    validTick: bool
+    valid_tick: bool
     #: type of event - 0: new, 1: correction, 2: cancellation
     type: str
     #: Undocumented; always None

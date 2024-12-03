@@ -10,29 +10,25 @@ class Quote(Event):
     fields that change with each quote.
     """
 
-    #: symbol of this event
-    eventSymbol: str
-    #: time of this event
-    eventTime: int
     #: sequence of this quote
     sequence: int
     #: microseconds and nanoseconds part of time of the last bid or ask change
-    timeNanoPart: int
+    time_nano_part: int
     #: time of the last bid change
-    bidTime: int
+    bid_time: int
     #: bid exchange code
-    bidExchangeCode: str
+    bid_exchange_code: str
     #: time of the last ask change
-    askTime: int
+    ask_time: int
     #: ask exchange code
-    askExchangeCode: str
+    ask_exchange_code: str
     #: bid price
-    bidPrice: Decimal
+    bid_price: Decimal
     #: ask price
-    askPrice: Decimal
+    ask_price: Decimal
     #: bid size as integer number (rounded toward zero)
     #: or decimal for cryptocurrencies
-    bidSize: Optional[Decimal] = None
+    bid_size: Optional[Decimal] = None
     #: ask size as integer number (rounded toward zero)
     #: or decimal for cryptocurrencies
-    askSize: Optional[Decimal] = None
+    ask_size: Optional[Decimal] = None

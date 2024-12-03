@@ -12,12 +12,8 @@ class TheoPrice(Event):
     this event.
     """
 
-    #: symbol of this event
-    eventSymbol: str
-    #: time of this event
-    eventTime: int
     #: transactional event flags
-    eventFlags: int
+    event_flags: int
     #: unique per-symbol index of this event
     index: int
     #: timestamp of this event in milliseconds
@@ -27,7 +23,7 @@ class TheoPrice(Event):
     #: theoretical price
     price: Decimal
     #: underlying price at the time of theo price computation
-    underlyingPrice: Decimal
+    underlying_price: Decimal
     #: delta of the theoretical price
     delta: Decimal
     #: gamma of the theoretical price
