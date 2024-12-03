@@ -1,7 +1,8 @@
 from typing import Any, List
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ValidationError, field_validator
 
+from tastytrade import logger
 from tastytrade.utils import TastytradeError
 
 
@@ -27,12 +28,17 @@ class Event(BaseModel):
         size = len(cls.model_fields)
         multiples = len(data) / size
         if not multiples.is_integer():
-            msg = "Mapper data input values are not a multiple of the key size"
-            raise TastytradeError(msg)
+            raise TastytradeError(
+                "Mapper data input values are not a multiple of the key size!"
+            )
         keys = cls.model_fields.keys()
         for i in range(int(multiples)):
             offset = i * size
             local_values = data[offset : (i + 1) * size]
             event_dict = dict(zip(keys, local_values))
-            objs.append(cls(**event_dict))
+            try:
+                objs.append(cls(**event_dict))
+            except ValidationError as e:
+                # we just skip these events as they're generally useless
+                logger.debug(e)
         return objs

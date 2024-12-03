@@ -33,7 +33,7 @@ class Trade(Event):
     #: whether the last trade was in extended trading hours
     extendedTradingHours: bool
     #: price of the last trade
-    price: Optional[Decimal] = None
+    price: Decimal
     #: change of the last trade
     change: Optional[Decimal] = None
     #: size of the last trade as integer number (rounded toward zero)

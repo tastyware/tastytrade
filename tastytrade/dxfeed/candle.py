@@ -26,13 +26,13 @@ class Candle(Event):
     #: total number of events in the candle
     count: int
     #: the first (open) price of the candle
-    open: Optional[Decimal] = None
+    open: Decimal
     #: the maximal (high) price of the candle
-    high: Optional[Decimal] = None
+    high: Decimal
     #: the minimal (low) price of the candle
-    low: Optional[Decimal] = None
+    low: Decimal
     #: the last (close) price of the candle
-    close: Optional[Decimal] = None
+    close: Decimal
     #: the total volume of the candle
     volume: Optional[Decimal] = None
     #: volume-weighted average price

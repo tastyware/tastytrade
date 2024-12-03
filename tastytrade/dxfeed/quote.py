@@ -27,9 +27,9 @@ class Quote(Event):
     #: ask exchange code
     askExchangeCode: str
     #: bid price
-    bidPrice: Optional[Decimal] = None
+    bidPrice: Decimal
     #: ask price
-    askPrice: Optional[Decimal] = None
+    askPrice: Decimal
     #: bid size as integer number (rounded toward zero)
     #: or decimal for cryptocurrencies
     bidSize: Optional[Decimal] = None

@@ -2,17 +2,31 @@ from typing import cast
 
 import pytest
 
-from tastytrade.dxfeed import Quote
+from tastytrade.dxfeed import Quote, Summary
 from tastytrade.utils import TastytradeError
 
 
 def test_parse_infinities_and_nan():
-    quote_data = ["SPY", 0, 0, 0, 0, "Q", 0, "Q", "-Infinity", "Infinity", "NaN", "NaN"]
-    quote = Quote.from_stream(quote_data)[0]
-    quote = cast(Quote, quote)
-    assert quote.bidPrice is None
-    assert quote.askPrice is None
-    assert quote.bidSize is None
+    summary_data = [
+        "SPY",
+        0,
+        0,
+        "foo",
+        0,
+        "bar",
+        0,
+        "-Infinity",
+        "Infinity",
+        "NaN",
+        "NaN",
+        "NaN",
+        "Infinity",
+    ]
+    summary = Summary.from_stream(summary_data)[0]
+    summary = cast(Summary, summary)
+    assert summary.dayOpenPrice is None
+    assert summary.dayClosePrice is None
+    assert summary.dayHighPrice is None
 
 
 def test_malformatted_data():
