@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tastytrade"
-version = "9.3"
+version = "9.4"
 description = "An unofficial, sync/async SDK for Tastytrade!"
 readme = "README.md"
 requires-python = ">=3.8"
