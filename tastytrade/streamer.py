@@ -8,9 +8,9 @@ from enum import Enum
 from ssl import SSLContext, create_default_context
 from typing import Any, AsyncIterator, Optional, Type, TypeVar, Union
 
-import websockets
 from pydantic import model_validator
-from websockets import WebSocketClientProtocol
+from websockets.asyncio.client import ClientConnection, connect
+from websockets.exceptions import ConnectionClosed
 
 from tastytrade import logger
 from tastytrade.account import Account, AccountBalance, CurrentPosition, TradingStatus
@@ -188,7 +188,7 @@ class AlertStreamer:
         self.base_url: str = CERT_STREAMER_URL if session.is_test else STREAMER_URL
 
         self._queues: dict[str, Queue] = defaultdict(Queue)
-        self._websocket: Optional[WebSocketClientProtocol] = None
+        self._websocket: Optional[ClientConnection] = None
         self._connect_task = asyncio.create_task(self._connect())
 
     async def __aenter__(self):
@@ -222,19 +222,21 @@ class AlertStreamer:
         token provided during initialization.
         """
         headers = {"Authorization": f"Bearer {self.token}"}
-        async with websockets.connect(
-            self.base_url, extra_headers=headers
-        ) as websocket:  # type: ignore
+        async for websocket in connect(self.base_url, additional_headers=headers):
             self._websocket = websocket
             self._heartbeat_task = asyncio.create_task(self._heartbeat())
+            logger.debug("Websocket connection established.")
 
-            while True:
-                raw_message = await self._websocket.recv()  # type: ignore
-                logger.debug("raw message: %s", raw_message)
-                data = json.loads(raw_message)
-                type_str = data.get("type")
-                if type_str is not None:
-                    await self._map_message(type_str, data["data"])
+            try:
+                async for raw_message in websocket:
+                    logger.debug("raw message: %s", raw_message)
+                    data = json.loads(raw_message)
+                    type_str = data.get("type")
+                    if type_str is not None:
+                        await self._map_message(type_str, data["data"])
+            except ConnectionClosed:
+                logger.debug("Websocket connection closed, retrying...")
+                continue
 
     async def listen(self, alert_class: Type[T]) -> AsyncIterator[T]:
         """
@@ -398,44 +400,52 @@ class DXLinkStreamer:
         authorization token provided during initialization.
         """
 
-        async with websockets.connect(
-            self._wss_url, ssl=self._ssl_context
-        ) as websocket:
-            self._websocket = websocket
-            await self._setup_connection()
+        async for websocket in connect(self._wss_url, ssl=self._ssl_context):
+            try:
+                self._websocket = websocket
+                await self._setup_connection()
 
-            # main loop
-            while True:
-                raw_message = await self._websocket.recv()
-                message = json.loads(raw_message)
+                # main loop
+                async for raw_message in websocket:
+                    message = json.loads(raw_message)
 
-                logger.debug("received: %s", message)
-                if message["type"] == "SETUP":
-                    await self._authenticate_connection()
-                elif message["type"] == "AUTH_STATE":
-                    if message["state"] == "AUTHORIZED":
-                        self._authenticated = True
-                        self._heartbeat_task = asyncio.create_task(self._heartbeat())
-                elif message["type"] == "CHANNEL_OPENED":
-                    channel = next(
-                        k for k, v in self._channels.items() if v == message["channel"]
-                    )
-                    self._subscription_state[channel] = message["type"]
-                    logger.debug("Channel opened: %s", message)
-                elif message["type"] == "CHANNEL_CLOSED":
-                    channel = next(
-                        k for k, v in self._channels.items() if v == message["channel"]
-                    )
-                    self._subscription_state[channel] = message["type"]
-                    logger.debug("Channel closed: %s", message)
-                elif message["type"] == "FEED_CONFIG":
-                    logger.debug("Feed configured: %s", message)
-                elif message["type"] == "FEED_DATA":
-                    await self._map_message(message["data"])
-                elif message["type"] == "KEEPALIVE":
-                    pass
-                else:
-                    raise TastytradeError("Unknown message type:", message)
+                    logger.debug("received: %s", message)
+                    if message["type"] == "SETUP":
+                        await self._authenticate_connection()
+                    elif message["type"] == "AUTH_STATE":
+                        if message["state"] == "AUTHORIZED":
+                            logger.debug("Websocket connection established.")
+                            self._authenticated = True
+                            self._heartbeat_task = asyncio.create_task(
+                                self._heartbeat()
+                            )
+                    elif message["type"] == "CHANNEL_OPENED":
+                        channel = next(
+                            k
+                            for k, v in self._channels.items()
+                            if v == message["channel"]
+                        )
+                        self._subscription_state[channel] = message["type"]
+                        logger.debug("Channel opened: %s", message)
+                    elif message["type"] == "CHANNEL_CLOSED":
+                        channel = next(
+                            k
+                            for k, v in self._channels.items()
+                            if v == message["channel"]
+                        )
+                        self._subscription_state[channel] = message["type"]
+                        logger.debug("Channel closed: %s", message)
+                    elif message["type"] == "FEED_CONFIG":
+                        logger.debug("Feed configured: %s", message)
+                    elif message["type"] == "FEED_DATA":
+                        await self._map_message(message["data"])
+                    elif message["type"] == "KEEPALIVE":
+                        pass
+                    else:
+                        raise TastytradeError("Unknown message type:", message)
+            except ConnectionClosed:
+                logger.debug("Websocket connection closed, retrying...")
+                continue
 
     async def _setup_connection(self):
         message = {
