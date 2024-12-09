@@ -1002,32 +1002,34 @@ class Account(TastytradeJsonDataclass):
         return Transaction(**data)
 
     async def a_get_total_fees(
-        self, session: Session, date: date = today_in_new_york()
+        self, session: Session, day: Optional[date] = None
     ) -> FeesInfo:
         """
         Get the total fees for a given date.
 
         :param session: the session to use for the request.
-        :param date: the date to get fees for.
+        :param day: the date to get fees for.
         """
+        if not day:
+            day = today_in_new_york()
         data = await session._a_get(
             f"/accounts/{self.account_number}/transactions/total-fees",
-            params={"date": date},
+            params={"date": day},
         )
         return FeesInfo(**data)
 
-    def get_total_fees(
-        self, session: Session, date: date = today_in_new_york()
-    ) -> FeesInfo:
+    def get_total_fees(self, session: Session, day: Optional[date] = None) -> FeesInfo:
         """
         Get the total fees for a given date.
 
         :param session: the session to use for the request.
-        :param date: the date to get fees for.
+        :param day: the date to get fees for.
         """
+        if not day:
+            day = today_in_new_york()
         data = session._get(
             f"/accounts/{self.account_number}/transactions/total-fees",
-            params={"date": date},
+            params={"date": day},
         )
         return FeesInfo(**data)
 
