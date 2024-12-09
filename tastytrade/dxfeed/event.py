@@ -6,8 +6,19 @@ from pydantic.alias_generators import to_camel
 from tastytrade import logger
 from tastytrade.utils import TastytradeError
 
+REMOVE_EVENT = 0x2
+SNAPSHOT_BEGIN = 0x4
+SNAPSHOT_END = 0x8
+SNAPSHOT_MODE = 0x40
+SNAPSHOT_SNIP = 0x10
+TX_PENDING = 0x1
+
 
 class Event(BaseModel):
+    """
+    Base class for dxfeed events received from the data streamer.
+    """
+
     #: symbol of this event
     event_symbol: str
     #: time of this event
@@ -47,6 +58,40 @@ class Event(BaseModel):
             try:
                 objs.append(cls(**event_dict))
             except ValidationError as e:
-                # we just skip these events as they're generally useless
-                logger.debug(e)
+                # we just skip these events as they're generally not helpful
+                logger.debug(f"Skipping event due to error: {e}")
         return objs
+
+
+class IndexedEvent(Event):
+    """
+    A dxfeed `IndexedEvent` with flags computed bitwise.
+    For info see `here <https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/IndexedEvent.html>`_.
+    """
+
+    #: flags for the event
+    event_flags: int
+
+    @property
+    def pending(self) -> bool:
+        return self.event_flags & TX_PENDING != 0
+
+    @property
+    def remove(self) -> bool:
+        return self.event_flags & REMOVE_EVENT != 0
+
+    @property
+    def snapshot_begin(self) -> bool:
+        return self.event_flags & SNAPSHOT_BEGIN != 0
+
+    @property
+    def snapshot_end(self) -> bool:
+        return self.event_flags & SNAPSHOT_END != 0
+
+    @property
+    def snapshot_mode(self) -> bool:
+        return self.event_flags & SNAPSHOT_MODE != 0
+
+    @property
+    def snapshot_snip(self) -> bool:
+        return self.event_flags & SNAPSHOT_SNIP != 0

@@ -1,9 +1,9 @@
 from decimal import Decimal
 
-from .event import Event
+from .event import IndexedEvent
 
 
-class Underlying(Event):
+class Underlying(IndexedEvent):
     """
     Underlying event is a snapshot of computed values that are available for
     an option underlying symbol based on the option prices on the market. It
@@ -11,8 +11,6 @@ class Underlying(Event):
     corresponding values on the market at any given moment of time.
     """
 
-    #: transactional event flags
-    event_flags: int
     #: unique per-symbol index of this event
     index: int
     #: timestamp of this event in milliseconds
