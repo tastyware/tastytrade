@@ -1,9 +1,9 @@
 from decimal import Decimal
 
-from .event import Event
+from .event import IndexedEvent
 
 
-class TimeAndSale(Event):
+class TimeAndSale(IndexedEvent):
     """
     TimeAndSale event represents a trade or other market event with a price,
     like market open/close price. TimeAndSale events are intended to provide
@@ -13,8 +13,6 @@ class TimeAndSale(Event):
     correction/cancellation processing.
     """
 
-    #: transactional event flags
-    event_flags: int
     #: unique per-symbol index of this time and sale event
     index: int
     #: timestamp of the original event

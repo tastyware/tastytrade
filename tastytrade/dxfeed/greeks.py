@@ -1,9 +1,9 @@
 from decimal import Decimal
 
-from .event import Event
+from .event import IndexedEvent
 
 
-class Greeks(Event):
+class Greeks(IndexedEvent):
     """
     Greek ratios, or simply Greeks, are differential values that show how the
     price of an option depends on other market parameters: on the price of the
@@ -13,8 +13,6 @@ class Greeks(Event):
     portfolio has a risky sensitivity in this parameter.
     """
 
-    #: transactional event flags
-    event_flags: int
     #: unique per-symbol index of this event
     index: int
     #: timestamp of this event in milliseconds
