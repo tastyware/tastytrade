@@ -41,28 +41,32 @@ def today_in_new_york() -> date:
     return now_in_new_york().date()
 
 
-def is_market_open_on(day: date = today_in_new_york()) -> bool:
+def is_market_open_on(day: Optional[date] = None) -> bool:
     """
     Returns whether the market was/is/will be open at ANY point
     during the given day.
 
-    :param day: date to check
+    :param day: date to check. If not provided defaults to current NY date.
 
     :return: whether the market opens on given day
     """
+    if not day:
+        day = today_in_new_york()
     date_range = NYSE.valid_days(day, day)
     return not date_range.empty
 
 
-def get_third_friday(day: date = today_in_new_york()) -> date:
+def get_third_friday(day: Optional[date] = None) -> date:
     """
     Gets the monthly expiration associated with the month of the given date,
     or the monthly expiration associated with today's month.
 
-    :param day: the date to check, defaults to today
+    :param day: date to check. If not provided defaults to current NY date.
 
     :return: the associated monthly
     """
+    if not day:
+        day = today_in_new_york()
     day = day.replace(day=1)
     day += timedelta(weeks=2)
     while day.weekday() != 4:  # Friday
@@ -91,16 +95,18 @@ def _get_last_day_of_month(day: date) -> date:
     return last - timedelta(days=1)
 
 
-def get_future_fx_monthly(day: date = today_in_new_york()) -> date:
+def get_future_fx_monthly(day: Optional[date] = None) -> date:
     """
     Gets the monthly expiration associated with the FX futures: /6E, /6A, etc.
     As far as I can tell, these expire on the first Friday prior to the second
     Wednesday.
 
-    :param day: the date to check, defaults to today
+    :param day: date to check. If not provided defaults to current NY date.
 
     :return: the associated monthly
     """
+    if not day:
+        day = today_in_new_york()
     day = day.replace(day=1)
     day += timedelta(weeks=1)
     while day.weekday() != 2:  # Wednesday
@@ -110,17 +116,19 @@ def get_future_fx_monthly(day: date = today_in_new_york()) -> date:
     return day
 
 
-def get_future_treasury_monthly(day: date = today_in_new_york()) -> date:
+def get_future_treasury_monthly(day: Optional[date] = None) -> date:
     """
     Gets the monthly expiration associated with the treasury futures: /ZN,
     /ZB, etc. According to CME, these expire the Friday before the 2nd last
     business day of the month. If this is not a business day, they expire 1
     business day prior.
 
-    :param day: the date to check, defaults to today
+    :param day: date to check. If not provided defaults to current NY date.
 
     :return: the associated monthly
     """
+    if not day:
+        day = today_in_new_york()
     last_day = _get_last_day_of_month(day)
     first_day = last_day.replace(day=1)
     valid_range = [d.date() for d in NYSE.valid_days(first_day, last_day)]
@@ -132,17 +140,19 @@ def get_future_treasury_monthly(day: date = today_in_new_york()) -> date:
     return itr - timedelta(days=1)
 
 
-def get_future_metal_monthly(day: date = today_in_new_york()) -> date:
+def get_future_metal_monthly(day: Optional[date] = None) -> date:
     """
     Gets the monthly expiration associated with the metals futures: /GC, /SI,
     etc. According to CME, these expire on the 4th last business day of the
     month, unless that day occurs on a Friday or the day before a holiday, in
     which case they expire on the prior business day.
 
-    :param day: the date to check, defaults to today
+    :param day: date to check. If not provided defaults to current NY date.
 
     :return: the associated monthly
     """
+    if not day:
+        day = today_in_new_york()
     last_day = _get_last_day_of_month(day)
     first_day = last_day.replace(day=1)
     valid_range = [d.date() for d in NYSE.valid_days(first_day, last_day)]
@@ -153,16 +163,18 @@ def get_future_metal_monthly(day: date = today_in_new_york()) -> date:
     return itr
 
 
-def get_future_grain_monthly(day: date = today_in_new_york()) -> date:
+def get_future_grain_monthly(day: Optional[date] = None) -> date:
     """
     Gets the monthly expiration associated with the grain futures: /ZC, /ZW,
     etc. According to CME, these expire on the Friday which precedes, by at
     least 2 business days, the last business day of the month.
 
-    :param day: the date to check, defaults to today
+    :param day: date to check. If not provided defaults to current NY date.
 
     :return: the associated monthly
     """
+    if not day:
+        day = today_in_new_york()
     last_day = _get_last_day_of_month(day)
     first_day = last_day.replace(day=1)
     valid_range = [d.date() for d in NYSE.valid_days(first_day, last_day)]
@@ -172,33 +184,37 @@ def get_future_grain_monthly(day: date = today_in_new_york()) -> date:
     return itr
 
 
-def get_future_oil_monthly(day: date = today_in_new_york()) -> date:
+def get_future_oil_monthly(day: Optional[date] = None) -> date:
     """
     Gets the monthly expiration associated with the WTI oil futures: /CL and
     /MCL. According to CME, these expire 6 business days before the 25th day
     of the month, unless the 25th day is not a business day, in which case
     they expire 7 business days prior to the 25th day of the month.
 
-    :param day: the date to check, defaults to today
+    :param day: date to check. If not provided defaults to current NY date.
 
     :return: the associated monthly
     """
+    if not day:
+        day = today_in_new_york()
     last_day = day.replace(day=25)
     first_day = last_day.replace(day=1)
     valid_range = [d.date() for d in NYSE.valid_days(first_day, last_day)]
     return valid_range[-7]
 
 
-def get_future_index_monthly(day: date = today_in_new_york()) -> date:
+def get_future_index_monthly(day: Optional[date] = None) -> date:
     """
     Gets the monthly expiration associated with the index futures: /ES, /RTY,
     /NQ, etc. According to CME, these expire on the last business day of the
     month.
 
-    :param day: the date to check, defaults to today
+    :param day: date to check. If not provided defaults to current NY date.
 
     :return: the associated monthly
     """
+    if not day:
+        day = today_in_new_york()
     last_day = _get_last_day_of_month(day)
     first_day = last_day.replace(day=1)
     valid_range = [d.date() for d in NYSE.valid_days(first_day, last_day)]
