@@ -10,7 +10,7 @@ You can create a streamer using an active production session:
 .. code-block:: python
 
    from tastytrade import DXLinkStreamer
-   streamer = await DXLinkStreamer.create(session)
+   streamer = await DXLinkStreamer(session)
 
 Or, you can create a streamer using an asynchronous context manager:
 
@@ -110,7 +110,7 @@ For example, we can use the streamer to create an option chain that will continu
            # the `streamer_symbol` property is the symbol used by the streamer
            streamer_symbols = [o.streamer_symbol for o in options]
 
-           streamer = await DXLinkStreamer.create(session)
+           streamer = await DXLinkStreamer(session)
            # subscribe to quotes and greeks for all options on that date
            await streamer.subscribe(Quote, [symbol] + streamer_symbols)
            await streamer.subscribe(Greeks, streamer_symbols)
@@ -165,3 +165,5 @@ This callback can then be used when creating the streamer:
 
     async with DXLinkStreamer(session, reconnect_fn=callback, reconnect_args=(arg1, arg2)) as streamer:
         # ...
+
+The reconnection uses `websockets`' exponential backoff algorithm, which can be configured through environment variables `here <https://websockets.readthedocs.io/en/14.1/reference/variables.html>`_.

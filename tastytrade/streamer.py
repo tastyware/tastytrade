@@ -1,6 +1,6 @@
 import asyncio
 import json
-from asyncio import Lock, Queue, QueueEmpty
+from asyncio import Queue, QueueEmpty
 from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal
@@ -167,8 +167,8 @@ class AlertStreamer:
     """
     Used to subscribe to account-level updates (balances, orders, positions),
     public watchlist updates, quote alerts, and user-level messages. It should
-    always be initialized as an async context manager, or with the `create`
-    function, since the object cannot be fully instantiated without async.
+    always be initialized as an async context manager, or by awaiting it,
+    since the object cannot be fully instantiated without async.
 
     Example usage::
 
@@ -187,6 +187,10 @@ class AlertStreamer:
 
             async for order in streamer.listen(PlacedOrder):
                 print(order)
+
+    Or::
+
+        streamer = await AlertStreamer(session)
 
     """
 
@@ -221,20 +225,13 @@ class AlertStreamer:
 
         return self
 
-    @classmethod
-    async def create(
-        cls,
-        session: Session,
-        reconnect_args: tuple[Any, ...] = (),
-        reconnect_fn: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
-    ) -> "AlertStreamer":
-        self = cls(session, reconnect_args=reconnect_args, reconnect_fn=reconnect_fn)
-        return await self.__aenter__()
+    def __await__(self):
+        return self.__aenter__().__await__()
 
     async def __aexit__(self, *exc):
         self.close()
 
-    def close(self):
+    def close(self) -> None:
         """
         Closes the websocket connection and cancels the pending tasks.
         """
@@ -266,10 +263,10 @@ class AlertStreamer:
                     type_str = data.get("type")
                     if type_str is not None:
                         await self._map_message(type_str, data["data"])
-            except ConnectionClosed:
-                logger.debug("Websocket connection closed, retrying...")
-                reconnecting = True
-                continue
+            except ConnectionClosed as e:
+                logger.error(f"Websocket connection closed with {e}")
+            logger.debug("Websocket connection closed, retrying...")
+            reconnecting = True
 
     async def listen(self, alert_class: Type[T]) -> AsyncIterator[T]:
         """
@@ -285,7 +282,7 @@ class AlertStreamer:
         while True:
             yield await self._queues[cls_str].get()
 
-    async def _map_message(self, type_str: str, data: dict):
+    async def _map_message(self, type_str: str, data: dict) -> None:
         """
         I'm not sure what the user-status messages look like, so they're absent.
         """
@@ -355,8 +352,8 @@ class DXLinkStreamer:
     """
     A :class:`DXLinkStreamer` object is used to fetch quotes or greeks for a
     given symbol or list of symbols. It should always be initialized as an
-    async context manager, or with the `create` function, since the object
-    cannot be fully instantiated without async.
+    async context manager, or by awaiting it, since the object cannot be
+    fully instantiated without async.
 
     Example usage::
 
@@ -370,6 +367,10 @@ class DXLinkStreamer:
             quote = await streamer.get_event(Quote)
             print(quote)
 
+    Or::
+
+        streamer = await DXLinkStreamer(session)
+
     """
 
     def __init__(
@@ -379,8 +380,6 @@ class DXLinkStreamer:
         reconnect_fn: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
         ssl_context: SSLContext = create_default_context(),
     ):
-        self._counter = 0
-        self._lock: Lock = Lock()
         self._queues: dict[str, Queue] = defaultdict(Queue)
         self._channels: dict[str, int] = {
             "Candle": 1,
@@ -400,17 +399,15 @@ class DXLinkStreamer:
         #: Variable number of arguments to pass to the reconnect function
         self.reconnect_args = reconnect_args
 
-        # The unique client identifier received from the server
         self._session = session
         self._authenticated = False
         self._wss_url = session.dxlink_url
         self._auth_token = session.streamer_token
         self._ssl_context = ssl_context
-
-        self._connect_task = asyncio.create_task(self._connect())
         self._reconnect_task = None
 
     async def __aenter__(self):
+        self._connect_task = asyncio.create_task(self._connect())
         time_out = 100
         while not self._authenticated:
             await asyncio.sleep(0.1)
@@ -420,26 +417,13 @@ class DXLinkStreamer:
 
         return self
 
-    @classmethod
-    async def create(
-        cls,
-        session: Session,
-        reconnect_args: tuple[Any, ...] = (),
-        reconnect_fn: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
-        ssl_context: SSLContext = create_default_context(),
-    ) -> "DXLinkStreamer":
-        self = cls(
-            session,
-            reconnect_args=reconnect_args,
-            reconnect_fn=reconnect_fn,
-            ssl_context=ssl_context,
-        )
-        return await self.__aenter__()
+    def __await__(self):
+        return self.__aenter__().__await__()
 
     async def __aexit__(self, *exc):
         self.close()
 
-    def close(self):
+    def close(self) -> None:
         """
         Closes the websocket connection and cancels the heartbeat task.
         """
@@ -472,6 +456,8 @@ class DXLinkStreamer:
                             )
                         # run reconnect hook upon auth completion
                         if reconnecting and self.reconnect_fn is not None:
+                            self._subscription_state.clear()
+                            reconnecting = False
                             self._reconnect_task = asyncio.create_task(
                                 self.reconnect_fn(self, *self.reconnect_args)
                             )
@@ -481,7 +467,7 @@ class DXLinkStreamer:
                             for k, v in self._channels.items()
                             if v == message["channel"]
                         )
-                        self._subscription_state[channel] = message["type"]
+                        self._subscription_state[channel] = "CHANNEL_OPENED"
                         logger.debug("Channel opened: %s", message)
                     elif message["type"] == "CHANNEL_CLOSED":
                         channel = next(
@@ -489,7 +475,7 @@ class DXLinkStreamer:
                             for k, v in self._channels.items()
                             if v == message["channel"]
                         )
-                        self._subscription_state[channel] = message["type"]
+                        del self._subscription_state[channel]
                         logger.debug("Channel closed: %s", message)
                     elif message["type"] == "FEED_CONFIG":
                         logger.debug("Feed configured: %s", message)
@@ -498,13 +484,13 @@ class DXLinkStreamer:
                     elif message["type"] == "KEEPALIVE":
                         pass
                     else:
-                        raise TastytradeError("Unknown message type:", message)
-            except ConnectionClosed:
-                logger.debug("Websocket connection closed, retrying...")
-                reconnecting = True
-                continue
+                        logger.error(f"Streamer error: {message}")
+            except ConnectionClosed as e:
+                logger.error(f"Websocket connection closed with {e}")
+            logger.debug("Websocket connection closed, retrying...")
+            reconnecting = True
 
-    async def _setup_connection(self):
+    async def _setup_connection(self) -> None:
         message = {
             "type": "SETUP",
             "channel": 0,
@@ -514,7 +500,7 @@ class DXLinkStreamer:
         }
         await self._websocket.send(json.dumps(message))
 
-    async def _authenticate_connection(self):
+    async def _authenticate_connection(self) -> None:
         message = {
             "type": "AUTH",
             "channel": 0,
@@ -744,7 +730,7 @@ class DXLinkStreamer:
         }
         await self._websocket.send(json.dumps(message))
 
-    async def _map_message(self, message) -> None:  # pragma: no cover
+    async def _map_message(self, message) -> None:
         """
         Takes the raw JSON data, parses the events and places them into their
         respective queues.
