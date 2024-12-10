@@ -1,12 +1,21 @@
 import asyncio
 import json
-from asyncio import Lock, Queue, QueueEmpty
+from asyncio import Queue, QueueEmpty
 from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from ssl import SSLContext, create_default_context
-from typing import Any, AsyncIterator, Optional, Type, TypeVar, Union
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    Coroutine,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from pydantic import model_validator
 from websockets.asyncio.client import ClientConnection, connect
@@ -158,8 +167,8 @@ class AlertStreamer:
     """
     Used to subscribe to account-level updates (balances, orders, positions),
     public watchlist updates, quote alerts, and user-level messages. It should
-    always be initialized as an async context manager, or with the `create`
-    function, since the object cannot be fully instantiated without async.
+    always be initialized as an async context manager, or by awaiting it,
+    since the object cannot be fully instantiated without async.
 
     Example usage::
 
@@ -179,17 +188,32 @@ class AlertStreamer:
             async for order in streamer.listen(PlacedOrder):
                 print(order)
 
+    Or::
+
+        streamer = await AlertStreamer(session)
+
     """
 
-    def __init__(self, session: Session):
+    def __init__(
+        self,
+        session: Session,
+        reconnect_args: tuple[Any, ...] = (),
+        reconnect_fn: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
+    ):
         #: The active session used to initiate the streamer or make requests
         self.token: str = session.session_token
         #: The base url for the streamer websocket
         self.base_url: str = CERT_STREAMER_URL if session.is_test else STREAMER_URL
+        #: An async function to be called upon reconnection. The first argument must be
+        #: of type `AlertStreamer` and will be a reference to the streamer object.
+        self.reconnect_fn = reconnect_fn
+        #: Variable number of arguments to pass to the reconnect function
+        self.reconnect_args = reconnect_args
 
         self._queues: dict[str, Queue] = defaultdict(Queue)
         self._websocket: Optional[ClientConnection] = None
         self._connect_task = asyncio.create_task(self._connect())
+        self._reconnect_task = None
 
     async def __aenter__(self):
         time_out = 100
@@ -201,20 +225,20 @@ class AlertStreamer:
 
         return self
 
-    @classmethod
-    async def create(cls, session: Session) -> "AlertStreamer":
-        self = cls(session)
-        return await self.__aenter__()
+    def __await__(self):
+        return self.__aenter__().__await__()
 
     async def __aexit__(self, *exc):
-        await self.close()
+        self.close()
 
-    async def close(self):
+    def close(self) -> None:
         """
-        Closes the websocket connection and cancels the heartbeat task.
+        Closes the websocket connection and cancels the pending tasks.
         """
         self._connect_task.cancel()
         self._heartbeat_task.cancel()
+        if self._reconnect_task is not None:
+            self._reconnect_task.cancel()
 
     async def _connect(self) -> None:
         """
@@ -222,11 +246,16 @@ class AlertStreamer:
         token provided during initialization.
         """
         headers = {"Authorization": f"Bearer {self.token}"}
+        reconnecting = False
         async for websocket in connect(self.base_url, additional_headers=headers):
             self._websocket = websocket
             self._heartbeat_task = asyncio.create_task(self._heartbeat())
             logger.debug("Websocket connection established.")
 
+            if reconnecting and self.reconnect_fn is not None:
+                self._reconnect_task = asyncio.create_task(
+                    self.reconnect_fn(self, *self.reconnect_args)
+                )
             try:
                 async for raw_message in websocket:
                     logger.debug("raw message: %s", raw_message)
@@ -234,9 +263,10 @@ class AlertStreamer:
                     type_str = data.get("type")
                     if type_str is not None:
                         await self._map_message(type_str, data["data"])
-            except ConnectionClosed:
-                logger.debug("Websocket connection closed, retrying...")
-                continue
+            except ConnectionClosed as e:
+                logger.error(f"Websocket connection closed with {e}")
+            logger.debug("Websocket connection closed, retrying...")
+            reconnecting = True
 
     async def listen(self, alert_class: Type[T]) -> AsyncIterator[T]:
         """
@@ -252,7 +282,7 @@ class AlertStreamer:
         while True:
             yield await self._queues[cls_str].get()
 
-    async def _map_message(self, type_str: str, data: dict):
+    async def _map_message(self, type_str: str, data: dict) -> None:
         """
         I'm not sure what the user-status messages look like, so they're absent.
         """
@@ -322,8 +352,8 @@ class DXLinkStreamer:
     """
     A :class:`DXLinkStreamer` object is used to fetch quotes or greeks for a
     given symbol or list of symbols. It should always be initialized as an
-    async context manager, or with the `create` function, since the object
-    cannot be fully instantiated without async.
+    async context manager, or by awaiting it, since the object cannot be
+    fully instantiated without async.
 
     Example usage::
 
@@ -337,13 +367,19 @@ class DXLinkStreamer:
             quote = await streamer.get_event(Quote)
             print(quote)
 
+    Or::
+
+        streamer = await DXLinkStreamer(session)
+
     """
 
     def __init__(
-        self, session: Session, ssl_context: SSLContext = create_default_context()
+        self,
+        session: Session,
+        reconnect_args: tuple[Any, ...] = (),
+        reconnect_fn: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
+        ssl_context: SSLContext = create_default_context(),
     ):
-        self._counter = 0
-        self._lock: Lock = Lock()
         self._queues: dict[str, Queue] = defaultdict(Queue)
         self._channels: dict[str, int] = {
             "Candle": 1,
@@ -357,17 +393,21 @@ class DXLinkStreamer:
             "Underlying": 17,
         }
         self._subscription_state: dict[str, str] = defaultdict(lambda: "CHANNEL_CLOSED")
+        #: An async function to be called upon reconnection. The first argument must be
+        #: of type `DXLinkStreamer` and will be a reference to the streamer object.
+        self.reconnect_fn = reconnect_fn
+        #: Variable number of arguments to pass to the reconnect function
+        self.reconnect_args = reconnect_args
 
-        #: The unique client identifier received from the server
         self._session = session
         self._authenticated = False
         self._wss_url = session.dxlink_url
         self._auth_token = session.streamer_token
         self._ssl_context = ssl_context
-
-        self._connect_task = asyncio.create_task(self._connect())
+        self._reconnect_task = None
 
     async def __aenter__(self):
+        self._connect_task = asyncio.create_task(self._connect())
         time_out = 100
         while not self._authenticated:
             await asyncio.sleep(0.1)
@@ -377,38 +417,33 @@ class DXLinkStreamer:
 
         return self
 
-    @classmethod
-    async def create(
-        cls, session: Session, ssl_context: SSLContext = create_default_context()
-    ) -> "DXLinkStreamer":
-        self = cls(session, ssl_context=ssl_context)
-        return await self.__aenter__()
+    def __await__(self):
+        return self.__aenter__().__await__()
 
     async def __aexit__(self, *exc):
-        await self.close()
+        self.close()
 
-    async def close(self):
+    def close(self) -> None:
         """
         Closes the websocket connection and cancels the heartbeat task.
         """
         self._connect_task.cancel()
         self._heartbeat_task.cancel()
+        if self._reconnect_task is not None:
+            self._reconnect_task.cancel()
 
     async def _connect(self) -> None:
         """
         Connect to the websocket server using the URL and
         authorization token provided during initialization.
         """
-
+        reconnecting = False
         async for websocket in connect(self._wss_url, ssl=self._ssl_context):
+            self._websocket = websocket
+            await self._setup_connection()
             try:
-                self._websocket = websocket
-                await self._setup_connection()
-
-                # main loop
                 async for raw_message in websocket:
                     message = json.loads(raw_message)
-
                     logger.debug("received: %s", message)
                     if message["type"] == "SETUP":
                         await self._authenticate_connection()
@@ -419,13 +454,20 @@ class DXLinkStreamer:
                             self._heartbeat_task = asyncio.create_task(
                                 self._heartbeat()
                             )
+                        # run reconnect hook upon auth completion
+                        if reconnecting and self.reconnect_fn is not None:
+                            self._subscription_state.clear()
+                            reconnecting = False
+                            self._reconnect_task = asyncio.create_task(
+                                self.reconnect_fn(self, *self.reconnect_args)
+                            )
                     elif message["type"] == "CHANNEL_OPENED":
                         channel = next(
                             k
                             for k, v in self._channels.items()
                             if v == message["channel"]
                         )
-                        self._subscription_state[channel] = message["type"]
+                        self._subscription_state[channel] = "CHANNEL_OPENED"
                         logger.debug("Channel opened: %s", message)
                     elif message["type"] == "CHANNEL_CLOSED":
                         channel = next(
@@ -433,7 +475,7 @@ class DXLinkStreamer:
                             for k, v in self._channels.items()
                             if v == message["channel"]
                         )
-                        self._subscription_state[channel] = message["type"]
+                        del self._subscription_state[channel]
                         logger.debug("Channel closed: %s", message)
                     elif message["type"] == "FEED_CONFIG":
                         logger.debug("Feed configured: %s", message)
@@ -442,12 +484,13 @@ class DXLinkStreamer:
                     elif message["type"] == "KEEPALIVE":
                         pass
                     else:
-                        raise TastytradeError("Unknown message type:", message)
-            except ConnectionClosed:
-                logger.debug("Websocket connection closed, retrying...")
-                continue
+                        logger.error(f"Streamer error: {message}")
+            except ConnectionClosed as e:
+                logger.error(f"Websocket connection closed with {e}")
+            logger.debug("Websocket connection closed, retrying...")
+            reconnecting = True
 
-    async def _setup_connection(self):
+    async def _setup_connection(self) -> None:
         message = {
             "type": "SETUP",
             "channel": 0,
@@ -457,7 +500,7 @@ class DXLinkStreamer:
         }
         await self._websocket.send(json.dumps(message))
 
-    async def _authenticate_connection(self):
+    async def _authenticate_connection(self) -> None:
         message = {
             "type": "AUTH",
             "channel": 0,
@@ -687,7 +730,7 @@ class DXLinkStreamer:
         }
         await self._websocket.send(json.dumps(message))
 
-    async def _map_message(self, message) -> None:  # pragma: no cover
+    async def _map_message(self, message) -> None:
         """
         Takes the raw JSON data, parses the events and places them into their
         respective queues.
