@@ -6,7 +6,16 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from ssl import SSLContext, create_default_context
-from typing import Any, AsyncIterator, Optional, Type, TypeVar, Union
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    Coroutine,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from pydantic import model_validator
 from websockets.asyncio.client import ClientConnection, connect
@@ -181,15 +190,26 @@ class AlertStreamer:
 
     """
 
-    def __init__(self, session: Session):
+    def __init__(
+        self,
+        session: Session,
+        reconnect_args: tuple[Any, ...] = (),
+        reconnect_fn: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
+    ):
         #: The active session used to initiate the streamer or make requests
         self.token: str = session.session_token
         #: The base url for the streamer websocket
         self.base_url: str = CERT_STREAMER_URL if session.is_test else STREAMER_URL
+        #: An async function to be called upon reconnection. The first argument must be
+        #: of type `AlertStreamer` and will be a reference to the streamer object.
+        self.reconnect_fn = reconnect_fn
+        #: Variable number of arguments to pass to the reconnect function
+        self.reconnect_args = reconnect_args
 
         self._queues: dict[str, Queue] = defaultdict(Queue)
         self._websocket: Optional[ClientConnection] = None
         self._connect_task = asyncio.create_task(self._connect())
+        self._reconnect_task = None
 
     async def __aenter__(self):
         time_out = 100
@@ -202,19 +222,27 @@ class AlertStreamer:
         return self
 
     @classmethod
-    async def create(cls, session: Session) -> "AlertStreamer":
-        self = cls(session)
+    async def create(
+        cls,
+        session: Session,
+        *,
+        reconnect_args: tuple[Any, ...] = (),
+        reconnect_fn: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
+    ) -> "AlertStreamer":
+        self = cls(session, reconnect_args=reconnect_args, reconnect_fn=reconnect_fn)
         return await self.__aenter__()
 
     async def __aexit__(self, *exc):
-        await self.close()
+        self.close()
 
-    async def close(self):
+    def close(self):
         """
-        Closes the websocket connection and cancels the heartbeat task.
+        Closes the websocket connection and cancels the pending tasks.
         """
         self._connect_task.cancel()
         self._heartbeat_task.cancel()
+        if self._reconnect_task is not None:
+            self._reconnect_task.cancel()
 
     async def _connect(self) -> None:
         """
@@ -222,11 +250,16 @@ class AlertStreamer:
         token provided during initialization.
         """
         headers = {"Authorization": f"Bearer {self.token}"}
+        reconnecting = False
         async for websocket in connect(self.base_url, additional_headers=headers):
             self._websocket = websocket
             self._heartbeat_task = asyncio.create_task(self._heartbeat())
             logger.debug("Websocket connection established.")
 
+            if reconnecting and self.reconnect_fn is not None:
+                self._reconnect_task = asyncio.create_task(
+                    self.reconnect_fn(self, *self.reconnect_args)
+                )
             try:
                 async for raw_message in websocket:
                     logger.debug("raw message: %s", raw_message)
@@ -236,6 +269,7 @@ class AlertStreamer:
                         await self._map_message(type_str, data["data"])
             except ConnectionClosed:
                 logger.debug("Websocket connection closed, retrying...")
+                reconnecting = True
                 continue
 
     async def listen(self, alert_class: Type[T]) -> AsyncIterator[T]:
@@ -340,7 +374,11 @@ class DXLinkStreamer:
     """
 
     def __init__(
-        self, session: Session, ssl_context: SSLContext = create_default_context()
+        self,
+        session: Session,
+        reconnect_args: tuple[Any, ...] = (),
+        reconnect_fn: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
+        ssl_context: SSLContext = create_default_context(),
     ):
         self._counter = 0
         self._lock: Lock = Lock()
@@ -357,8 +395,13 @@ class DXLinkStreamer:
             "Underlying": 17,
         }
         self._subscription_state: dict[str, str] = defaultdict(lambda: "CHANNEL_CLOSED")
+        #: An async function to be called upon reconnection. The first argument must be
+        #: of type `DXLinkStreamer` and will be a reference to the streamer object.
+        self.reconnect_fn = reconnect_fn
+        #: Variable number of arguments to pass to the reconnect function
+        self.reconnect_args = reconnect_args
 
-        #: The unique client identifier received from the server
+        # The unique client identifier received from the server
         self._session = session
         self._authenticated = False
         self._wss_url = session.dxlink_url
@@ -366,6 +409,7 @@ class DXLinkStreamer:
         self._ssl_context = ssl_context
 
         self._connect_task = asyncio.create_task(self._connect())
+        self._reconnect_task = None
 
     async def __aenter__(self):
         time_out = 100
@@ -379,36 +423,38 @@ class DXLinkStreamer:
 
     @classmethod
     async def create(
-        cls, session: Session, ssl_context: SSLContext = create_default_context()
+        cls,
+        session: Session,
+        reconnect_fn: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
+        ssl_context: SSLContext = create_default_context(),
     ) -> "DXLinkStreamer":
-        self = cls(session, ssl_context=ssl_context)
+        self = cls(session, reconnect_fn=reconnect_fn, ssl_context=ssl_context)
         return await self.__aenter__()
 
     async def __aexit__(self, *exc):
-        await self.close()
+        self.close()
 
-    async def close(self):
+    def close(self):
         """
         Closes the websocket connection and cancels the heartbeat task.
         """
         self._connect_task.cancel()
         self._heartbeat_task.cancel()
+        if self._reconnect_task is not None:
+            self._reconnect_task.cancel()
 
     async def _connect(self) -> None:
         """
         Connect to the websocket server using the URL and
         authorization token provided during initialization.
         """
-
+        reconnecting = False
         async for websocket in connect(self._wss_url, ssl=self._ssl_context):
+            self._websocket = websocket
+            await self._setup_connection()
             try:
-                self._websocket = websocket
-                await self._setup_connection()
-
-                # main loop
                 async for raw_message in websocket:
                     message = json.loads(raw_message)
-
                     logger.debug("received: %s", message)
                     if message["type"] == "SETUP":
                         await self._authenticate_connection()
@@ -418,6 +464,11 @@ class DXLinkStreamer:
                             self._authenticated = True
                             self._heartbeat_task = asyncio.create_task(
                                 self._heartbeat()
+                            )
+                        # run reconnect hook upon auth completion
+                        if reconnecting and self.reconnect_fn is not None:
+                            self._reconnect_task = asyncio.create_task(
+                                self.reconnect_fn(self, *self.reconnect_args)
                             )
                     elif message["type"] == "CHANNEL_OPENED":
                         channel = next(
@@ -445,6 +496,7 @@ class DXLinkStreamer:
                         raise TastytradeError("Unknown message type:", message)
             except ConnectionClosed:
                 logger.debug("Websocket connection closed, retrying...")
+                reconnecting = True
                 continue
 
     async def _setup_connection(self):
