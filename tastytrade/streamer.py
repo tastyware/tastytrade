@@ -225,7 +225,6 @@ class AlertStreamer:
     async def create(
         cls,
         session: Session,
-        *,
         reconnect_args: tuple[Any, ...] = (),
         reconnect_fn: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
     ) -> "AlertStreamer":
@@ -425,10 +424,16 @@ class DXLinkStreamer:
     async def create(
         cls,
         session: Session,
+        reconnect_args: tuple[Any, ...] = (),
         reconnect_fn: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
         ssl_context: SSLContext = create_default_context(),
     ) -> "DXLinkStreamer":
-        self = cls(session, reconnect_fn=reconnect_fn, ssl_context=ssl_context)
+        self = cls(
+            session,
+            reconnect_args=reconnect_args,
+            reconnect_fn=reconnect_fn,
+            ssl_context=ssl_context,
+        )
         return await self.__aenter__()
 
     async def __aexit__(self, *exc):
