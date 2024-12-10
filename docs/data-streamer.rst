@@ -146,3 +146,22 @@ Now, we can access the quotes and greeks at any time, and they'll be up-to-date 
    print(live_prices.quotes[symbol], live_prices.greeks[symbol])
 
 >>> Quote(eventSymbol='.SPY230721C387', eventTime=0, sequence=0, timeNanoPart=0, bidTime=1689365699000, bidExchangeCode='X', bidPrice=62.01, bidSize=50.0, askTime=1689365699000, askExchangeCode='X', askPrice=62.83, askSize=50.0) Greeks(eventSymbol='.SPY230721C387', eventTime=0, eventFlags=0, index=7255910303911641088, time=1689398266363, sequence=0, price=62.6049270064687, volatility=0.536152815048564, delta=0.971506591907638, gamma=0.001814464566110275, theta=-0.1440768557397271, rho=0.0831882577866199, vega=0.0436861878838861)
+
+Retry callback
+--------------
+
+The data streamer has a special "callback" function which can be used to execute arbitrary code whenever the websocket reconnects. This is useful for re-subscribing to whatever events you wanted to subscribe to initially (in fact, you can probably use the same function/code you use when initializing the connection).
+The callback function should look something like this:
+
+.. code-block:: python
+
+    async def callback(streamer: DXLinkStreamer, arg1, arg2):
+        await streamer.subscribe(Quote, ['SPY'])
+
+The requirements are that the first parameter be the `DXLinkStreamer` instance, and the function should be asynchronous. Other than that, you have the flexibility to decide what arguments you want to use.
+This callback can then be used when creating the streamer:
+
+.. code-block:: python
+
+    async with DXLinkStreamer(session, reconnect_fn=callback, reconnect_args=(arg1, arg2)) as streamer:
+        # ...
