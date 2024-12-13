@@ -229,16 +229,19 @@ class AlertStreamer:
         return self.__aenter__().__await__()
 
     async def __aexit__(self, *exc):
-        self.close()
+        await self.close()
 
-    def close(self) -> None:
+    async def close(self) -> None:
         """
         Closes the websocket connection and cancels the pending tasks.
         """
         self._connect_task.cancel()
         self._heartbeat_task.cancel()
-        if self._reconnect_task is not None:
+        tasks = [self._connect_task, self._heartbeat_task]
+        if self._reconnect_task is not None and not self._reconnect_task.done():
             self._reconnect_task.cancel()
+            tasks.append(self._reconnect_task)
+        await asyncio.gather(*tasks)
 
     async def _connect(self) -> None:
         """
@@ -265,6 +268,9 @@ class AlertStreamer:
                         await self._map_message(type_str, data["data"])
             except ConnectionClosed as e:
                 logger.error(f"Websocket connection closed with {e}")
+            except asyncio.CancelledError:
+                logger.debug("Websocket interrupted, cancelling main loop.")
+                return
             logger.debug("Websocket connection closed, retrying...")
             reconnecting = True
 
@@ -327,10 +333,14 @@ class AlertStreamer:
         Sends a heartbeat message every 10 seconds to keep the connection
         alive.
         """
-        while True:
-            await self._subscribe(SubscriptionType.HEARTBEAT, "")
-            # send the heartbeat every 10 seconds
-            await asyncio.sleep(10)
+        try:
+            while True:
+                await self._subscribe(SubscriptionType.HEARTBEAT, "")
+                # send the heartbeat every 10 seconds
+                await asyncio.sleep(10)
+        except asyncio.CancelledError:
+            logger.debug("Websocket interrupted, cancelling heartbeat.")
+            return
 
     async def _subscribe(
         self,
@@ -421,16 +431,19 @@ class DXLinkStreamer:
         return self.__aenter__().__await__()
 
     async def __aexit__(self, *exc):
-        self.close()
+        await self.close()
 
-    def close(self) -> None:
+    async def close(self) -> None:
         """
         Closes the websocket connection and cancels the heartbeat task.
         """
         self._connect_task.cancel()
         self._heartbeat_task.cancel()
-        if self._reconnect_task is not None:
+        tasks = [self._connect_task, self._heartbeat_task]
+        if self._reconnect_task is not None and not self._reconnect_task.done():
             self._reconnect_task.cancel()
+            tasks.append(self._reconnect_task)
+        await asyncio.gather(*tasks)
 
     async def _connect(self) -> None:
         """
@@ -487,6 +500,9 @@ class DXLinkStreamer:
                         logger.error(f"Streamer error: {message}")
             except ConnectionClosed as e:
                 logger.error(f"Websocket connection closed with {e}")
+            except asyncio.CancelledError:
+                logger.debug("Websocket interrupted, cancelling main loop.")
+                return
             logger.debug("Websocket connection closed, retrying...")
             reconnecting = True
 
@@ -558,12 +574,15 @@ class DXLinkStreamer:
         alive.
         """
         message = {"type": "KEEPALIVE", "channel": 0}
-
-        while True:
-            logger.debug("sending keepalive message: %s", message)
-            await self._websocket.send(json.dumps(message))
-            # send the heartbeat every 30 seconds
-            await asyncio.sleep(30)
+        try:
+            while True:
+                logger.debug("sending keepalive message: %s", message)
+                await self._websocket.send(json.dumps(message))
+                # send the heartbeat every 30 seconds
+                await asyncio.sleep(30)
+        except asyncio.CancelledError:
+            logger.debug("Websocket interrupted, cancelling heartbeat.")
+            return
 
     async def subscribe(self, event_class: Type[EventType], symbols: list[str]) -> None:
         """

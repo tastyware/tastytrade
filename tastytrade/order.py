@@ -3,6 +3,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any, Optional, Union
 
+from pandas_market_calendars.calendar_registry import prop
 from pydantic import computed_field, field_serializer, model_validator
 
 from tastytrade import VERSION
@@ -221,6 +222,17 @@ class OrderRule(TastytradeJsonDataclass):
     order_conditions: list[OrderCondition]
 
 
+class AdvancedInstructions(TastytradeJsonDataclass):
+    """
+    Dataclass containing advanced order rules.
+    """
+
+    #: By default, if a position meant to be closed by a closing order is no longer
+    #: open, the API will turn it into an opening order. With this flag, the API would
+    #: instead discard the closing order.
+    strict_position_effect_validation: bool = False
+
+
 class NewOrder(TastytradeJsonDataclass):
     """
     Dataclass containing information about a new order. Also used for
@@ -241,6 +253,7 @@ class NewOrder(TastytradeJsonDataclass):
     partition_key: Optional[str] = None
     preflight_id: Optional[str] = None
     rules: Optional[OrderRule] = None
+    advanced_instructions: Optional[AdvancedInstructions] = None
 
     @computed_field
     @property
