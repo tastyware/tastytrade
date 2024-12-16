@@ -1,9 +1,8 @@
-from typing import Any, List
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 from pydantic.alias_generators import to_camel
 
-from tastytrade import logger
 from tastytrade.utils import TastytradeError
 
 REMOVE_EVENT = 0x2
@@ -34,7 +33,7 @@ class Event(BaseModel):
         return v
 
     @classmethod
-    def from_stream(cls, data: list) -> List["Event"]:
+    def from_stream(cls, data: list) -> list["Event"]:
         """
         Makes a list of event objects from a list of raw trade data fetched by
         a :class:`~tastyworks.streamer.DXFeedStreamer`.
@@ -56,10 +55,10 @@ class Event(BaseModel):
             local_values = data[offset : (i + 1) * size]
             event_dict = dict(zip(keys, local_values))
             try:
-                objs.append(cls(**event_dict))
-            except ValidationError as e:
+                objs.append(cls.model_validate(event_dict))
+            except ValidationError:
                 # we just skip these events as they're generally not helpful
-                logger.debug(f"Skipping event due to error: {e}")
+                pass
         return objs
 
 

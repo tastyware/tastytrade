@@ -1,11 +1,28 @@
 from decimal import Decimal
-from typing import Optional
+from typing import Annotated, Any, Optional
 
-from pydantic import Field, computed_field
+from pydantic import (
+    ValidationError,
+    ValidationInfo,
+    ValidatorFunctionWrapHandler,
+    WrapValidator,
+)
 
 from .event import IndexedEvent
 
 ZERO = Decimal(0)
+
+
+def zero_from_none(
+    v: Any, handler: ValidatorFunctionWrapHandler, info: ValidationInfo
+) -> Decimal:
+    try:
+        return handler(v)
+    except ValidationError:
+        return ZERO
+
+
+ZeroFromNone = Annotated[Decimal, WrapValidator(zero_from_none)]
 
 
 class Candle(IndexedEvent):
@@ -35,40 +52,11 @@ class Candle(IndexedEvent):
     imp_volatility: Optional[Decimal] = None
     #: open interest in the candle
     open_interest: Optional[int] = None
-    # these fields will not show up in serialization
-    raw_open: Optional[Decimal] = Field(validation_alias="open", exclude=True)
-    raw_high: Optional[Decimal] = Field(validation_alias="high", exclude=True)
-    raw_low: Optional[Decimal] = Field(validation_alias="low", exclude=True)
-    raw_close: Optional[Decimal] = Field(validation_alias="close", exclude=True)
-
-    @computed_field
-    @property
-    def open(self) -> Decimal:
-        """
-        the first (open) price of the candle
-        """
-        return self.raw_open or ZERO
-
-    @computed_field
-    @property
-    def high(self) -> Decimal:
-        """
-        the maximal (high) price of the candle
-        """
-        return self.raw_high or ZERO
-
-    @computed_field
-    @property
-    def low(self) -> Decimal:
-        """
-        the minimal (low) price of the candle
-        """
-        return self.raw_low or ZERO
-
-    @computed_field
-    @property
-    def close(self) -> Decimal:
-        """
-        the last (close) price of the candle
-        """
-        return self.raw_close or ZERO
+    #: the first (open) price of the candle
+    open: ZeroFromNone
+    #: the maximal (high) price of the candle
+    high: ZeroFromNone
+    #: the minimal (low) price of the candle
+    low: ZeroFromNone
+    #: the last (close) price of the candle
+    close: ZeroFromNone

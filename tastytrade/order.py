@@ -3,7 +3,6 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any, Optional, Union
 
-from pandas_market_calendars.calendar_registry import prop
 from pydantic import computed_field, field_serializer, model_validator
 
 from tastytrade import VERSION
