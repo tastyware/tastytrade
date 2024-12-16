@@ -409,7 +409,6 @@ class DXLinkStreamer:
         #: Variable number of arguments to pass to the reconnect function
         self.reconnect_args = reconnect_args
 
-        self._session = session
         self._authenticated = False
         self._wss_url = session.dxlink_url
         self._auth_token = session.streamer_token
@@ -663,7 +662,7 @@ class DXLinkStreamer:
         Removes existing subscription for given list of symbols.
         For candles, use :meth:`unsubscribe_candle` instead.
 
-        :param event_type: type of subscription to remove
+        :param event_class: type of subscription to remove
         :param symbols: list of symbols to unsubscribe from
         """
         if not self._authenticated:
@@ -682,11 +681,10 @@ class DXLinkStreamer:
         symbols: list[str],
         interval: str,
         start_time: datetime,
-        end_time: Optional[datetime] = None,
         extended_trading_hours: bool = False,
     ) -> None:
         """
-        Subscribes to time series data for the given symbol.
+        Subscribes to candle data for the given list of symbols.
 
         :param symbols: list of symbols to get data for
         :param interval:
@@ -715,8 +713,6 @@ class DXLinkStreamer:
                 for ticker in symbols
             ],
         }
-        if end_time is not None:
-            raise TastytradeError("End time no longer supported")
         await self._websocket.send(json.dumps(message))
 
     async def unsubscribe_candle(
