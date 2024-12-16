@@ -49,7 +49,7 @@ async def test_account_streamer_reconnect(session):
     await streamer._websocket.close()  # type: ignore
     await asyncio.sleep(3)
     assert "test" in ref
-    streamer.close()
+    await streamer.close()
 
 
 async def reconnect_trades(streamer: DXLinkStreamer):
@@ -64,4 +64,4 @@ async def test_dxlink_streamer_reconnect(session):
     await asyncio.sleep(3)
     trade = await streamer.get_event(Trade)
     assert trade.event_symbol == "SPX"
-    streamer.close()
+    await streamer.close()
