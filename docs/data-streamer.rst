@@ -131,11 +131,11 @@ For example, we can use the streamer to create an option chain that will continu
 
        async def _update_greeks(self):
            async for e in self.streamer.listen(Greeks):
-               self.greeks[e.eventSymbol] = e
+               self.greeks[e.event_symbol] = e
       
        async def _update_quotes(self):
            async for e in self.streamer.listen(Quote):
-               self.quotes[e.eventSymbol] = e
+               self.quotes[e.event_symbol] = e
 
 Now, we can access the quotes and greeks at any time, and they'll be up-to-date with the live prices from the streamer:
 
