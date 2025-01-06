@@ -499,6 +499,11 @@ class DXLinkStreamer:
                         logger.error(f"Streamer error: {message}")
             except ConnectionClosed as e:
                 logger.error(f"Websocket connection closed with {e}")
+                if e.rcvd and e.rcvd.code == 1009:
+                    logger.error(
+                        "Subscription message too long! Try reducing the number of symbols."
+                    )
+                    return
             except asyncio.CancelledError:
                 logger.debug("Websocket interrupted, cancelling main loop.")
                 return

@@ -467,7 +467,7 @@ class Account(TastytradeJsonDataclass):
     is_firm_error: bool
     is_firm_proprietary: bool
     is_futures_approved: bool
-    is_test_drive: bool
+    is_test_drive: bool = False
     margin_or_cash: str
     is_foreign: bool
     created_at: datetime
