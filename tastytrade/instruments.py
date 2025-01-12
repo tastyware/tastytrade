@@ -669,11 +669,7 @@ class NestedOptionChain(TastytradeJsonDataclass):
         """
         symbol = symbol.replace("/", "%2F")
         data = await session._a_get(f"/option-chains/{symbol}/nested")
-        chains = []
-        for item in data['items']:
-            chains.append(cls(**item))
-        return chains
-
+        return [cls(**item) for item in data["items"]]
 
     @classmethod
     def get_chain(cls, session: Session, symbol: str) -> list[Self]:
@@ -685,10 +681,7 @@ class NestedOptionChain(TastytradeJsonDataclass):
         """
         symbol = symbol.replace("/", "%2F")
         data = session._get(f"/option-chains/{symbol}/nested")
-        chains = []
-        for item in data['items']:
-            chains.append(cls(**item))
-        return chains
+        return [cls(**item) for item in data["items"]]
 
 
 class FutureProduct(TastytradeJsonDataclass):
