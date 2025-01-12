@@ -1,7 +1,10 @@
 from datetime import date, datetime
 from typing import Any, Optional, Union
+from typing_extensions import Self
 
 import httpx
+import json
+from httpx import AsyncClient, Client
 
 from tastytrade import API_URL, CERT_URL
 from tastytrade.utils import TastytradeError, TastytradeJsonDataclass, validate_response
@@ -302,7 +305,7 @@ class Session:
             "Content-Type": "application/json",
         }
         #: httpx client for sync requests
-        self.sync_client = httpx.Client(
+        self.sync_client = Client(
             base_url=(CERT_URL if is_test else API_URL), headers=headers
         )
         if two_factor_authentication is not None:
@@ -323,9 +326,8 @@ class Session:
         #: A single-use token which can be used to login without a password
         self.remember_token = json["data"].get("remember-token")
         self.sync_client.headers.update({"Authorization": self.session_token})
-        self.validate()
         #: httpx client for async requests
-        self.async_client = httpx.AsyncClient(
+        self.async_client = AsyncClient(
             base_url=self.sync_client.base_url, headers=self.sync_client.headers.copy()
         )
 
@@ -440,3 +442,34 @@ class Session:
         """
         data = self._get("/users/me/two-factor-method")
         return TwoFactorInfo(**data)
+
+    def serialize(self) -> str:
+        """
+        Serializes the session to a string, useful for storing
+        a session for later use.
+        Could be used with pickle, Redis, etc.
+        """
+        attrs = self.__dict__.copy()
+        del attrs["async_client"]
+        del attrs["sync_client"]
+        attrs["user"] = attrs["user"].model_dump()
+        return json.dumps(attrs)
+
+    @classmethod
+    def deserialize(cls, serialized: str) -> Self:
+        """
+        Create a new Session object from a serialized string.
+        """
+        deserialized = json.loads(serialized)
+        deserialized["user"] = User(**deserialized["user"])
+        self = cls.__new__(cls)
+        self.__dict__ = deserialized
+        base_url = CERT_URL if self.is_test else API_URL
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": self.session_token,
+        }
+        self.sync_client = Client(base_url=base_url, headers=headers)
+        self.async_client = AsyncClient(base_url=base_url, headers=headers)
+        return self

@@ -546,7 +546,7 @@ wheels = [
 
 [[package]]
 name = "tastytrade"
-version = "9.5"
+version = "9.7"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },

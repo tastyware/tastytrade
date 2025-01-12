@@ -25,3 +25,9 @@ def test_destroy(credentials):
 async def test_destroy_async(credentials):
     session = Session(*credentials)
     await session.a_destroy()
+
+
+def test_serialize_deserialize(session):
+    data = session.serialize()
+    obj = Session.deserialize(data)
+    assert set(obj.__dict__.keys()) == set(session.__dict__.keys())
