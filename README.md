@@ -24,7 +24,7 @@ A simple, reverse-engineered SDK for Tastytrade built on their (now mostly publi
 
 ```console
 $ pip install tastytrade
-```   
+```
 
 ## Creating a session
 

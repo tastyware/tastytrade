@@ -2,12 +2,16 @@ from datetime import date, datetime
 from typing import Any, Optional, Union
 from typing_extensions import Self
 
-import httpx
 import json
 from httpx import AsyncClient, Client
 
 from tastytrade import API_URL, CERT_URL
-from tastytrade.utils import TastytradeError, TastytradeJsonDataclass, validate_response
+from tastytrade.utils import (
+    TastytradeError,
+    TastytradeJsonDataclass,
+    _validate_and_parse,
+    validate_response,
+)
 
 
 class Address(TastytradeJsonDataclass):
@@ -316,15 +320,13 @@ class Session:
             )
         else:
             response = self.sync_client.post("/sessions", json=body)
-        validate_response(response)  # throws exception if not 200
-
-        json = response.json()
+        data = _validate_and_parse(response)
         #: The user dict returned by the API; contains basic user information
-        self.user = User(**json["data"]["user"])
+        self.user = User(**data["user"])
         #: The session token used to authenticate requests
-        self.session_token = json["data"]["session-token"]
+        self.session_token = data["session-token"]
         #: A single-use token which can be used to login without a password
-        self.remember_token = json["data"].get("remember-token")
+        self.remember_token = data.get("remember-token")
         self.sync_client.headers.update({"Authorization": self.session_token})
         #: httpx client for async requests
         self.async_client = AsyncClient(
@@ -345,11 +347,11 @@ class Session:
 
     async def _a_get(self, url, **kwargs) -> dict[str, Any]:
         response = await self.async_client.get(url, timeout=30, **kwargs)
-        return self._validate_and_parse(response)
+        return _validate_and_parse(response)
 
     def _get(self, url, **kwargs) -> dict[str, Any]:
         response = self.sync_client.get(url, timeout=30, **kwargs)
-        return self._validate_and_parse(response)
+        return _validate_and_parse(response)
 
     async def _a_delete(self, url, **kwargs) -> None:
         response = await self.async_client.delete(url, **kwargs)
@@ -361,23 +363,19 @@ class Session:
 
     async def _a_post(self, url, **kwargs) -> dict[str, Any]:
         response = await self.async_client.post(url, **kwargs)
-        return self._validate_and_parse(response)
+        return _validate_and_parse(response)
 
     def _post(self, url, **kwargs) -> dict[str, Any]:
         response = self.sync_client.post(url, **kwargs)
-        return self._validate_and_parse(response)
+        return _validate_and_parse(response)
 
     async def _a_put(self, url, **kwargs) -> dict[str, Any]:
         response = await self.async_client.put(url, **kwargs)
-        return self._validate_and_parse(response)
+        return _validate_and_parse(response)
 
     def _put(self, url, **kwargs) -> dict[str, Any]:
         response = self.sync_client.put(url, **kwargs)
-        return self._validate_and_parse(response)
-
-    def _validate_and_parse(self, response: httpx._models.Response) -> dict[str, Any]:
-        validate_response(response)
-        return response.json()["data"]
+        return _validate_and_parse(response)
 
     async def a_validate(self) -> bool:
         """

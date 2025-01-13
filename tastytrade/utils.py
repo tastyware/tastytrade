@@ -223,7 +223,7 @@ def get_future_index_monthly(day: Optional[date] = None) -> date:
 
 class TastytradeError(Exception):
     """
-    An internal error raised by the Tastytrade API.
+    An internal error raised by the Tastytrade SDK.
     """
 
     pass
@@ -267,6 +267,11 @@ def validate_response(response: Response) -> None:
                     error_message += f"\n{error['domain']}: {error['reason']}"
 
         raise TastytradeError(error_message)
+
+
+def _validate_and_parse(response: Response) -> dict[str, Any]:
+    validate_response(response)
+    return response.json()["data"]
 
 
 def _get_sign(value: Optional[Decimal]) -> Optional[PriceEffect]:
