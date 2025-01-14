@@ -33,16 +33,12 @@ If you want to build the documentation (usually not necessary):
 
 ::
 
-   $ source .venv/bin/activate
-   $ cd docs
-   $ uv pip install -r requirements.txt
-   $ make html
+   $ make docs
 
 Windows
 -------
 
-If you want to install from source on Windows, you'll need to either use Cygwin/WSL, or run the commands from the Makefile manually.
-Here's an example for PowerShell:
+If you want to install from source on Windows, you can't use the Makefile, so just run the commands individually. For example:
 
 ::
 

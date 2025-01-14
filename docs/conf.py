@@ -23,8 +23,7 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
-    # "sphinx.ext.intersphinx",
-    "sphinx_toolbox.more_autodoc.autotypeddict",
+    "sphinx.ext.intersphinx",
     "enum_tools.autoenum",
     "sphinxcontrib.autodoc_pydantic",
 ]

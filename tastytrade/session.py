@@ -266,7 +266,7 @@ class Session:
     Contains a local user login which can then be used to interact with the
     remote API.
 
-    :param login: tastytrade username or email
+    :param login: Tastytrade username or email
     :param remember_me:
         whether or not to create a remember token to use instead of a password
     :param password:
