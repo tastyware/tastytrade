@@ -17,8 +17,11 @@ A simple, reverse-engineered SDK for Tastytrade built on their (now mostly publi
 - Comprehensive documentation
 - Utility functions for timezone calculations, futures monthly expiration dates, and more
 
-> [!NOTE]
+> [!TIP]
 > Want to see the SDK in action? Check out [tastytrade-cli](https://github.com/tastyware/tastytrade-cli), a CLI for Tastytrade that showcases many of the SDK's features.
+
+> [!NOTE]
+> Do you use TradeStation? We're building a [brand-new SDK](https://github.com/tastyware/tradestation) for TS users, with many of the same features!
 
 ## Installation
 

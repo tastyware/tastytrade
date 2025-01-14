@@ -4,7 +4,7 @@ Installation
 Via pypi
 --------
 
-The easiest way to install tastytrade is using pip:
+The easiest way to install the SDK is using pip:
 
 ::
 

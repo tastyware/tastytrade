@@ -10,6 +10,10 @@
    :target: https://pepy.tech/project/tastytrade
    :alt: PyPI Downloads
 
+.. image:: https://img.shields.io/github/v/release/tastyware/tastytrade?label=release%20notes
+   :target: https://github.com/tastyware/tastytrade/releases
+   :alt: Release
+
 Tastytrade Python SDK
 =====================
 
@@ -17,6 +21,9 @@ A simple, reverse-engineered, sync/async SDK for Tastytrade built on their (now 
 
 .. tip::
    Want to see the SDK in action? Check out `tastytrade-cli <https://github.com/tastyware/tastytrade-cli>`_, a CLI for Tastytrade that showcases many of the SDK's features.
+
+.. tip::
+   Do you use TradeStation? We're building a `brand-new SDK <https://github.com/tastyware/tradestation>`_ for TS users, with many of the same features!
 
 .. toctree::
    :maxdepth: 2
