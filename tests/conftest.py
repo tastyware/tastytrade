@@ -1,4 +1,5 @@
 import os
+from typing import AsyncGenerator
 
 from pytest import fixture
 
@@ -7,12 +8,12 @@ from tastytrade import Session
 
 # Run all tests with asyncio only
 @fixture(scope="session")
-def aiolib():
+def aiolib() -> str:
     return "asyncio"
 
 
 @fixture(scope="session")
-def credentials():
+def credentials() -> tuple[str, str]:
     username = os.getenv("TT_USERNAME")
     password = os.getenv("TT_PASSWORD")
     assert username is not None
@@ -21,7 +22,9 @@ def credentials():
 
 
 @fixture(scope="session")
-async def session(credentials, aiolib):
+async def session(
+    credentials: tuple[str, str], aiolib: str
+) -> AsyncGenerator[Session, None]:
     session = Session(*credentials)
     yield session
     session.destroy()

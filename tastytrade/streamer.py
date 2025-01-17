@@ -242,6 +242,7 @@ class AlertStreamer:
             self._reconnect_task.cancel()
             tasks.append(self._reconnect_task)
         await asyncio.gather(*tasks)
+        await self._websocket.wait_closed()  # type: ignore
 
     async def _connect(self) -> None:
         """
@@ -443,6 +444,7 @@ class DXLinkStreamer:
             self._reconnect_task.cancel()
             tasks.append(self._reconnect_task)
         await asyncio.gather(*tasks)
+        await self._websocket.wait_closed()
 
     async def _connect(self) -> None:
         """

@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.abspath(".."))
 project = "tastytrade"
 copyright = "2024, Graeme Holliday"
 author = "Graeme Holliday"
-release = "9.7"
+release = "9.8"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

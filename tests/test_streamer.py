@@ -1,11 +1,11 @@
 import asyncio
 from datetime import datetime, timedelta
 
-from tastytrade import Account, AlertStreamer, DXLinkStreamer
+from tastytrade import Account, AlertStreamer, DXLinkStreamer, Session
 from tastytrade.dxfeed import Candle, Quote, Trade
 
 
-async def test_account_streamer(session):
+async def test_account_streamer(session: Session):
     async with AlertStreamer(session) as streamer:
         await streamer.subscribe_public_watchlists()
         await streamer.subscribe_quote_alerts()
@@ -14,7 +14,7 @@ async def test_account_streamer(session):
         await streamer.subscribe_accounts(accounts)
 
 
-async def test_dxlink_streamer(session):
+async def test_dxlink_streamer(session: Session):
     async with DXLinkStreamer(session) as streamer:
         subs = ["SPY", "AAPL"]
         await streamer.subscribe(Quote, subs)
@@ -37,7 +37,7 @@ async def reconnect_alerts(streamer: AlertStreamer, ref: dict[str, bool]):
     ref["test"] = True
 
 
-async def test_account_streamer_reconnect(session):
+async def test_account_streamer_reconnect(session: Session):
     ref = {}
     streamer = await AlertStreamer(
         session, reconnect_args=(ref,), reconnect_fn=reconnect_alerts
@@ -56,7 +56,7 @@ async def reconnect_trades(streamer: DXLinkStreamer):
     await streamer.subscribe(Trade, ["SPX"])
 
 
-async def test_dxlink_streamer_reconnect(session):
+async def test_dxlink_streamer_reconnect(session: Session):
     streamer = await DXLinkStreamer(session, reconnect_fn=reconnect_trades)
     await streamer.subscribe(Quote, ["SPY"])
     _ = await streamer.get_event(Quote)

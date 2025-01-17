@@ -22,7 +22,7 @@ A simple, reverse-engineered, sync/async SDK for Tastytrade built on their (now 
 .. tip::
    Want to see the SDK in action? Check out `tastytrade-cli <https://github.com/tastyware/tastytrade-cli>`_, a CLI for Tastytrade that showcases many of the SDK's features.
 
-.. tip::
+.. note::
    Do you use TradeStation? We're building a `brand-new SDK <https://github.com/tastyware/tradestation>`_ for TS users, with many of the same features!
 
 .. toctree::

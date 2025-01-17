@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from tastytrade import Session
 from tastytrade.backtest import (
     Backtest,
     BacktestEntry,
@@ -10,7 +11,7 @@ from tastytrade.backtest import (
 from tastytrade.utils import today_in_new_york
 
 
-async def test_backtest_simple(session):
+async def test_backtest_simple(session: Session):
     backtest_session = BacktestSession(session)
     backtest = Backtest(
         symbol="SPY",
