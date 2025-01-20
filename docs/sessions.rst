@@ -12,7 +12,7 @@ To create a production (real) session using your normal login:
    from tastytrade import Session
    session = Session('username', 'password')
 
-A certification (test) account can be created `here <https://developer.tastytrade.com/sandbox/>`_, then used to create a session:
+A certification (test) account can be created `here <https://developer.tastytrade.com/sandbox/>`_, then used to create a session.
 
 .. code-block:: python
 
@@ -27,3 +27,6 @@ You can make a session persistent by generating a remember token, which is valid
    remember_token = session.remember_token
    # remember token replaces the password for the next login
    new_session = Session('username', remember_token=remember_token)
+
+.. note::
+   If you used a certification (test) account to create the session associated with the `remember_token`, you must set `is_test=True` when creating subsequent sessions.
