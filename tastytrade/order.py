@@ -328,6 +328,7 @@ class PlacedOrder(TastytradeJsonDataclass):
     complex_order_tag: Optional[str] = None
     preflight_id: Optional[Union[str, int]] = None
     order_rule: Optional[OrderRule] = None
+    source: Optional[str] = None
 
     @model_validator(mode="before")
     @classmethod

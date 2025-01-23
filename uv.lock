@@ -1339,7 +1339,6 @@ wheels = [
 
 [[package]]
 name = "tastytrade"
-version = "9.7"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },

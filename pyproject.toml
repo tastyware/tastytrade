@@ -2,9 +2,11 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.version]
+path = "tastytrade/__init__.py"
+
 [project]
 name = "tastytrade"
-version = "9.8"
 description = "An unofficial, sync/async SDK for Tastytrade!"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -18,6 +20,7 @@ dependencies = [
     "pydantic>=2.9.2",
     "websockets>=14.1,<15",
 ]
+dynamic = ["version"]
 
 [project.urls]
 Homepage = "https://github.com/tastyware/tastytrade"
