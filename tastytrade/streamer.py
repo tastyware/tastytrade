@@ -41,7 +41,7 @@ from tastytrade.order import (
     PlacedOrder,
 )
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeError, TastytradeJsonDataclass, _set_sign_for
+from tastytrade.utils import TastytradeError, TastytradeJsonDataclass, set_sign_for
 from tastytrade.watchlists import Watchlist
 
 CERT_STREAMER_URL = "wss://streamer.cert.tastyworks.com"
@@ -87,7 +87,7 @@ class UnderlyingYearGainSummary(TastytradeJsonDataclass):
     @model_validator(mode="before")
     @classmethod
     def validate_price_effects(cls, data: Any) -> Any:
-        return _set_sign_for(
+        return set_sign_for(
             data,
             [
                 "fees",

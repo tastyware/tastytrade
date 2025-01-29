@@ -9,8 +9,8 @@ from tastytrade import VERSION
 from tastytrade.utils import (
     PriceEffect,
     TastytradeJsonDataclass,
-    _get_sign,
-    _set_sign_for,
+    get_sign,
+    set_sign_for,
 )
 
 
@@ -149,11 +149,12 @@ class TradeableTastytradeJsonDataclass(TastytradeJsonDataclass):
     instrument_type: InstrumentType
     symbol: str
 
-    def build_leg(self, quantity: Decimal, action: OrderAction) -> Leg:
+    def build_leg(self, quantity: Optional[Decimal], action: OrderAction) -> Leg:
         """
         Builds an order :class:`Leg` from the dataclass.
 
-        :param quantity: the quantity of the symbol to trade
+        :param quantity:
+            the quantity of the symbol to trade, set this as `None` for notional orders
         :param action: :class:`OrderAction` to perform, e.g. BUY_TO_OPEN
 
         :return: a :class:`Leg` object
@@ -257,12 +258,12 @@ class NewOrder(TastytradeJsonDataclass):
     @computed_field
     @property
     def price_effect(self) -> Optional[PriceEffect]:
-        return _get_sign(self.price)
+        return get_sign(self.price)
 
     @computed_field
     @property
     def value_effect(self) -> Optional[PriceEffect]:
-        return _get_sign(self.value)
+        return get_sign(self.value)
 
     @field_serializer("price", "value")
     def serialize_fields(self, field: Optional[Decimal]) -> Optional[Decimal]:
@@ -333,7 +334,7 @@ class PlacedOrder(TastytradeJsonDataclass):
     @model_validator(mode="before")
     @classmethod
     def validate_price_effects(cls, data: Any) -> Any:
-        return _set_sign_for(data, ["price", "value"])
+        return set_sign_for(data, ["price", "value"])
 
 
 class PlacedComplexOrder(TastytradeJsonDataclass):
@@ -372,7 +373,7 @@ class BuyingPowerEffect(TastytradeJsonDataclass):
     @model_validator(mode="before")
     @classmethod
     def validate_price_effects(cls, data: Any) -> Any:
-        return _set_sign_for(
+        return set_sign_for(
             data,
             [
                 "change_in_margin_requirement",
@@ -398,7 +399,7 @@ class FeeCalculation(TastytradeJsonDataclass):
     @model_validator(mode="before")
     @classmethod
     def validate_price_effects(cls, data: Any) -> Any:
-        return _set_sign_for(
+        return set_sign_for(
             data,
             [
                 "regulatory_fees",
@@ -480,7 +481,7 @@ class OrderChainNode(TastytradeJsonDataclass):
     @model_validator(mode="before")
     @classmethod
     def validate_price_effects(cls, data: Any) -> Any:
-        return _set_sign_for(
+        return set_sign_for(
             data,
             [
                 "total_fees",
@@ -520,7 +521,7 @@ class ComputedData(TastytradeJsonDataclass):
     @model_validator(mode="before")
     @classmethod
     def validate_price_effects(cls, data: Any) -> Any:
-        return _set_sign_for(
+        return set_sign_for(
             data,
             [
                 "total_fees",
