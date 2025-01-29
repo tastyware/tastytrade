@@ -9,7 +9,7 @@ from tastytrade import API_URL, CERT_URL
 from tastytrade.utils import (
     TastytradeError,
     TastytradeJsonDataclass,
-    _validate_and_parse,
+    validate_and_parse,
     validate_response,
 )
 
@@ -320,7 +320,7 @@ class Session:
             )
         else:
             response = self.sync_client.post("/sessions", json=body)
-        data = _validate_and_parse(response)
+        data = validate_and_parse(response)
         #: The user dict returned by the API; contains basic user information
         self.user = User(**data["user"])
         #: The session token used to authenticate requests
@@ -347,11 +347,11 @@ class Session:
 
     async def _a_get(self, url, **kwargs) -> dict[str, Any]:
         response = await self.async_client.get(url, timeout=30, **kwargs)
-        return _validate_and_parse(response)
+        return validate_and_parse(response)
 
     def _get(self, url, **kwargs) -> dict[str, Any]:
         response = self.sync_client.get(url, timeout=30, **kwargs)
-        return _validate_and_parse(response)
+        return validate_and_parse(response)
 
     async def _a_delete(self, url, **kwargs) -> None:
         response = await self.async_client.delete(url, **kwargs)
@@ -363,19 +363,19 @@ class Session:
 
     async def _a_post(self, url, **kwargs) -> dict[str, Any]:
         response = await self.async_client.post(url, **kwargs)
-        return _validate_and_parse(response)
+        return validate_and_parse(response)
 
     def _post(self, url, **kwargs) -> dict[str, Any]:
         response = self.sync_client.post(url, **kwargs)
-        return _validate_and_parse(response)
+        return validate_and_parse(response)
 
     async def _a_put(self, url, **kwargs) -> dict[str, Any]:
         response = await self.async_client.put(url, **kwargs)
-        return _validate_and_parse(response)
+        return validate_and_parse(response)
 
     def _put(self, url, **kwargs) -> dict[str, Any]:
         response = self.sync_client.put(url, **kwargs)
-        return _validate_and_parse(response)
+        return validate_and_parse(response)
 
     async def a_validate(self) -> bool:
         """

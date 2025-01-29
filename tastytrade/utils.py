@@ -4,11 +4,11 @@ from enum import Enum
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
-import pandas_market_calendars as mcal  # type: ignore
 from httpx._models import Response
+from pandas_market_calendars import get_calendar
 from pydantic import BaseModel, ConfigDict
 
-NYSE = mcal.get_calendar("NYSE")
+NYSE = get_calendar("NYSE")
 TZ = ZoneInfo("US/Eastern")
 
 
@@ -269,18 +269,18 @@ def validate_response(response: Response) -> None:
         raise TastytradeError(error_message)
 
 
-def _validate_and_parse(response: Response) -> dict[str, Any]:
+def validate_and_parse(response: Response) -> dict[str, Any]:
     validate_response(response)
     return response.json()["data"]
 
 
-def _get_sign(value: Optional[Decimal]) -> Optional[PriceEffect]:
+def get_sign(value: Optional[Decimal]) -> Optional[PriceEffect]:
     if not value:
         return None
     return PriceEffect.DEBIT if value < 0 else PriceEffect.CREDIT
 
 
-def _set_sign_for(data: Any, properties: list[str]) -> Any:
+def set_sign_for(data: Any, properties: list[str]) -> Any:
     """
     Handles setting the sign of a number using the associated "-effect" field.
 

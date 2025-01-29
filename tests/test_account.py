@@ -181,6 +181,18 @@ def new_order(session: Session) -> NewOrder:
 
 
 @fixture(scope="module")
+def notional_order(session: Session) -> NewOrder:
+    symbol = Equity.get_equity(session, "AAPL")
+    leg = symbol.build_leg(None, OrderAction.BUY_TO_OPEN)
+    return NewOrder(
+        time_in_force=OrderTimeInForce.DAY,
+        order_type=OrderType.NOTIONAL_MARKET,
+        legs=[leg],
+        value=Decimal(-5),
+    )
+
+
+@fixture(scope="module")
 def placed_order(
     session: Session, account: Account, new_order: NewOrder
 ) -> PlacedOrder:
@@ -189,6 +201,12 @@ def placed_order(
 
 def test_place_order(placed_order: PlacedOrder):
     pass
+
+
+def test_place_notional_order(
+    session: Session, account: Account, notional_order: NewOrder
+):
+    account.place_order(session, notional_order, dry_run=True)
 
 
 def test_get_order(session: Session, account: Account, placed_order: PlacedOrder):

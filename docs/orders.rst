@@ -127,3 +127,21 @@ An OCO order is similar, but has no trigger order. It's used to add a profit-tak
    resp = account.place_complex_order(session, oco, dry_run=False)
 
 Note that to cancel complex orders, you need to use the ``delete_complex_order`` function, NOT ``delete_order``.
+
+Notional market orders
+----------------------
+
+Notional orders are slightly different from normal orders. Since the market will determine both the quantity and the price for you, you need to pass `value` instead of price, and pass `None` for the `quantity` parameter to ``build_leg``.
+
+.. code-block:: python
+
+    symbol = Equity.get_equity(session, 'AAPL')
+    order = NewOrder(
+        time_in_force=OrderTimeInForce.DAY,
+        order_type=OrderType.NOTIONAL_MARKET,
+        value=Decimal(-10),  # $10 debit, this will result in fractional shares
+        legs=[
+            symbol.build_leg(None, OrderAction.BUY_TO_OPEN),
+        ]
+    )
+    resp = account.place_order(session, order, dry_run=False)
