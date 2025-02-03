@@ -77,6 +77,7 @@ class AccountBalance(TastytradeJsonDataclass):
     equity_offering_margin_requirement: Decimal
     long_bond_value: Decimal
     bond_margin_requirement: Decimal
+    used_derivative_buying_power: Decimal
     snapshot_date: date
     reg_t_margin_requirement: Decimal
     futures_overnight_margin_requirement: Decimal
@@ -142,6 +143,7 @@ class AccountBalanceSnapshot(TastytradeJsonDataclass):
     equity_offering_margin_requirement: Optional[Decimal] = None
     long_bond_value: Optional[Decimal] = None
     bond_margin_requirement: Optional[Decimal] = None
+    used_derivative_buying_power: Optional[Decimal] = None
 
     @model_validator(mode="before")
     @classmethod
