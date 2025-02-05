@@ -387,6 +387,7 @@ class DXLinkStreamer:
     def __init__(
         self,
         session: Session,
+        refresh_interval: float = 0.1,
         reconnect_args: tuple[Any, ...] = (),
         reconnect_fn: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
         ssl_context: SSLContext = create_default_context(),
@@ -404,6 +405,9 @@ class DXLinkStreamer:
             "Underlying": 17,
         }
         self._subscription_state: dict[str, str] = defaultdict(lambda: "CHANNEL_CLOSED")
+        #: Time in seconds between fetching new events from dxfeed. You can try a higher
+        #: value if processing quote updates quickly is not a high priority.
+        self.refresh_interval = refresh_interval
         #: An async function to be called upon reconnection. The first argument must be
         #: of type `DXLinkStreamer` and will be a reference to the streamer object.
         self.reconnect_fn = reconnect_fn
@@ -647,7 +651,7 @@ class DXLinkStreamer:
         message = {
             "type": "FEED_SETUP",
             "channel": self._channels[event_type],
-            "acceptAggregationPeriod": 10,
+            "acceptAggregationPeriod": self.refresh_interval,
             "acceptDataFormat": "COMPACT",
         }
 
