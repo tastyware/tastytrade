@@ -623,7 +623,7 @@ class DXLinkStreamer:
         logger.debug("sending channel cancel: %s", message)
         await self._websocket.send(json.dumps(message))
 
-    async def _channel_request(self, event_type: str) -> None:
+    async def _channel_request(self, event_type: str, accept_aggregation_period: float = 10.0) -> None:
         message = {
             "type": "CHANNEL_REQUEST",
             "channel": self._channels[event_type],
@@ -641,13 +641,13 @@ class DXLinkStreamer:
             if time_out <= 0:
                 raise TastytradeError("Subscription channel not opened")
         # setup the feed
-        await self._channel_setup(event_type)
+        await self._channel_setup(event_type, accept_aggregation_period)
 
-    async def _channel_setup(self, event_type: str) -> None:
+    async def _channel_setup(self, event_type: str, accept_aggregation_period: float = 10.0) -> None:
         message = {
             "type": "FEED_SETUP",
             "channel": self._channels[event_type],
-            "acceptAggregationPeriod": 10,
+            "acceptAggregationPeriod": accept_aggregation_period,
             "acceptDataFormat": "COMPACT",
         }
 
@@ -689,6 +689,7 @@ class DXLinkStreamer:
         interval: str,
         start_time: datetime,
         extended_trading_hours: bool = False,
+        accept_aggregation_period: float = 10.0
     ) -> None:
         """
         Subscribes to candle data for the given list of symbols.
@@ -703,7 +704,7 @@ class DXLinkStreamer:
         """
         cls_str = "Candle"
         if self._subscription_state[cls_str] != "CHANNEL_OPENED":
-            await self._channel_request(cls_str)
+            await self._channel_request(cls_str, accept_aggregation_period)
         message = {
             "type": "FEED_SUBSCRIPTION",
             "channel": self._channels[cls_str],
