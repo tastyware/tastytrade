@@ -1,5 +1,3 @@
-from datetime import date
-
 from tastytrade import Session
 from tastytrade.market_sessions import (
     a_get_market_time_sessions,
