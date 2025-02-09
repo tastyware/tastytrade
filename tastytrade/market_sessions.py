@@ -142,4 +142,3 @@ def get_market_state(session: Session, instrument_collections: list[str]) -> lis
     """
     data = get_market_time_sessions(session=session, instrument_collections=instrument_collections)
     return [s.state for s in data]
-
