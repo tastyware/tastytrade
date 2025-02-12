@@ -139,6 +139,7 @@ def get_market_state(session: Session, instrument_collections: list[str]) -> lis
     Example:
     s = Market.get_market_state(session=session, instrument_collections=['Equity','CME','CFE','Smalls'])
     Returns ['Closed', 'Closed', 'Closed', 'Closed'] when all markets are closed.
+    Other values seen short before market opening: ['Pre-market', 'Open', 'Open', 'Pre-market']
     """
     data = get_market_time_sessions(session=session, instrument_collections=instrument_collections)
     return [s.state for s in data]
