@@ -64,6 +64,9 @@ class MarketCalendarData(TastytradeJsonDataclass):
 
 
 class MarketState(str, Enum):
+    """
+    Represents a data structure holding valid market states.
+    """
     open = "Open"
     closed = "Closed"
     pre_market = "Pre-market"
