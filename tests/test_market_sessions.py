@@ -10,7 +10,7 @@ from tastytrade.market_sessions import (
 
 
 async def test_get_market_time_sessions_async(session: Session):
-    await a_get_market_time_sessions(session, instrument_collections=['Equity','CME','CFE','Smalls'])
+    await a_get_market_time_sessions(session, exchanges=['Equity','CME','CFE','Smalls'])
 
 
 async def test_get_market_time_equity_holidays_async(session: Session):
@@ -18,11 +18,11 @@ async def test_get_market_time_equity_holidays_async(session: Session):
 
 
 async def test_get_market_state_async(session: Session):
-    await a_get_market_state(session, instrument_collections=['Equity','CME','CFE','Smalls'])
+    await a_get_market_state(session, exchanges=['Equity','CME','CFE','Smalls'])
 
 
 def test_get_market_time_sessions(session: Session):
-    get_market_time_sessions(session, instrument_collections=['Equity','CME','CFE','Smalls'])
+    get_market_time_sessions(session, exchanges=['Equity','CME','CFE','Smalls'])
 
 
 def test_get_market_time_equity_holidays(session: Session):
@@ -30,6 +30,6 @@ def test_get_market_time_equity_holidays(session: Session):
 
 
 def test_get_market_state(session: Session):
-    get_market_state(session, instrument_collections=['Equity','CME','CFE','Smalls'])
+    get_market_state(session, exchanges=['Equity','CME','CFE','Smalls'])
 
 

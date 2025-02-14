@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from enum import Enum
 from typing import Optional, List
 
 from tastytrade.session import Session
@@ -62,7 +63,13 @@ class MarketCalendarData(TastytradeJsonDataclass):
     market_holidays: List[date]
 
 
-async def a_get_market_time_sessions(session: Session, instrument_collections: list[str]) -> list[MarketTimeSessionsCurrent]:
+class MarketState(str, Enum):
+    open = "Open"
+    closed = "Closed"
+    pre_market = "Pre-market"
+
+
+async def a_get_market_time_sessions(session: Session, exchanges: list[str]) -> list[MarketTimeSessionsCurrent]:
     """
     Retrieves a list of session timings for a date range.
 
@@ -71,15 +78,15 @@ async def a_get_market_time_sessions(session: Session, instrument_collections: l
 
     Example:
     import tastytrade.market_sessions as Market
-    mt = await Market.a_get_market_time_sessions(session=session, instrument_collections=['Equity','CME'])
+    mt = await Market.a_get_market_time_sessions(session=session, exchanges=['Equity','CME'])
     """
     data = await session._a_get(
-        "/market-time/sessions/current", params = "".join(f"&instrument-collections[]={inst}" for inst in instrument_collections)
+        "/market-time/sessions/current", params = "".join(f"&instrument-collections[]={inst}" for inst in exchanges)
     )
     return [MarketTimeSessionsCurrent(**i) for i in data["items"]]
 
 
-def get_market_time_sessions(session: Session, instrument_collections: list[str]) -> list[MarketTimeSessionsCurrent]:
+def get_market_time_sessions(session: Session, exchanges: list[str]) -> list[MarketTimeSessionsCurrent]:
     """
     Retrieves market metrics for the given symbols.
 
@@ -88,9 +95,9 @@ def get_market_time_sessions(session: Session, instrument_collections: list[str]
 
     Example:
     import tastytrade.market_sessions as Market
-    mt = Market.get_market_time_sessions(session=session, instrument_collections=['Equity','CME])
+    mt = Market.get_market_time_sessions(session=session, exchanges=['Equity','CME])
     """
-    data = session._get("/market-time/sessions/current", params = "".join(f"&instrument-collections[]={inst}" for inst in instrument_collections))
+    data = session._get("/market-time/sessions/current", params = "".join(f"&instrument-collections[]={inst}" for inst in exchanges))
     return [MarketTimeSessionsCurrent(**i) for i in data["items"]]
 
 
@@ -114,7 +121,7 @@ def get_market_time_equity_holidays(session: Session) -> MarketCalendarData:
     return MarketCalendarData(**data)
 
 
-async def a_get_market_state(session: Session, instrument_collections: list[str]) -> list:
+async def a_get_market_state(session: Session, exchanges: list[str]) -> list:
     """
     Retrieves market state (Open/Closed).
 
@@ -124,12 +131,13 @@ async def a_get_market_state(session: Session, instrument_collections: list[str]
     Example:
     s = await Market.a_get_market_state(session=session, instrument_collections=['Equity','CME','CFE','Smalls'])
     Returns ['Closed', 'Closed', 'Closed', 'Closed'] when all markets are closed.
+    Other values seen short before market opening: ['Pre-market', 'Open', 'Open', 'Pre-market']
     """
-    data = await a_get_market_time_sessions(session=session, instrument_collections=instrument_collections)
-    return [s.state for s in data]
+    data = await a_get_market_time_sessions(session=session, exchanges=exchanges)
+    enum_states = [MarketState(s.state) for s in data]
+    return [st.value for st in enum_states]
 
-
-def get_market_state(session: Session, instrument_collections: list[str]) -> list:
+def get_market_state(session: Session, exchanges: list[str]) -> list:
     """
     Retrieves market state (Open/Closed).
 
@@ -141,5 +149,6 @@ def get_market_state(session: Session, instrument_collections: list[str]) -> lis
     Returns ['Closed', 'Closed', 'Closed', 'Closed'] when all markets are closed.
     Other values seen short before market opening: ['Pre-market', 'Open', 'Open', 'Pre-market']
     """
-    data = get_market_time_sessions(session=session, instrument_collections=instrument_collections)
-    return [s.state for s in data]
+    data = get_market_time_sessions(session=session, exchanges=exchanges)
+    enum_states = [MarketState(s.state) for s in data]
+    return [st.value for st in enum_states]
