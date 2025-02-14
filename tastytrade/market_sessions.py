@@ -70,6 +70,7 @@ class MarketState(str, Enum):
     open = "Open"
     closed = "Closed"
     pre_market = "Pre-market"
+    extended = "Extended"
 
 
 async def a_get_market_time_sessions(session: Session, exchanges: list[str]) -> list[MarketTimeSessionsCurrent]:
@@ -151,6 +152,7 @@ def get_market_state(session: Session, exchanges: list[str]) -> list:
     s = Market.get_market_state(session=session, instrument_collections=['Equity','CME','CFE','Smalls'])
     Returns ['Closed', 'Closed', 'Closed', 'Closed'] when all markets are closed.
     Other values seen short before market opening: ['Pre-market', 'Open', 'Open', 'Pre-market']
+    Extended market hours: ['Extended', 'Open', 'Open', 'Closed']
     """
     data = get_market_time_sessions(session=session, exchanges=exchanges)
     enum_states = [MarketState(s.state) for s in data]
