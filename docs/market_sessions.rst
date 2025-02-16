@@ -1,7 +1,7 @@
 Market Sessions
 ===============
 
-A market time sessiom object contains information about the current state of specific markets. It can be used to get the market opening and closing times and state.
+A market time session object contains information about the current state of specific markets. It can be used to get the market opening and closing times and state.
 
 The dataclass represents the current session and any nested 'next' or 'previous' session info.
 
