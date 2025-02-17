@@ -19,6 +19,12 @@ Instruments
    :members:
    :show-inheritance:
 
+Market Sessions
+---------------
+.. automodule:: tastytrade.market_sessions
+   :members:
+   :show-inheritance:
+
 Metrics
 -------
 .. automodule:: tastytrade.metrics
