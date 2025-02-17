@@ -18,7 +18,7 @@ dependencies = [
     "httpx>=0.27.2",
     "pandas-market-calendars>=4.4.1",
     "pydantic>=2.9.2",
-    "websockets>=14.1,<15",
+    "websockets>=15",
 ]
 dynamic = ["version"]
 
@@ -37,6 +37,7 @@ dev-dependencies = [
     "sphinx-rtd-theme>=3.0.2",
     "enum-tools[sphinx]>=0.12.0",
     "autodoc-pydantic>=2.2.0",
+    "proxy-py>=2.4.9",
 ]
 
 [tool.setuptools.package-data]

@@ -1,5 +1,9 @@
 import asyncio
 from datetime import datetime, timedelta
+from unittest import IsolatedAsyncioTestCase
+
+import pytest
+from proxy import TestCase
 
 from tastytrade import Account, AlertStreamer, DXLinkStreamer, Session
 from tastytrade.dxfeed import Candle, Quote, Trade
@@ -65,3 +69,18 @@ async def test_dxlink_streamer_reconnect(session: Session):
     trade = await streamer.get_event(Trade)
     assert trade.event_symbol == "SPX"
     await streamer.close()
+
+
+@pytest.mark.usefixtures("inject_credentials")
+class TestProxy(TestCase, IsolatedAsyncioTestCase):
+    @pytest.mark.asyncio
+    async def test_streamer_with_proxy(self):
+        assert self.PROXY is not None
+        with Session(
+            *self.credentials,  # type: ignore
+            proxy=f"http://127.0.0.1:{self.PROXY.flags.port}",
+        ) as session:
+            assert session.validate()
+            async with DXLinkStreamer(session) as streamer:
+                await streamer.subscribe(Quote, ["SPY"])
+                _ = await streamer.get_event(Quote)

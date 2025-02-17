@@ -209,6 +209,8 @@ class AlertStreamer:
         self.reconnect_fn = reconnect_fn
         #: Variable number of arguments to pass to the reconnect function
         self.reconnect_args = reconnect_args
+        #: The proxy URL, if any, associated with the session
+        self.proxy = session.proxy
 
         self._queues: dict[str, Queue] = defaultdict(Queue)
         self._websocket: Optional[ClientConnection] = None
@@ -251,7 +253,9 @@ class AlertStreamer:
         """
         headers = {"Authorization": f"Bearer {self.token}"}
         reconnecting = False
-        async for websocket in connect(self.base_url, additional_headers=headers):
+        async for websocket in connect(
+            self.base_url, additional_headers=headers, proxy=self.proxy
+        ):
             self._websocket = websocket
             self._heartbeat_task = asyncio.create_task(self._heartbeat())
             logger.debug("Websocket connection established.")
@@ -413,6 +417,8 @@ class DXLinkStreamer:
         self.reconnect_fn = reconnect_fn
         #: Variable number of arguments to pass to the reconnect function
         self.reconnect_args = reconnect_args
+        #: The proxy URL, if any, associated with the session
+        self.proxy = session.proxy
 
         self._authenticated = False
         self._wss_url = session.dxlink_url
@@ -456,7 +462,9 @@ class DXLinkStreamer:
         authorization token provided during initialization.
         """
         reconnecting = False
-        async for websocket in connect(self._wss_url, ssl=self._ssl_context):
+        async for websocket in connect(
+            self._wss_url, ssl=self._ssl_context, proxy=self.proxy
+        ):
             self._websocket = websocket
             await self._setup_connection()
             try:

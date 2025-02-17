@@ -25,6 +25,10 @@ def credentials() -> tuple[str, str]:
 async def session(
     credentials: tuple[str, str], aiolib: str
 ) -> AsyncGenerator[Session, None]:
-    session = Session(*credentials)
-    yield session
-    session.destroy()
+    with Session(*credentials) as session:
+        yield session
+
+
+@fixture(scope="class")
+def inject_credentials(request, credentials: tuple[str, str]):
+    request.cls.credentials = credentials

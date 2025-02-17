@@ -280,6 +280,9 @@ class Session:
         user's device
     :param dxfeed_tos_compliant:
         whether to use the dxfeed TOS-compliant API endpoint for the streamer
+    :param proxy:
+        if provided, all requests will be made through this proxy, as well as
+        web socket connections for streamers.
     """
 
     def __init__(
@@ -291,6 +294,7 @@ class Session:
         is_test: bool = False,
         two_factor_authentication: Optional[str] = None,
         dxfeed_tos_compliant: bool = False,
+        proxy: Optional[str] = None,
     ):
         body = {"login": login, "remember-me": remember_me}
         if password is not None:
@@ -303,6 +307,8 @@ class Session:
             )
         #: Whether this is a cert or real session
         self.is_test = is_test
+        #: Proxy URL to use for requests and web sockets
+        self.proxy = proxy
         # The headers to use for API requests
         headers = {
             "Accept": "application/json",
@@ -310,7 +316,7 @@ class Session:
         }
         #: httpx client for sync requests
         self.sync_client = Client(
-            base_url=(CERT_URL if is_test else API_URL), headers=headers
+            base_url=(CERT_URL if is_test else API_URL), headers=headers, proxy=proxy
         )
         if two_factor_authentication is not None:
             response = self.sync_client.post(
@@ -330,7 +336,9 @@ class Session:
         self.sync_client.headers.update({"Authorization": self.session_token})
         #: httpx client for async requests
         self.async_client = AsyncClient(
-            base_url=self.sync_client.base_url, headers=self.sync_client.headers.copy()
+            base_url=self.sync_client.base_url,
+            headers=self.sync_client.headers.copy(),
+            proxy=proxy,
         )
 
         # Pull streamer tokens and urls
@@ -344,6 +352,12 @@ class Session:
         self.streamer_token = data["token"]
         #: URL for dxfeed websocket
         self.dxlink_url = data["dxlink-url"]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.destroy()
 
     async def _a_get(self, url, **kwargs) -> dict[str, Any]:
         response = await self.async_client.get(url, timeout=30, **kwargs)
@@ -468,6 +482,8 @@ class Session:
             "Content-Type": "application/json",
             "Authorization": self.session_token,
         }
-        self.sync_client = Client(base_url=base_url, headers=headers)
-        self.async_client = AsyncClient(base_url=base_url, headers=headers)
+        self.sync_client = Client(base_url=base_url, headers=headers, proxy=self.proxy)
+        self.async_client = AsyncClient(
+            base_url=base_url, headers=headers, proxy=self.proxy
+        )
         return self
