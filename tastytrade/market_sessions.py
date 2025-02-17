@@ -58,13 +58,13 @@ class MarketSession(TastytradeJsonDataclass):
     status: MarketStatus = Field(alias="state")
 
 
-class MarketCalendarData(TastytradeJsonDataclass):
+class MarketCalendar(TastytradeJsonDataclass):
     """
     Dataclass containing information about market holidays and shortened days.
     """
 
-    market_half_days: list[date]
-    market_holidays: list[date]
+    half_days: list[date] = Field(alias="market-half-days")
+    holidays: list[date] = Field(alias="market-holidays")
 
 
 async def a_get_market_sessions(
@@ -99,21 +99,21 @@ def get_market_sessions(
     return [MarketSession(**i) for i in data["items"]]
 
 
-async def a_get_market_holidays(session: Session) -> MarketCalendarData:
+async def a_get_market_holidays(session: Session) -> MarketCalendar:
     """
     Retrieves market calendar for half days and holidays.
 
     :param session: active user session to use
     """
     data = await session._a_get("/market-time/equities/holidays")
-    return MarketCalendarData(**data)
+    return MarketCalendar(**data)
 
 
-def get_market_holidays(session: Session) -> MarketCalendarData:
+def get_market_holidays(session: Session) -> MarketCalendar:
     """
     Retrieves market calendar for half days and holidays.
 
     :param session: active user session to use
     """
     data = session._get("/market-time/equities/holidays")
-    return MarketCalendarData(**data)
+    return MarketCalendar(**data)
