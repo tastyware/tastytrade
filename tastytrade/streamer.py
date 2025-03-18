@@ -24,6 +24,7 @@ from websockets.exceptions import ConnectionClosed
 from tastytrade import logger
 from tastytrade.account import Account, AccountBalance, CurrentPosition, TradingStatus
 from tastytrade.dxfeed import (
+    Event,
     Candle,
     Greeks,
     Profile,
@@ -391,7 +392,6 @@ class DXLinkStreamer:
     def __init__(
         self,
         session: Session,
-        refresh_interval: float = 0.1,
         reconnect_args: tuple[Any, ...] = (),
         reconnect_fn: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
         ssl_context: SSLContext = create_default_context(),
@@ -409,9 +409,6 @@ class DXLinkStreamer:
             "Underlying": 17,
         }
         self._subscription_state: dict[str, str] = defaultdict(lambda: "CHANNEL_CLOSED")
-        #: Time in seconds between fetching new events from dxfeed. You can try a higher
-        #: value if processing quote updates quickly is not a high priority.
-        self.refresh_interval = refresh_interval
         #: An async function to be called upon reconnection. The first argument must be
         #: of type `DXLinkStreamer` and will be a reference to the streamer object.
         self.reconnect_fn = reconnect_fn
@@ -471,7 +468,11 @@ class DXLinkStreamer:
                 async for raw_message in websocket:
                     message = json.loads(raw_message)
                     logger.debug("received: %s", message)
-                    if message["type"] == "SETUP":
+                    if (
+                        message["type"] == "FEED_DATA"
+                    ):  # This is the most common message type
+                        await self._map_message(message["data"])
+                    elif message["type"] == "SETUP":
                         await self._authenticate_connection()
                     elif message["type"] == "AUTH_STATE":
                         if message["state"] == "AUTHORIZED":
@@ -505,8 +506,6 @@ class DXLinkStreamer:
                         logger.debug("Channel closed: %s", message)
                     elif message["type"] == "FEED_CONFIG":
                         logger.debug("Feed configured: %s", message)
-                    elif message["type"] == "FEED_DATA":
-                        await self._map_message(message["data"])
                     elif message["type"] == "KEEPALIVE":
                         pass
                     else:
@@ -602,7 +601,12 @@ class DXLinkStreamer:
             logger.debug("Websocket interrupted, cancelling heartbeat.")
             return
 
-    async def subscribe(self, event_class: Type[EventType], symbols: list[str]) -> None:
+    async def subscribe(
+        self,
+        event_class: Type[EventType],
+        symbols: list[str],
+        refresh_interval: float = 0.1,
+    ) -> None:
         """
         Subscribes to quotes for given list of symbols. Used for recurring data
         feeds.
@@ -610,10 +614,13 @@ class DXLinkStreamer:
 
         :param event_class: type of subscription to add, should be of :any:`EventType`
         :param symbols: list of symbols to subscribe for
+        :param refresh_interval: Time in seconds between fetching new events from dxfeed for this event_class.
+            You can try a higher value if processing quote updates quickly is not a high priority.
+            Once refresh_interval is set for this event_class and channel is opened, it cannot be changed later.
         """
         cls_str = MAP_EVENTS_REVERSE[event_class]
         if self._subscription_state[cls_str] != "CHANNEL_OPENED":
-            await self._channel_request(cls_str)
+            await self._channel_request(cls_str, refresh_interval)
         message = {
             "type": "FEED_SUBSCRIPTION",
             "channel": self._channels[cls_str],
@@ -635,7 +642,9 @@ class DXLinkStreamer:
         logger.debug("sending channel cancel: %s", message)
         await self._websocket.send(json.dumps(message))
 
-    async def _channel_request(self, event_type: str) -> None:
+    async def _channel_request(
+        self, event_type: str, refresh_interval: float = 0.1
+    ) -> None:
         message = {
             "type": "CHANNEL_REQUEST",
             "channel": self._channels[event_type],
@@ -653,13 +662,15 @@ class DXLinkStreamer:
             if time_out <= 0:
                 raise TastytradeError("Subscription channel not opened")
         # setup the feed
-        await self._channel_setup(event_type)
+        await self._channel_setup(event_type, refresh_interval)
 
-    async def _channel_setup(self, event_type: str) -> None:
+    async def _channel_setup(
+        self, event_type: str, refresh_interval: float = 0.1
+    ) -> None:
         message = {
             "type": "FEED_SETUP",
             "channel": self._channels[event_type],
-            "acceptAggregationPeriod": self.refresh_interval,
+            "acceptAggregationPeriod": refresh_interval,
             "acceptDataFormat": "COMPACT",
         }
 
@@ -701,6 +712,7 @@ class DXLinkStreamer:
         interval: str,
         start_time: datetime,
         extended_trading_hours: bool = False,
+        refresh_interval: float = 0.1,
     ) -> None:
         """
         Subscribes to candle data for the given list of symbols.
@@ -712,10 +724,13 @@ class DXLinkStreamer:
         :param start_time: starting time for the data range
         :param end_time: ending time for the data range
         :param extended_trading_hours: whether to include extended trading
+        :param refresh_interval: Time in seconds between fetching new events from dxfeed for this event_class.
+            You can try a higher value if processing quote updates quickly is not a high priority.
+            Once refresh_interval is set for this event_class and channel is opened, it cannot be changed later.
         """
         cls_str = "Candle"
         if self._subscription_state[cls_str] != "CHANNEL_OPENED":
-            await self._channel_request(cls_str)
+            await self._channel_request(cls_str, refresh_interval)
         message = {
             "type": "FEED_SUBSCRIPTION",
             "channel": self._channels[cls_str],
@@ -782,7 +797,7 @@ class DXLinkStreamer:
             raise NotImplementedError(
                 f"Unknown message type {msg_type} received: {data}"
             )
-        cls = MAP_EVENTS[msg_type]
+        cls: Event = MAP_EVENTS[msg_type]
         results = cls.from_stream(data)
         for r in results:
             await self._queues[msg_type].put(r)
