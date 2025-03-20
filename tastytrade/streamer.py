@@ -105,7 +105,7 @@ class SubscriptionType(str, Enum):
     for the alert streamer.
     """
 
-    ACCOUNT = "account-subscribe"  # may be 'connect' in the future
+    ACCOUNT = "connect"
     HEARTBEAT = "heartbeat"
     PUBLIC_WATCHLISTS = "public-watchlists-subscribe"
     QUOTE_ALERTS = "quote-alerts-subscribe"
@@ -212,6 +212,8 @@ class AlertStreamer:
         self.reconnect_args = reconnect_args
         #: The proxy URL, if any, associated with the session
         self.proxy = session.proxy
+        #: Counter used to track the request ID for the streamer
+        self.request_id = 0
 
         self._queues: dict[str, Queue] = defaultdict(Queue)
         self._websocket: Optional[ClientConnection] = None
@@ -252,11 +254,8 @@ class AlertStreamer:
         Connect to the websocket server using the URL and authorization
         token provided during initialization.
         """
-        headers = {"Authorization": f"Bearer {self.token}"}
         reconnecting = False
-        async for websocket in connect(
-            self.base_url, additional_headers=headers, proxy=self.proxy
-        ):
+        async for websocket in connect(self.base_url, proxy=self.proxy):
             self._websocket = websocket
             self._heartbeat_task = asyncio.create_task(self._heartbeat())
             logger.debug("Websocket connection established.")
@@ -342,8 +341,8 @@ class AlertStreamer:
         try:
             while True:
                 await self._subscribe(SubscriptionType.HEARTBEAT, "")
-                # send the heartbeat every 10 seconds
-                await asyncio.sleep(10)
+                # send the heartbeat every 15 seconds
+                await asyncio.sleep(15)
         except asyncio.CancelledError:
             logger.debug("Websocket interrupted, cancelling heartbeat.")
             return
@@ -357,7 +356,12 @@ class AlertStreamer:
         Subscribes to a :class:`SubscriptionType`. Depending on the kind of
         subscription, the value parameter may be required.
         """
-        message: dict[str, Any] = {"auth-token": self.token, "action": subscription}
+        self.request_id += 1
+        message: dict[str, Any] = {
+            "auth-token": self.token,
+            "action": subscription.value,
+            "request-id": self.request_id,
+        }
         if value:
             message["value"] = value
         logger.debug("sending alert subscription: %s", message)

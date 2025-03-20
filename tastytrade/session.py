@@ -1,3 +1,4 @@
+import time
 from datetime import date, datetime
 from typing import Any, Optional, Union
 from typing_extensions import Self
@@ -5,7 +6,7 @@ from typing_extensions import Self
 import json
 from httpx import AsyncClient, Client
 
-from tastytrade import API_URL, CERT_URL
+from tastytrade import API_URL, CERT_URL, logger
 from tastytrade.utils import (
     TastytradeError,
     TastytradeJsonDataclass,
@@ -474,6 +475,140 @@ class Session:
         """
         deserialized = json.loads(serialized)
         deserialized["user"] = User(**deserialized["user"])
+        self = cls.__new__(cls)
+        self.__dict__ = deserialized
+        base_url = CERT_URL if self.is_test else API_URL
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": self.session_token,
+        }
+        self.sync_client = Client(base_url=base_url, headers=headers, proxy=self.proxy)
+        self.async_client = AsyncClient(
+            base_url=base_url, headers=headers, proxy=self.proxy
+        )
+        return self
+
+
+def _now_ms() -> int:
+    return round(time.time() * 1000)
+
+
+class OAuthSession(Session):  # pragma: no cover
+    """
+    Contains a managed user login which can then be used to interact with the
+    remote API.
+
+    Note that OAuth sessions can't be used to create streamers!
+
+    :param provider_secret: OAuth secret for your provider
+    :param refresh_token: refresh token for the user
+    :param is_test:
+        whether to use the test API endpoints, default False
+    :param proxy:
+        if provided, all requests will be made through this proxy, as well as
+        web socket connections for streamers.
+    """
+
+    def __init__(
+        self,
+        provider_secret: str,
+        refresh_token: str,
+        is_test: bool = False,
+        proxy: Optional[str] = None,
+    ):
+        #: Whether this is a cert or real session
+        self.is_test = is_test
+        #: Proxy URL to use for requests and web sockets
+        self.proxy = proxy
+        #: OAuth secret for your provider
+        self.provider_secret = provider_secret
+        #: Refresh token for the user
+        self.refresh_token = refresh_token
+        #: Unix timestamp for when the session token expires
+        self.expires_at = 0
+        # The headers to use for API requests
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
+        #: httpx client for sync requests
+        self.sync_client = Client(
+            base_url=(CERT_URL if is_test else API_URL), headers=headers, proxy=proxy
+        )
+        #: httpx client for async requests
+        self.async_client = AsyncClient(
+            base_url=self.sync_client.base_url,
+            headers=self.sync_client.headers.copy(),
+            proxy=proxy,
+        )
+        self.refresh()
+
+    def refresh(self) -> None:
+        """
+        Refreshes the acccess token using the stored refresh token.
+        """
+        response = self.sync_client.post(
+            "/oauth/token",
+            json={
+                "grant_type": "refresh_token",
+                "client_secret": self.provider_secret,
+                "refresh_token": self.refresh_token,
+            },
+        )
+        validate_response(response)
+        data = response.json()
+        # update the relevant tokens
+        self.session_token = data["access_token"]
+        token_lifetime = data.get("expires_in", 900) * 1000
+        self.expires_at = _now_ms() + token_lifetime
+        logger.debug(f"Refreshed token, expires in {token_lifetime}ms")
+        auth_headers = {"Authorization": f"Bearer {self.session_token}"}
+        # update the httpx clients with the new token
+        self.sync_client.headers.update(auth_headers)
+        self.async_client.headers.update(auth_headers)
+
+    async def a_refresh(self) -> None:
+        """
+        Refreshes the acccess token using the stored refresh token.
+        """
+        response = await self.async_client.post(
+            "/oauth/token",
+            json={
+                "grant_type": "refresh_token",
+                "client_secret": self.provider_secret,
+                "refresh_token": self.refresh_token,
+            },
+        )
+        validate_response(response)
+        data = response.json()
+        # update the relevant tokens
+        self.session_token = data["access_token"]
+        token_lifetime = data.get("expires_in", 900) * 1000
+        self.expires_at = _now_ms() + token_lifetime
+        logger.debug(f"Refreshed token, expires in {token_lifetime}ms")
+        auth_headers = {"Authorization": f"Bearer {self.session_token}"}
+        # update the httpx clients with the new token
+        self.sync_client.headers.update(auth_headers)
+        self.async_client.headers.update(auth_headers)
+
+    def serialize(self) -> str:
+        """
+        Serializes the session to a string, useful for storing
+        a session for later use.
+        Could be used with pickle, Redis, etc.
+        """
+        attrs = self.__dict__.copy()
+        del attrs["async_client"]
+        del attrs["sync_client"]
+        return json.dumps(attrs)
+
+    @classmethod
+    def deserialize(cls, serialized: str) -> Self:
+        """
+        Create a new Session object from a serialized string.
+        """
+        deserialized = json.loads(serialized)
         self = cls.__new__(cls)
         self.__dict__ = deserialized
         base_url = CERT_URL if self.is_test else API_URL
