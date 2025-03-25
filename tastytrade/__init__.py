@@ -4,7 +4,7 @@ API_URL = "https://api.tastyworks.com"
 BACKTEST_URL = "https://backtester.vast.tastyworks.com"
 CERT_URL = "https://api.cert.tastyworks.com"
 VAST_URL = "https://vast.tastyworks.com"
-VERSION = "9.11"
+VERSION = "9.12"
 
 __version__ = VERSION
 

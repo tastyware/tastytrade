@@ -656,8 +656,8 @@ class NestedOptionChain(TastytradeJsonDataclass):
     option_chain_type: str
     shares_per_contract: int
     tick_sizes: list[TickSize]
-    deliverables: list[Deliverable]
     expirations: list[NestedOptionChainExpiration]
+    deliverables: Optional[list[Deliverable]] = None
 
     @classmethod
     async def a_get_chain(cls, session: Session, symbol: str) -> list[Self]:
@@ -948,7 +948,7 @@ class FutureOptionProduct(TastytradeJsonDataclass):
         """
         root_symbol = root_symbol.replace("/", "")
         data = await session._a_get(
-            f"/instruments/future-option-products/" f"{exchange}/{root_symbol}"
+            f"/instruments/future-option-products/{exchange}/{root_symbol}"
         )
         return cls(**data)
 
@@ -965,7 +965,7 @@ class FutureOptionProduct(TastytradeJsonDataclass):
         """
         root_symbol = root_symbol.replace("/", "")
         data = session._get(
-            f"/instruments/future-option-products/" f"{exchange}/{root_symbol}"
+            f"/instruments/future-option-products/{exchange}/{root_symbol}"
         )
         return cls(**data)
 
