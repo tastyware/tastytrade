@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from proxy import TestCase
 
@@ -46,3 +48,11 @@ class TestProxy(TestCase):
         )
         assert session.validate()
         session.destroy()
+
+
+def test_cert_session():
+    username = os.getenv("TT_USERNAME_SANDBOX")
+    password = os.getenv("TT_PASSWORD_SANDBOX")
+    assert username and password
+    session = Session(username, password, is_test=True)
+    session.destroy()

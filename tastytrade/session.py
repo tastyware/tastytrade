@@ -362,8 +362,9 @@ class Session:
         #: URL for dxfeed websocket
         self.dxlink_url = data["dxlink-url"]
         #: expiration for streamer token
-        self.streamer_expiration = datetime.fromisoformat(
-            data["expires-at"].replace("Z", "+00:00")
+        exp = data.get("expires-at")
+        self.streamer_expiration = (
+            datetime.fromisoformat(exp.replace("Z", "+00:00")) if exp else None
         )
 
     def __enter__(self):
@@ -479,7 +480,11 @@ class Session:
         del attrs["sync_client"]
         attrs["user"] = attrs["user"].model_dump()
         attrs["session_expiration"] = self.session_expiration.strftime(_fmt)
-        attrs["streamer_expiration"] = self.streamer_expiration.strftime(_fmt)
+        attrs["streamer_expiration"] = (
+            self.streamer_expiration.strftime(_fmt)
+            if self.streamer_expiration
+            else None
+        )
         return json.dumps(attrs)
 
     @classmethod
@@ -500,9 +505,8 @@ class Session:
         self.session_expiration = datetime.strptime(
             deserialized["session_expiration"], _fmt
         )
-        self.streamer_expiration = datetime.strptime(
-            deserialized["streamer_expiration"], _fmt
-        )
+        exp = deserialized.get("streamer_expiration")
+        self.streamer_expiration = datetime.strptime(exp, _fmt) if exp else None
         self.sync_client = Client(base_url=base_url, headers=headers, proxy=self.proxy)
         self.async_client = AsyncClient(
             base_url=base_url, headers=headers, proxy=self.proxy
