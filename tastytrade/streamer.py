@@ -21,7 +21,7 @@ from pydantic import model_validator
 from websockets.asyncio.client import ClientConnection, connect
 from websockets.exceptions import ConnectionClosed
 
-from tastytrade import logger
+from tastytrade import logger, version_str
 from tastytrade.account import Account, AccountBalance, CurrentPosition, TradingStatus
 from tastytrade.dxfeed import (
     Event,
@@ -48,7 +48,7 @@ from tastytrade.watchlists import Watchlist
 CERT_STREAMER_URL = "wss://streamer.cert.tastyworks.com"
 STREAMER_URL = "wss://streamer.tastyworks.com"
 
-DXLINK_VERSION = "0.1-js/1.0.0-beta.4"
+DXLINK_VERSION = "0.1-DXF-JS/0.3.0"
 
 
 class QuoteAlert(TastytradeJsonDataclass):
@@ -361,6 +361,7 @@ class AlertStreamer:
             "auth-token": self.token,
             "action": subscription.value,
             "request-id": self.request_id,
+            "source": version_str,
         }
         if value:
             message["value"] = value
@@ -512,17 +513,23 @@ class DXLinkStreamer:
                         logger.debug("Feed configured: %s", message)
                     elif message["type"] == "KEEPALIVE":
                         pass
+                    elif message["type"] == "ERROR":
+                        logger.error(f"Fatal streamer error: {message['message']}")
+                        asyncio.create_task(self.close())
+                        return
                     else:
-                        logger.error(f"Streamer error: {message}")
+                        logger.error(f"Unknown message: {message}")
             except ConnectionClosed as e:
                 logger.error(f"Websocket connection closed with {e}")
                 if e.rcvd and e.rcvd.code == 1009:
                     logger.error(
                         "Subscription message too long! Try reducing the number of symbols."
                     )
+                    asyncio.create_task(self.close())
                     return
             except asyncio.CancelledError:
                 logger.debug("Websocket interrupted, cancelling main loop.")
+                asyncio.create_task(self.close())
                 return
             logger.debug("Websocket connection closed, retrying...")
             reconnecting = True

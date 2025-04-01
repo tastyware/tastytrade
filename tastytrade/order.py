@@ -5,7 +5,7 @@ from typing import Any, Optional, Union
 
 from pydantic import computed_field, field_serializer, model_validator
 
-from tastytrade import VERSION
+from tastytrade import version_str
 from tastytrade.utils import (
     PriceEffect,
     TastytradeJsonDataclass,
@@ -241,7 +241,7 @@ class NewOrder(TastytradeJsonDataclass):
 
     time_in_force: OrderTimeInForce
     order_type: OrderType
-    source: str = f"tastyware/tastytrade:v{VERSION}"
+    source: str = version_str
     legs: list[Leg]
     gtc_date: Optional[date] = None
     #: For a stop/stop limit order. If the latter, use price for the limit price
@@ -277,7 +277,7 @@ class NewComplexOrder(TastytradeJsonDataclass):
     """
 
     orders: list[NewOrder]
-    source: str = f"tastyware/tastytrade:v{VERSION}"
+    source: str = version_str
     trigger_order: Optional[NewOrder] = None
     type: ComplexOrderType = ComplexOrderType.OCO
 

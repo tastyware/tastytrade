@@ -7,6 +7,7 @@ VAST_URL = "https://vast.tastyworks.com"
 VERSION = "9.12"
 
 __version__ = VERSION
+version_str = f"tastyware/tastytrade:v{VERSION}"
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

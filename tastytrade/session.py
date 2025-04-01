@@ -341,6 +341,10 @@ class Session:
             headers=self.sync_client.headers.copy(),
             proxy=proxy,
         )
+        #: expiration for session token
+        self.session_expiration = datetime.fromisoformat(
+            data["session-expiration"].replace("Z", "+00:00")
+        )
 
         # Pull streamer tokens and urls
         url = (
@@ -349,10 +353,15 @@ class Session:
             else "/quote-streamer-tokens"
         )
         data = self._get(url)
+
         #: Auth token for dxfeed websocket
         self.streamer_token = data["token"]
         #: URL for dxfeed websocket
         self.dxlink_url = data["dxlink-url"]
+        #: expiration for streamer token
+        self.streamer_expiration = datetime.fromisoformat(
+            data["expires-at"].replace("Z", "+00:00")
+        )
 
     def __enter__(self):
         return self
