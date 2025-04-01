@@ -262,6 +262,9 @@ class User(TastytradeJsonDataclass):
     nickname: Optional[str] = None
 
 
+_fmt = "%Y-%m-%d %H:%M:%S%z"
+
+
 class Session:
     """
     Contains a local user login which can then be used to interact with the
@@ -475,6 +478,8 @@ class Session:
         del attrs["async_client"]
         del attrs["sync_client"]
         attrs["user"] = attrs["user"].model_dump()
+        attrs["session_expiration"] = self.session_expiration.strftime(_fmt)
+        attrs["streamer_expiration"] = self.streamer_expiration.strftime(_fmt)
         return json.dumps(attrs)
 
     @classmethod
@@ -492,6 +497,12 @@ class Session:
             "Content-Type": "application/json",
             "Authorization": self.session_token,
         }
+        self.session_expiration = datetime.strptime(
+            deserialized["session_expiration"], _fmt
+        )
+        self.streamer_expiration = datetime.strptime(
+            deserialized["streamer_expiration"], _fmt
+        )
         self.sync_client = Client(base_url=base_url, headers=headers, proxy=self.proxy)
         self.async_client = AsyncClient(
             base_url=base_url, headers=headers, proxy=self.proxy
