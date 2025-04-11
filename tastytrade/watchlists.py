@@ -119,6 +119,7 @@ class PublicWatchlist(Watchlist):
         a name is provided.
 
         :param session: the session to use for the request.
+        :param name: the name of the watchlist to fetch.
         :param counts_only: whether to only fetch the counts of the watchlists.
         """
         if name:
@@ -150,6 +151,7 @@ class PublicWatchlist(Watchlist):
         a name is provided.
 
         :param session: the session to use for the request.
+        :param name: the name of the watchlist to fetch.
         :param counts_only: whether to only fetch the counts of the watchlists.
         """
         if name:
