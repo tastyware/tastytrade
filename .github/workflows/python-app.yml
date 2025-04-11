@@ -31,4 +31,6 @@ jobs:
       env:
         TT_USERNAME: ${{ secrets.TT_USERNAME }}
         TT_PASSWORD: ${{ secrets.TT_PASSWORD }}
+        TT_USERNAME_SANDBOX: ${{ secrets.TT_USERNAME_SANDBOX }}
+        TT_PASSWORD_SANDBOX: ${{ secrets.TT_PASSWORD_SANDBOX }}
         TT_ACCOUNT: ${{ secrets.TT_ACCOUNT }}
