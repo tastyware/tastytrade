@@ -85,28 +85,29 @@ class PairsWatchlist(TastytradeJsonDataclass):
 
 
 class Watchlist(TastytradeJsonDataclass):
-    """
-    Dataclass that represents a watchlist object (public or private),
-    with functions to update, publish, modify and remove watchlists.
-    """
-
     name: str
     watchlist_entries: Optional[list[dict[str, Any]]] = None
     group_name: str = "default"
     order_index: int = 9999
 
+
+class PublicWatchlist(Watchlist):
+    """
+    Dataclass that contains symbols from a public watchlist.
+    """
+
     @overload
     @classmethod
-    async def a_get_public(
+    async def a_get(
         cls, session: Session, *, counts_only: bool = False
     ) -> list[Self]: ...
 
     @overload
     @classmethod
-    async def a_get_public(cls, session: Session, name: str) -> Self: ...
+    async def a_get(cls, session: Session, name: str) -> Self: ...
 
     @classmethod
-    async def a_get_public(
+    async def a_get(
         cls,
         session: Session,
         name: Optional[str] = None,
@@ -130,16 +131,14 @@ class Watchlist(TastytradeJsonDataclass):
 
     @overload
     @classmethod
-    def get_public(
-        cls, session: Session, *, counts_only: bool = False
-    ) -> list[Self]: ...
+    def get(cls, session: Session, *, counts_only: bool = False) -> list[Self]: ...
 
     @overload
     @classmethod
-    def get_public(cls, session: Session, name: str) -> Self: ...
+    def get(cls, session: Session, name: str) -> Self: ...
 
     @classmethod
-    def get_public(
+    def get(
         cls,
         session: Session,
         name: Optional[str] = None,
@@ -159,16 +158,23 @@ class Watchlist(TastytradeJsonDataclass):
         data = session._get("/public-watchlists", params={"counts-only": counts_only})
         return [cls(**i) for i in data["items"]]
 
-    @overload
-    @classmethod
-    async def a_get_private(cls, session: Session) -> list[Self]: ...
+
+class PrivateWatchlist(Watchlist):
+    """
+    Dataclass that contains a private watchlist object, with functions to
+    update, publish, modify and remove watchlists.
+    """
 
     @overload
     @classmethod
-    async def a_get_private(cls, session: Session, name: str) -> Self: ...
+    async def a_get(cls, session: Session) -> list[Self]: ...
+
+    @overload
+    @classmethod
+    async def a_get(cls, session: Session, name: str) -> Self: ...
 
     @classmethod
-    async def a_get_private(
+    async def a_get(
         cls,
         session: Session,
         name: Optional[str] = None,
@@ -187,14 +193,14 @@ class Watchlist(TastytradeJsonDataclass):
 
     @overload
     @classmethod
-    def get_private(cls, session: Session) -> list[Self]: ...
+    def get(cls, session: Session) -> list[Self]: ...
 
     @overload
     @classmethod
-    def get_private(cls, session: Session, name: str) -> Self: ...
+    def get(cls, session: Session, name: str) -> Self: ...
 
     @classmethod
-    def get_private(
+    def get(
         cls,
         session: Session,
         name: Optional[str] = None,
@@ -212,7 +218,7 @@ class Watchlist(TastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
     @classmethod
-    async def a_remove_private(cls, session: Session, name: str) -> None:
+    async def a_remove(cls, session: Session, name: str) -> None:
         """
         Deletes the named private watchlist.
 
@@ -222,7 +228,7 @@ class Watchlist(TastytradeJsonDataclass):
         await session._a_delete(f"/watchlists/{name}")
 
     @classmethod
-    def remove_private(cls, session: Session, name: str) -> None:
+    def remove(cls, session: Session, name: str) -> None:
         """
         Deletes the named private watchlist.
 
@@ -231,7 +237,7 @@ class Watchlist(TastytradeJsonDataclass):
         """
         session._delete(f"/watchlists/{name}")
 
-    async def a_upload_private(self, session: Session) -> None:
+    async def a_upload(self, session: Session) -> None:
         """
         Creates a private remote watchlist identical to this local one.
 
@@ -239,7 +245,7 @@ class Watchlist(TastytradeJsonDataclass):
         """
         await session._a_post("/watchlists", json=self.model_dump(by_alias=True))
 
-    def upload_private(self, session: Session) -> None:
+    def upload(self, session: Session) -> None:
         """
         Creates a private remote watchlist identical to this local one.
 
@@ -247,7 +253,7 @@ class Watchlist(TastytradeJsonDataclass):
         """
         session._post("/watchlists", json=self.model_dump(by_alias=True))
 
-    async def a_update_private(self, session: Session) -> None:
+    async def a_update(self, session: Session) -> None:
         """
         Updates the existing private remote watchlist.
 
@@ -257,7 +263,7 @@ class Watchlist(TastytradeJsonDataclass):
             f"/watchlists/{self.name}", json=self.model_dump(by_alias=True)
         )
 
-    def update_private(self, session: Session) -> None:
+    def update(self, session: Session) -> None:
         """
         Updates the existing private remote watchlist.
 

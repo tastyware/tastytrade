@@ -8,13 +8,13 @@ The easiest way to get an account is to grab all accounts associated with a spec
 .. code-block:: python
 
    from tastytrade import Account
-   accounts = Account.get_accounts(session)
+   accounts = Account.get(session)
 
 You can also get a specific account by its unique ID:
 
 .. code-block:: python
 
-   account = Account.get_account(session, '5WX01234')
+   account = Account.get(session, '5WX01234')
 
 The ``get_balances`` function can be used to obtain information about the current buying power and cash balance:
 

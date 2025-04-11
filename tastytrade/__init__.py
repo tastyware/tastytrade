@@ -17,12 +17,10 @@ logger.setLevel(logging.DEBUG)
 from .account import Account
 from .session import Session
 from .streamer import AlertStreamer, DXLinkStreamer
-from .watchlists import Watchlist
 
 __all__ = [
     "Account",
     "AlertStreamer",
     "DXLinkStreamer",
     "Session",
-    "Watchlist",
 ]

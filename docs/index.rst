@@ -23,7 +23,7 @@ A simple, reverse-engineered, sync/async SDK for Tastytrade built on their (now 
    Want to see the SDK in action? Check out `tastytrade-cli <https://github.com/tastyware/tastytrade-cli>`_, a CLI for Tastytrade that showcases many of the SDK's features.
 
 .. note::
-   Do you use TradeStation? We're building a `brand-new SDK <https://github.com/tastyware/tradestation>`_ for TS users, with many of the same features!
+   Want to build an advanced trading system? Check out `streaQ <https://github.com/tastyware/streaq>`_, an async job queuing library for Python that's perfect for complex applications!
 
 .. toctree::
    :maxdepth: 2

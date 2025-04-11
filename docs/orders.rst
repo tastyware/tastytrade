@@ -11,8 +11,8 @@ Placing an order
    from tastytrade.instruments import Equity
    from tastytrade.order import *
 
-   account = Account.get_account(session, '5WX01234')
-   symbol = Equity.get_equity(session, 'USO')
+   account = Account.get(session, '5WX01234')
+   symbol = Equity.get(session, 'USO')
    leg = symbol.build_leg(Decimal('5'), OrderAction.BUY_TO_OPEN)  # buy to open 5 shares
 
    order = NewOrder(
@@ -71,7 +71,7 @@ To create an OTOCO order, you need an entry point order, a stop loss order, and 
    from tastytrade.instruments import Equity
    from tastytrade.order import *
 
-   symbol = Equity.get_equity(session, 'AAPL')
+   symbol = Equity.get(session, 'AAPL')
    opening = symbol.build_leg(Decimal(1), OrderAction.BUY_TO_OPEN) # buy to open 1 share
    closing = symbol.build_leg(Decimal(1), OrderAction.SELL_TO_CLOSE) # sell to close 1 share
 
@@ -103,7 +103,7 @@ An OCO order is similar, but has no trigger order. It's used to add a profit-tak
 
 .. code-block:: python
 
-   symbol = Equity.get_equity(session, 'SPY')
+   symbol = Equity.get(session, 'SPY')
    closing = symbol.build_leg(Decimal(10), OrderAction.SELL_TO_CLOSE) # sell to close 10 shares
 
    oco = NewComplexOrder(
@@ -135,7 +135,7 @@ Notional orders are slightly different from normal orders. Since the market will
 
 .. code-block:: python
 
-    symbol = Equity.get_equity(session, 'AAPL')
+    symbol = Equity.get(session, 'AAPL')
     order = NewOrder(
         time_in_force=OrderTimeInForce.DAY,
         order_type=OrderType.NOTIONAL_MARKET,

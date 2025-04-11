@@ -14,7 +14,7 @@ Here's an example of setting up an account streamer to continuously wait for eve
     from tastytrade import Account, AlertStreamer, Watchlist
 
     async with AlertStreamer(session) as streamer:
-        accounts = Account.get_accounts(session)
+        accounts = Account.get(session)
 
         # updates to balances, orders, and positions
         await streamer.subscribe_accounts(accounts)
@@ -33,7 +33,7 @@ Probably the most important information the account streamer handles is order fi
     from tastytrade.order import PlacedOrder
 
     async with AlertStreamer(session) as streamer:
-        accounts = Account.get_accounts(session)
+        accounts = Account.get(session)
         await streamer.subscribe_accounts(accounts)
 
         async for order in streamer.listen(PlacedOrder):

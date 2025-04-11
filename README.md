@@ -21,7 +21,7 @@ A simple, reverse-engineered SDK for Tastytrade built on their (now mostly publi
 > Want to see the SDK in action? Check out [tastytrade-cli](https://github.com/tastyware/tastytrade-cli), a CLI for Tastytrade that showcases many of the SDK's features.
 
 > [!NOTE]
-> Do you use TradeStation? We're building a [brand-new SDK](https://github.com/tastyware/tradestation) for TS users, with many of the same features!
+> Want to build an advanced trading system? Check out [streaQ](https://github.com/tastyware/streaq), an async job queuing library for Python that's perfect for complex applications!
 
 ## Installation
 
@@ -66,13 +66,25 @@ Note that this is asynchronous code, so you can't run it as is unless you're usi
 ```python
 from tastytrade import Account
 
-account = Account.get_accounts(session)[0]
+account = Account.get(session)[0]
 positions = account.get_positions(session)
 print(positions[0])
 ```
 
 ```python
 >>> CurrentPosition(account_number='5WX01234', symbol='IAU', instrument_type=<InstrumentType.EQUITY: 'Equity'>, underlying_symbol='IAU', quantity=Decimal('20'), quantity_direction='Long', close_price=Decimal('37.09'), average_open_price=Decimal('37.51'), average_yearly_market_close_price=Decimal('37.51'), average_daily_market_close_price=Decimal('37.51'), multiplier=1, cost_effect=<PriceEffect.CREDIT: 'Credit'>, is_suppressed=False, is_frozen=False, realized_day_gain=Decimal('7.888'), realized_day_gain_date=datetime.date(2023, 5, 19), realized_today=Decimal('-0.512'), realized_today_date=datetime.date(2023, 5, 19), created_at=datetime.datetime(2023, 3, 31, 14, 38, 32, 58000, tzinfo=datetime.timezone.utc), updated_at=datetime.datetime(2023, 5, 19, 16, 56, 51, 920000, tzinfo=datetime.timezone.utc), mark=None, mark_price=None, restricted_quantity=Decimal('0'), expires_at=None, fixing_price=None, deliverable_type=None)
+```
+
+## Sync/async wrappers
+
+The code from above can be rewritten asynchronously:
+
+```python
+from tastytrade import Account
+
+account = (await Account.a_get(session))[0]
+positions = await account.a_get_positions(session)
+print(positions[0])
 ```
 
 ## Placing an order
@@ -83,8 +95,8 @@ from tastytrade import Account
 from tastytrade.instruments import Equity
 from tastytrade.order import NewOrder, OrderAction, OrderTimeInForce, OrderType
 
-account = Account.get_account(session, '5WX01234')
-symbol = Equity.get_equity(session, 'USO')
+account = Account.get(session, '5WX01234')
+symbol = Equity.get(session, 'USO')
 leg = symbol.build_leg(Decimal('5'), OrderAction.BUY_TO_OPEN)  # buy to open 5 shares
 
 order = NewOrder(
