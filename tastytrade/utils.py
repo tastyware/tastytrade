@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
-from httpx._models import Response
+from httpx._models import Response  # type: ignore
 from pandas_market_calendars import get_calendar
 from pydantic import BaseModel, ConfigDict
 

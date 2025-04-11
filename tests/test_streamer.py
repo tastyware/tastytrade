@@ -14,7 +14,7 @@ async def test_account_streamer(session: Session):
         await streamer.subscribe_public_watchlists()
         await streamer.subscribe_quote_alerts()
         await streamer.subscribe_user_messages(session)
-        accounts = Account.get_accounts(session)
+        accounts = Account.get(session)
         await streamer.subscribe_accounts(accounts)
 
 
@@ -36,23 +36,22 @@ async def test_dxlink_streamer(session: Session):
         await streamer.unsubscribe_all(Quote)
 
 
-async def reconnect_alerts(streamer: AlertStreamer, ref: dict[str, bool]):
+async def reconnect_alerts(streamer: AlertStreamer, arg: bool = False):
     await streamer.subscribe_quote_alerts()
-    ref["test"] = True
+    if not arg:
+        raise Exception("Oh no!")
 
 
 async def test_account_streamer_reconnect(session: Session):
-    ref = {}
     streamer = await AlertStreamer(
-        session, reconnect_args=(ref,), reconnect_fn=reconnect_alerts
+        session, reconnect_args=(True,), reconnect_fn=reconnect_alerts
     )
     await streamer.subscribe_public_watchlists()
     await streamer.subscribe_user_messages(session)
-    accounts = Account.get_accounts(session)
-    await streamer.subscribe_accounts(accounts)
     await streamer._websocket.close()  # type: ignore
     await asyncio.sleep(3)
-    assert "test" in ref
+    accounts = await Account.a_get(session)
+    await streamer.subscribe_accounts(accounts)
     await streamer.close()
 
 

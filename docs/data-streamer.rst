@@ -31,7 +31,7 @@ Once you've created the streamer, you can subscribe/unsubscribe to events, like 
        await streamer.subscribe(Quote, subs_list)
        quotes = {}
        async for quote in streamer.listen(Quote):
-           quotes[quote.eventSymbol] = quote
+           quotes[quote.event_symbol] = quote
            if len(quotes) >= len(subs_list):
                break
        print(quotes)

@@ -10,7 +10,7 @@ Let's see how this looks:
     from tastytrade Account, Session
     session = Session(username, password)
     # using sync implementation
-    accounts = Account.get_accounts(session)
+    accounts = Account.get(session)
 
 The async implementation is similar:
 
@@ -19,7 +19,7 @@ The async implementation is similar:
     from tastytrade Account, Session
     session = Session(username, password)
     # using async implementation
-    accounts = await Account.a_get_accounts(session)
+    accounts = await Account.a_get(session)
 
 That's it! All sync methods have a parallel async method that starts with `a_`.
 

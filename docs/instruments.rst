@@ -9,11 +9,11 @@ Initialization
 
 Instruments follow a basic schema for initialization. To create an instrument(s), use the classmethods for the desired type of instrument:
 
-- ``Cryptocurrency.get_cryptocurrency()``, ``Cryptocurrency.get_cryptocurrencies()``
-- ``Equity.get_equity()``, ``Equity.get_equities()``
-- ``Future.get_future()``, ``Future.get_futures()``
-- ``Option.get_option()``, ``Option.get_options()``
-- ``FutureOption.get_future_option()``, ``FutureOption.get_future_options()``
+- ``Cryptocurrency.get()``
+- ``Equity.get()``
+- ``Future.get()``
+- ``Option.get()``
+- ``FutureOption.get()``
 
 These functions take the session object as the first parameter, and the symbol (or list of symbols) as the second.
 Note that ETFs and indices are treated as equities for the purposes of the API.
@@ -22,9 +22,9 @@ Note that ETFs and indices are treated as equities for the purposes of the API.
 
    from tastytrade.instruments import Equity, FutureOption
 
-   equities = Equity.get_equities(session, ['SPY', 'AAPL'])
+   equities = Equity.get(session, ['SPY', 'AAPL'])
    print(equities[0].is_etf, equities[0].description)
-   future_option = FutureOption.get_future_option(session, './GCJ4 OG4G4 240223P1915')
+   future_option = FutureOption.get(session, './GCJ4 OG4G4 240223P1915')
    print(future_option.exchange)
 
 >>> (False, 'APPLE INC')
@@ -57,7 +57,7 @@ Alternatively, ``NestedOptionChain`` and ``NestedFutureOptionChain`` provide a s
 
    from tastytrade.instruments import NestedOptionChain
 
-   chain = NestedOptionChain.get_chain(session, 'SPY')
+   chain = NestedOptionChain.get(session, 'SPY')
    print(chain.expirations[0].strikes[0])
 
 >>> Strike(strike_price=Decimal('437.0'), call='SPY   240417C00437000', put='SPY   240417P00437000', call_streamer_symbol='.SPY240417C437', put_streamer_symbol='.SPY240417P437')
