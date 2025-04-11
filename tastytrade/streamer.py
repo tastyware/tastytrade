@@ -41,7 +41,7 @@ from tastytrade.order import (
     PlacedComplexOrder,
     PlacedOrder,
 )
-from tastytrade.session import Session
+from tastytrade.session import OAuthSession, Session
 from tastytrade.utils import TastytradeError, TastytradeJsonDataclass, set_sign_for
 from tastytrade.watchlists import Watchlist
 
@@ -203,6 +203,8 @@ class AlertStreamer:
     ):
         #: The active session used to initiate the streamer or make requests
         self.token: str = session.session_token
+        if isinstance(session, OAuthSession):
+            self.token = "Bearer " + self.token
         #: The base url for the streamer websocket
         self.base_url: str = CERT_STREAMER_URL if session.is_test else STREAMER_URL
         #: An async function to be called upon reconnection. The first argument must be
@@ -335,22 +337,24 @@ class AlertStreamer:
 
     async def _heartbeat(self) -> None:
         """
-        Sends a heartbeat message every 10 seconds to keep the connection
+        Sends a heartbeat message every 15 seconds to keep the connection
         alive.
         """
-        try:
-            while True:
-                await self._subscribe(SubscriptionType.HEARTBEAT, "")
+        while True:
+            try:
                 # send the heartbeat every 15 seconds
                 await asyncio.sleep(15)
-        except asyncio.CancelledError:
-            logger.debug("Websocket interrupted, cancelling heartbeat.")
-            return
+                await self._subscribe(SubscriptionType.HEARTBEAT)
+            except asyncio.CancelledError:
+                logger.debug("Websocket interrupted, cancelling heartbeat.")
+                break
+            except ConnectionClosed:  # if the message fires while reconnecting
+                continue
 
     async def _subscribe(
         self,
         subscription: SubscriptionType,
-        value: Union[Optional[str], list[str]] = "",
+        value: Union[str, list[str], None] = None,
     ) -> None:
         """
         Subscribes to a :class:`SubscriptionType`. Depending on the kind of
