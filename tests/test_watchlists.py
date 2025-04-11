@@ -10,43 +10,43 @@ WATCHLIST_NAME = "TestWatchlist"
 
 
 def test_get_pairs_watchlists(session: Session):
-    PairsWatchlist.get_pairs_watchlists(session)
+    PairsWatchlist.get(session)
 
 
 def test_get_pairs_watchlist(session: Session):
-    PairsWatchlist.get_pairs_watchlist(session, "Stocks")
+    PairsWatchlist.get(session, "Stocks")
 
 
 async def test_get_pairs_watchlists_async(session: Session):
-    await PairsWatchlist.a_get_pairs_watchlists(session)
+    await PairsWatchlist.a_get(session)
 
 
 async def test_get_pairs_watchlist_async(session: Session):
-    await PairsWatchlist.a_get_pairs_watchlist(session, "Stocks")
+    await PairsWatchlist.a_get(session, "Stocks")
 
 
 def test_get_public_watchlists(session: Session):
-    Watchlist.get_public_watchlists(session)
+    Watchlist.get_public(session)
 
 
 def test_get_public_watchlist(session: Session):
-    Watchlist.get_public_watchlist(session, "Crypto")
+    Watchlist.get_public(session, "Crypto")
 
 
 def test_get_private_watchlists(session: Session):
-    Watchlist.get_private_watchlists(session)
+    Watchlist.get_private(session)
 
 
 async def test_get_public_watchlists_async(session: Session):
-    await Watchlist.a_get_public_watchlists(session)
+    await Watchlist.a_get_public(session)
 
 
 async def test_get_public_watchlist_async(session: Session):
-    await Watchlist.a_get_public_watchlist(session, "Crypto")
+    await Watchlist.a_get_public(session, "Crypto")
 
 
 async def test_get_private_watchlists_async(session: Session):
-    await Watchlist.a_get_private_watchlists(session)
+    await Watchlist.a_get_private(session)
 
 
 @fixture(scope="module")
@@ -58,40 +58,40 @@ def private_wl() -> Watchlist:
 
 
 def test_upload_private_watchlist(session: Session, private_wl: Watchlist):
-    private_wl.upload_private_watchlist(session)
+    private_wl.upload_private(session)
 
 
 def test_get_private_watchlist(session: Session):
     sleep(1)
-    Watchlist.get_private_watchlist(session, WATCHLIST_NAME)
+    Watchlist.get_private(session, WATCHLIST_NAME)
 
 
 def test_update_private_watchlist(session: Session, private_wl: Watchlist):
     private_wl.remove_symbol("AAPL", InstrumentType.EQUITY)
     sleep(1)
-    private_wl.update_private_watchlist(session)
+    private_wl.update_private(session)
 
 
 def test_remove_private_watchlist(session: Session):
     sleep(1)
-    Watchlist.remove_private_watchlist(session, WATCHLIST_NAME)
+    Watchlist.remove_private(session, WATCHLIST_NAME)
 
 
 async def test_upload_private_watchlist_async(session: Session, private_wl: Watchlist):
-    await private_wl.a_upload_private_watchlist(session)
+    await private_wl.a_upload_private(session)
 
 
 async def test_get_private_watchlist_async(session: Session):
     sleep(1)
-    await Watchlist.a_get_private_watchlist(session, WATCHLIST_NAME)
+    await Watchlist.a_get_private(session, WATCHLIST_NAME)
 
 
 async def test_update_private_watchlist_async(session: Session, private_wl: Watchlist):
     private_wl.remove_symbol("MSFT", InstrumentType.EQUITY)
     sleep(1)
-    await private_wl.a_update_private_watchlist(session)
+    await private_wl.a_update_private(session)
 
 
 async def test_remove_private_watchlist_async(session: Session):
     sleep(1)
-    await Watchlist.a_remove_private_watchlist(session, WATCHLIST_NAME)
+    await Watchlist.a_remove_private(session, WATCHLIST_NAME)

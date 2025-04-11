@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Optional, Union, overload
 
 import httpx
 from pydantic import BaseModel, model_validator
@@ -485,15 +485,34 @@ class Account(TastytradeJsonDataclass):
     suitable_options_level: Optional[str] = None
     submitting_user_id: Optional[str] = None
 
+    @overload
     @classmethod
-    async def a_get_accounts(cls, session: Session, include_closed=False) -> list[Self]:
+    async def a_get(
+        cls, session: Session, *, include_closed: bool = False
+    ) -> list[Self]: ...
+
+    @overload
+    @classmethod
+    async def a_get(cls, session: Session, account_number: str) -> Self: ...
+
+    @classmethod
+    async def a_get(
+        cls,
+        session: Session,
+        account_number: Optional[str] = None,
+        include_closed: bool = False,
+    ) -> Union[Self, list[Self]]:
         """
-        Gets all trading accounts associated with the Tastytrade user.
+        Gets all trading accounts associated with the Tastytrade user, or a specific
+        one if given an account ID.
 
         :param session: the session to use for the request.
-        :param include_closed:
-            whether to include closed accounts in the results (default False)
+        :param account_number: the account ID to get.
+        :param include_closed: whether to include closed accounts in the results
         """
+        if account_number:
+            data = await session._a_get(f"/customers/me/accounts/{account_number}")
+            return cls(**data)
         data = await session._a_get("/customers/me/accounts")
         return [
             cls(**i["account"])
@@ -501,43 +520,40 @@ class Account(TastytradeJsonDataclass):
             if include_closed or not i["account"]["is-closed"]
         ]
 
+    @overload
     @classmethod
-    def get_accounts(cls, session: Session, include_closed=False) -> list[Self]:
+    def get(cls, session: Session, *, include_closed: bool = False) -> list[Self]: ...
+
+    @overload
+    @classmethod
+    def get(cls, session: Session, account_number: str) -> Self: ...
+
+    @classmethod
+    def get(
+        cls,
+        session: Session,
+        account_number: Optional[str] = None,
+        include_closed: bool = False,
+    ) -> Union[Self, list[Self]]:
         """
-        Gets all trading accounts associated with the Tastytrade user.
+        Gets all trading accounts associated with the Tastytrade user, or a specific
+        one if given an account ID.
 
         :param session: the session to use for the request.
-        :param include_closed:
-            whether to include closed accounts in the results (default False)
+        :param account_number: the account ID to get.
+        :param include_closed: whether to include closed accounts in the results
+
+        :return: an account if an ID was provided; otherwise, a single account.
         """
+        if account_number:
+            data = session._get(f"/customers/me/accounts/{account_number}")
+            return cls(**data)
         data = session._get("/customers/me/accounts")
         return [
             cls(**i["account"])
             for i in data["items"]
             if include_closed or not i["account"]["is-closed"]
         ]
-
-    @classmethod
-    async def a_get_account(cls, session: Session, account_number: str) -> Self:
-        """
-        Returns the Tastytrade account associated with the given account ID.
-
-        :param session: the session to use for the request.
-        :param account_number: the account ID to get.
-        """
-        data = await session._a_get(f"/customers/me/accounts/{account_number}")
-        return cls(**data)
-
-    @classmethod
-    def get_account(cls, session: Session, account_number: str) -> Self:
-        """
-        Returns the Tastytrade account associated with the given account ID.
-
-        :param session: the session to use for the request.
-        :param account_number: the account ID to get.
-        """
-        data = session._get(f"/customers/me/accounts/{account_number}")
-        return cls(**data)
 
     async def a_get_trading_status(self, session: Session) -> TradingStatus:
         """

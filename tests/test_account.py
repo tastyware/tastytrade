@@ -26,7 +26,7 @@ def account_number() -> str:
 
 @fixture(scope="module")
 async def account(session: Session, account_number: str, aiolib: str) -> Account:
-    return Account.get_account(session, account_number)
+    return Account.get(session, account_number)
 
 
 def test_get_account(account: Account):
@@ -34,7 +34,7 @@ def test_get_account(account: Account):
 
 
 def test_get_accounts(session: Session):
-    assert Account.get_accounts(session) != []
+    assert Account.get(session) != []
 
 
 def test_get_trading_status(session: Session, account: Account):
@@ -90,11 +90,11 @@ def test_get_live_orders(session: Session, account: Account):
 
 
 async def test_get_account_async(session: Session, account_number: str):
-    await Account.a_get_account(session, account_number)
+    await Account.a_get(session, account_number)
 
 
 async def test_get_accounts_async(session: Session):
-    accounts = await Account.a_get_accounts(session)
+    accounts = await Account.a_get(session)
     assert accounts != []
 
 
@@ -170,7 +170,7 @@ async def test_get_order_chains_async(session: Session, account: Account):
 
 @fixture(scope="module")
 def new_order(session: Session) -> NewOrder:
-    symbol = Equity.get_equity(session, "F")
+    symbol = Equity.get(session, "F")
     leg = symbol.build_leg(Decimal(1), OrderAction.BUY_TO_OPEN)
     return NewOrder(
         time_in_force=OrderTimeInForce.DAY,
@@ -182,7 +182,7 @@ def new_order(session: Session) -> NewOrder:
 
 @fixture(scope="module")
 def notional_order(session: Session) -> NewOrder:
-    symbol = Equity.get_equity(session, "AAPL")
+    symbol = Equity.get(session, "AAPL")
     leg = symbol.build_leg(None, OrderAction.BUY_TO_OPEN)
     return NewOrder(
         time_in_force=OrderTimeInForce.DAY,
@@ -226,7 +226,7 @@ def test_replace_and_delete_order(
 
 def test_place_oco_order(session: Session, account: Account):
     # account must have a share of F for this to work
-    symbol = Equity.get_equity(session, "F")
+    symbol = Equity.get(session, "F")
     closing = symbol.build_leg(Decimal(1), OrderAction.SELL_TO_CLOSE)
     oco = NewComplexOrder(
         orders=[
@@ -252,7 +252,7 @@ def test_place_oco_order(session: Session, account: Account):
 
 
 def test_place_otoco_order(session: Session, account: Account):
-    symbol = Equity.get_equity(session, "AAPL")
+    symbol = Equity.get(session, "AAPL")
     opening = symbol.build_leg(Decimal(1), OrderAction.BUY_TO_OPEN)
     closing = symbol.build_leg(Decimal(1), OrderAction.SELL_TO_CLOSE)
     otoco = NewComplexOrder(
@@ -324,7 +324,7 @@ async def test_replace_and_delete_order_async(
 
 async def test_place_complex_order_async(session: Session, account: Account):
     sleep(3)
-    symbol = Equity.get_equity(session, "AAPL")
+    symbol = Equity.get(session, "AAPL")
     opening = symbol.build_leg(Decimal(1), OrderAction.BUY_TO_OPEN)
     closing = symbol.build_leg(Decimal(1), OrderAction.SELL_TO_CLOSE)
     otoco = NewComplexOrder(
