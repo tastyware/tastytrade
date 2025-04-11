@@ -1234,7 +1234,7 @@ class NestedFutureOptionChain(TastytradeJsonDataclass):
     option_chains: list[NestedFutureOptionSubchain]
 
     @classmethod
-    async def a_get_chain(cls, session: Session, symbol: str) -> Self:
+    async def a_get(cls, session: Session, symbol: str) -> Self:
         """
         Gets the futures option chain for the given symbol in nested format.
 
@@ -1246,7 +1246,7 @@ class NestedFutureOptionChain(TastytradeJsonDataclass):
         return cls(**data)
 
     @classmethod
-    def get_chain(cls, session: Session, symbol: str) -> Self:
+    def get(cls, session: Session, symbol: str) -> Self:
         """
         Gets the futures option chain for the given symbol in nested format.
 

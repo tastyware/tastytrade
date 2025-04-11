@@ -112,11 +112,11 @@ def test_get_nested_option_chain(session: Session):
 
 
 async def test_get_nested_future_option_chain_async(session: Session):
-    await NestedFutureOptionChain.a_get_chain(session, "ES")
+    await NestedFutureOptionChain.a_get(session, "ES")
 
 
 def test_get_nested_future_option_chain(session: Session):
-    NestedFutureOptionChain.get_chain(session, "ES")
+    NestedFutureOptionChain.get(session, "ES")
 
 
 async def test_get_warrants_async(session: Session):
