@@ -27,7 +27,8 @@ A simple, reverse-engineered, sync/async SDK for Tastytrade built on their (now 
 
 .. toctree::
    :maxdepth: 2
-   :caption: Documentation:
+   :caption: Documentation
+   :hidden:
 
    installation
    sessions
@@ -43,10 +44,21 @@ A simple, reverse-engineered, sync/async SDK for Tastytrade built on their (now 
 
 .. toctree::
    :maxdepth: 2
-   :caption: SDK Reference:
+   :caption: SDK Reference
+   :hidden:
 
-   tastytrade
-   dxfeed
+   api/account
+   api/backtesting
+   api/dxfeed
+   api/instruments
+   api/market-sessions
+   api/metrics
+   api/order
+   api/search
+   api/session
+   api/streamer
+   api/utils
+   api/watchlists
 
 Indices and tables
 ==================

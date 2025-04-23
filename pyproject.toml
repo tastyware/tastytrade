@@ -9,6 +9,30 @@ path = "tastytrade/__init__.py"
 name = "tastytrade"
 description = "An unofficial, sync/async SDK for Tastytrade!"
 readme = "README.md"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: Unix",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Internet :: WWW/HTTP",
+]
 requires-python = ">=3.9"
 license = {file = "LICENSE"}
 authors = [
@@ -24,20 +48,23 @@ dynamic = ["version"]
 
 [project.urls]
 Homepage = "https://github.com/tastyware/tastytrade"
-Documentation = "https://tastyworks-api.readthedocs.io/en/latest"
+Documentation = "https://tastyworks-api.rtfd.io"
+Funding = "https://github.com/sponsors/tastyware"
+Source = "https://github.com/tastyware/tastytrade"
+Changelog = "https://github.com/tastyware/tastytrade/releases"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest>=8.3.3",
     "pytest-aio>=1.5.0",
     "pytest-cov>=5.0.0",
     "ruff>=0.6.9",
     "pyright>=1.1.390",
     "sphinx>=7.4.7",
-    "sphinx-rtd-theme>=3.0.2",
     "enum-tools[sphinx]>=0.12.0",
     "autodoc-pydantic>=2.2.0",
     "proxy-py>=2.4.9",
+    "sphinx-immaterial>=0.12.5",
 ]
 
 [tool.setuptools.package-data]
