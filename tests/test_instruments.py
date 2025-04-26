@@ -178,6 +178,14 @@ def test_get_future_option_chain(session: Session):
         FutureOption.get(session, symbols)
         break
 
+def test_get_market_data(session: Session):
+    requests = {
+        "equity": ["AAPL", "MSFT"],
+        "future": ["/ES", "/VX"],
+        "equity-option": ["AAPL  250620C00180000"],
+        "future-option": ["./ESM5 EW2M5 250613C4600"]
+    } # use some options that exist
+    get_market_data(session, requests)
 
 def test_streamer_symbol_to_occ():
     dxf = ".SPY240324P480.5"

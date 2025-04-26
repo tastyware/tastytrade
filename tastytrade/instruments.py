@@ -1451,3 +1451,36 @@ def get_future_option_chain(
         chain[option.expiration_date].append(option)
 
     return chain
+
+def get_market_data(
+    session: Session, requests: dict
+):
+    """
+    Returns a list of dictionaries containing a symbol and its associated market data.
+
+    Example request to endpoint:
+    https://api.tastyworks.com/market-data/by-type?equity=AAPL&equity-option=AAPL%20%20250620C00180000&equity=MSFT&equity-option=MSFT%20%20250620C00355000&future=%2FESM5&cryptocurrency=BTC%2FUSD&future-option=.%2FESM5%20EW2M5%20250613C4600\
+
+    :param session: the session to use for the request.
+    :param requests: the dictionary of requested security types to a list of the
+    securities of that type you want the market data for. The combined limit of
+    all tickers requested at once is 100.
+
+    Valid values for requests keys:
+    "index", "equity", "equity-option", "future", "future-option", "cryptocurrency"
+    """
+    parts = []
+    for key, values in requests.items():
+        for v in values:
+            parts.append(f"{key.lower()}={str(v)}")
+
+    symbol = "&".join(parts)
+
+    symbol = symbol.replace("/", "%2F")
+    symbol = symbol.replace(" ", "%20")
+    data = session._get(f"/market-data/by-type?{symbol}")
+    if 'items' in data:
+        market_data = data["items"]
+    else:
+        market_data = []
+    return market_data
