@@ -10,7 +10,7 @@ from typing_extensions import Self
 
 from tastytrade.order import InstrumentType, TradeableTastytradeJsonDataclass
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeJsonDataclass, validate_response
+from tastytrade.utils import TastytradeData, validate_response
 
 
 class OptionType(str, Enum):
@@ -45,7 +45,7 @@ class FutureMonthCode(str, Enum):
     DEC = "Z"
 
 
-class Deliverable(TastytradeJsonDataclass):
+class Deliverable(TastytradeData):
     """
     Dataclass representing the deliverable for an option.
     """
@@ -60,7 +60,7 @@ class Deliverable(TastytradeJsonDataclass):
     instrument_type: Optional[InstrumentType] = None
 
 
-class DestinationVenueSymbol(TastytradeJsonDataclass):
+class DestinationVenueSymbol(TastytradeData):
     """
     Dataclass representing a specific destination venue symbol for a
     cryptocurrency.
@@ -74,7 +74,7 @@ class DestinationVenueSymbol(TastytradeJsonDataclass):
     max_price_precision: Optional[int] = None
 
 
-class QuantityDecimalPrecision(TastytradeJsonDataclass):
+class QuantityDecimalPrecision(TastytradeData):
     """
     Dataclass representing the decimal precision (number of places) for an
     instrument.
@@ -86,7 +86,7 @@ class QuantityDecimalPrecision(TastytradeJsonDataclass):
     symbol: Optional[str] = None
 
 
-class Strike(TastytradeJsonDataclass):
+class Strike(TastytradeData):
     """
     Dataclass representing a specific strike in an options chain, containing
     the symbols for the call and put options.
@@ -99,7 +99,7 @@ class Strike(TastytradeJsonDataclass):
     put_streamer_symbol: str
 
 
-class TickSize(TastytradeJsonDataclass):
+class TickSize(TastytradeData):
     """
     Dataclass representing the tick size for an instrument.
     """
@@ -109,7 +109,7 @@ class TickSize(TastytradeJsonDataclass):
     symbol: Optional[str] = None
 
 
-class NestedOptionChainExpiration(TastytradeJsonDataclass):
+class NestedOptionChainExpiration(TastytradeData):
     """
     Dataclass representing an expiration in a nested options chain.
     """
@@ -121,7 +121,7 @@ class NestedOptionChainExpiration(TastytradeJsonDataclass):
     strikes: list[Strike]
 
 
-class NestedFutureOptionChainExpiration(TastytradeJsonDataclass):
+class NestedFutureOptionChainExpiration(TastytradeData):
     """
     Dataclass representing an expiration in a nested future options chain.
     """
@@ -144,7 +144,7 @@ class NestedFutureOptionChainExpiration(TastytradeJsonDataclass):
     tick_sizes: list[TickSize]
 
 
-class NestedFutureOptionFuture(TastytradeJsonDataclass):
+class NestedFutureOptionFuture(TastytradeData):
     """
     Dataclass representing an underlying future in a nested future options
     chain.
@@ -161,7 +161,7 @@ class NestedFutureOptionFuture(TastytradeJsonDataclass):
     maturity_date: Optional[date] = None
 
 
-class FutureEtfEquivalent(TastytradeJsonDataclass):
+class FutureEtfEquivalent(TastytradeData):
     """
     Dataclass that represents the ETF equivalent for a future (aka, the number
     of shares of the ETF that are equivalent to one future, leverage-wise).
@@ -171,7 +171,7 @@ class FutureEtfEquivalent(TastytradeJsonDataclass):
     share_quantity: int
 
 
-class Roll(TastytradeJsonDataclass):
+class Roll(TastytradeData):
     """
     Dataclass representing a roll for a future.
     """
@@ -687,7 +687,7 @@ class Option(TradeableTastytradeJsonDataclass):
         return res
 
 
-class NestedOptionChain(TastytradeJsonDataclass):
+class NestedOptionChain(TastytradeData):
     """
     Dataclass that represents a Tastytrade nested option chain object.
     Contains information about the option chain and a method to fetch one for
@@ -731,7 +731,7 @@ class NestedOptionChain(TastytradeJsonDataclass):
         return [cls(**item) for item in data["items"]]
 
 
-class FutureProduct(TastytradeJsonDataclass):
+class FutureProduct(TastytradeData):
     """
     Dataclass that represents a Tastytrade future product object. Contains
     information about the future product and a method to fetch one for a
@@ -959,7 +959,7 @@ class Future(TradeableTastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
 
-class FutureOptionProduct(TastytradeJsonDataclass):
+class FutureOptionProduct(TastytradeData):
     """
     Dataclass that represents a Tastytrade future option product object.
     Contains information about the future option product (deliverable for
@@ -1208,7 +1208,7 @@ class FutureOption(TradeableTastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
 
-class NestedFutureOptionSubchain(TastytradeJsonDataclass):
+class NestedFutureOptionSubchain(TastytradeData):
     """
     Dataclass that represents a Tastytrade nested future option chain for a
     specific futures underlying symbol.
@@ -1220,7 +1220,7 @@ class NestedFutureOptionSubchain(TastytradeJsonDataclass):
     expirations: list[NestedFutureOptionChainExpiration]
 
 
-class NestedFutureOptionChain(TastytradeJsonDataclass):
+class NestedFutureOptionChain(TastytradeData):
     """
     Dataclass that represents a Tastytrade nested option chain object. Contains
     information about the option chain and a method to fetch one for a symbol.
@@ -1258,7 +1258,7 @@ class NestedFutureOptionChain(TastytradeJsonDataclass):
         return cls(**data)
 
 
-class Warrant(TastytradeJsonDataclass):
+class Warrant(TastytradeData):
     """
     Dataclass that represents a Tastytrade warrant object. Contains
     information about the warrant, and methods to get warrants.

@@ -23,7 +23,7 @@ from tastytrade.session import Session
 from tastytrade.utils import (
     PriceEffect,
     TastytradeError,
-    TastytradeJsonDataclass,
+    TastytradeData,
     set_sign_for,
     today_in_new_york,
     validate_response,
@@ -37,7 +37,7 @@ class EmptyDict(BaseModel):
         extra = "forbid"
 
 
-class AccountBalance(TastytradeJsonDataclass):
+class AccountBalance(TastytradeData):
     """
     Dataclass containing account balance information.
     """
@@ -101,7 +101,7 @@ class AccountBalance(TastytradeJsonDataclass):
         return set_sign_for(data, ["pending_cash", "buying_power_adjustment"])
 
 
-class AccountBalanceSnapshot(TastytradeJsonDataclass):
+class AccountBalanceSnapshot(TastytradeData):
     """
     Dataclass containing account balance for a moment in time (snapshot).
     """
@@ -156,7 +156,7 @@ class AccountBalanceSnapshot(TastytradeJsonDataclass):
         return set_sign_for(data, ["pending_cash"])
 
 
-class CurrentPosition(TastytradeJsonDataclass):
+class CurrentPosition(TastytradeData):
     """
     Dataclass containing imformation about an individual position in a
     portfolio.
@@ -195,7 +195,7 @@ class CurrentPosition(TastytradeJsonDataclass):
         return set_sign_for(data, ["realized_day_gain", "realized_today"])
 
 
-class FeesInfo(TastytradeJsonDataclass):
+class FeesInfo(TastytradeData):
     total_fees: Decimal
 
     @model_validator(mode="before")
@@ -204,7 +204,7 @@ class FeesInfo(TastytradeJsonDataclass):
         return set_sign_for(data, ["total_fees"])
 
 
-class Lot(TastytradeJsonDataclass):
+class Lot(TastytradeData):
     """
     Dataclass containing information about the lot of a position.
     """
@@ -218,7 +218,7 @@ class Lot(TastytradeJsonDataclass):
     transaction_date: date
 
 
-class MarginReportEntry(TastytradeJsonDataclass):
+class MarginReportEntry(TastytradeData):
     """
     Dataclass containing an individual entry (relating to a specific position)
     as part of the overall margin report.
@@ -254,7 +254,7 @@ class MarginReportEntry(TastytradeJsonDataclass):
         )
 
 
-class MarginReport(TastytradeJsonDataclass):
+class MarginReport(TastytradeData):
     """
     Dataclass containing an overall portfolio margin report.
     """
@@ -292,7 +292,7 @@ class MarginReport(TastytradeJsonDataclass):
         )
 
 
-class MarginRequirement(TastytradeJsonDataclass):
+class MarginRequirement(TastytradeData):
     """
     Dataclass containing general margin requirement information for a symbol.
     """
@@ -309,7 +309,7 @@ class MarginRequirement(TastytradeJsonDataclass):
     is_deleted: Optional[bool] = None
 
 
-class NetLiqOhlc(TastytradeJsonDataclass):
+class NetLiqOhlc(TastytradeData):
     """
     Dataclass containing historical net liquidation data in OHLC format
     (open, high, low, close), with a timestamp.
@@ -330,7 +330,7 @@ class NetLiqOhlc(TastytradeJsonDataclass):
     time: str
 
 
-class PositionLimit(TastytradeJsonDataclass):
+class PositionLimit(TastytradeData):
     """
     Dataclass containing information about general account limits.
     """
@@ -347,7 +347,7 @@ class PositionLimit(TastytradeJsonDataclass):
     future_option_position_size: int
 
 
-class TradingStatus(TastytradeJsonDataclass):
+class TradingStatus(TastytradeData):
     """
     Dataclass containing information about an account's trading status, such
     as what types of trades are allowed (e.g. margin, crypto, futures)
@@ -392,7 +392,7 @@ class TradingStatus(TastytradeJsonDataclass):
     enhanced_fraud_safeguards_enabled_at: Optional[datetime] = None
 
 
-class Transaction(TastytradeJsonDataclass):
+class Transaction(TastytradeData):
     """
     Dataclass containing information about a past transaction.
     """
@@ -453,7 +453,7 @@ class Transaction(TastytradeJsonDataclass):
         )
 
 
-class Account(TastytradeJsonDataclass):
+class Account(TastytradeData):
     """
     Dataclass that represents a Tastytrade account object, containing
     methods for retrieving information about the account, placing orders,

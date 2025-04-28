@@ -240,13 +240,19 @@ def _dasherize(s: str) -> str:
     return s.replace("_", "-")
 
 
-class TastytradeJsonDataclass(BaseModel):
+class TastytradeData(BaseModel):
     """
     A pydantic dataclass that converts keys from snake case to dasherized
     and performs type validation and coercion.
     """
 
     model_config = ConfigDict(alias_generator=_dasherize, populate_by_name=True)
+
+    def __str__(self) -> str:
+        return " ".join(f"{a}={v!r}" for a, v in self.__repr_args__() if v)
+
+    def __repr__(self) -> str:
+        return f"{self.__repr_name__()}({str(self)})"
 
 
 def validate_response(response: Response) -> None:

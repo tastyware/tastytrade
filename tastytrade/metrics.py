@@ -3,10 +3,10 @@ from decimal import Decimal
 from typing import Optional
 
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeJsonDataclass
+from tastytrade.utils import TastytradeData
 
 
-class DividendInfo(TastytradeJsonDataclass):
+class DividendInfo(TastytradeData):
     """
     Dataclass representing dividend information for a given symbol.
     """
@@ -15,7 +15,7 @@ class DividendInfo(TastytradeJsonDataclass):
     amount: Decimal
 
 
-class EarningsInfo(TastytradeJsonDataclass):
+class EarningsInfo(TastytradeData):
     """
     Dataclass representing earnings information for a given symbol.
     """
@@ -24,7 +24,7 @@ class EarningsInfo(TastytradeJsonDataclass):
     eps: Decimal
 
 
-class EarningsReport(TastytradeJsonDataclass):
+class EarningsReport(TastytradeData):
     """
     Dataclass containing information about a recent earnings report, or the
     expected date of the next one.
@@ -41,7 +41,7 @@ class EarningsReport(TastytradeJsonDataclass):
     updated_at: Optional[datetime] = None
 
 
-class Liquidity(TastytradeJsonDataclass):
+class Liquidity(TastytradeData):
     """
     Dataclass representing liquidity information for a given symbol.
     """
@@ -52,7 +52,7 @@ class Liquidity(TastytradeJsonDataclass):
     updated_at: Optional[datetime] = None
 
 
-class OptionExpirationImpliedVolatility(TastytradeJsonDataclass):
+class OptionExpirationImpliedVolatility(TastytradeData):
     """
     Dataclass containing implied volatility information for a given symbol
     and expiration date.
@@ -64,7 +64,7 @@ class OptionExpirationImpliedVolatility(TastytradeJsonDataclass):
     implied_volatility: Optional[Decimal] = None
 
 
-class MarketMetricInfo(TastytradeJsonDataclass):
+class MarketMetricInfo(TastytradeData):
     """
     Dataclass representing market metrics for a given symbol.
 
@@ -148,7 +148,7 @@ async def a_get_dividends(session: Session, symbol: str) -> list[DividendInfo]:
     """
     symbol = symbol.replace("/", "%2F")
     data = await session._a_get(
-        f"/market-metrics/historic-corporate-events/" f"dividends/{symbol}"
+        f"/market-metrics/historic-corporate-events/dividends/{symbol}"
     )
     return [DividendInfo(**i) for i in data["items"]]
 
@@ -161,9 +161,7 @@ def get_dividends(session: Session, symbol: str) -> list[DividendInfo]:
     :param symbol: symbol to retrieve dividend information for
     """
     symbol = symbol.replace("/", "%2F")
-    data = session._get(
-        f"/market-metrics/historic-corporate-events/" f"dividends/{symbol}"
-    )
+    data = session._get(f"/market-metrics/historic-corporate-events/dividends/{symbol}")
     return [DividendInfo(**i) for i in data["items"]]
 
 
@@ -180,7 +178,7 @@ async def a_get_earnings(
     symbol = symbol.replace("/", "%2F")
     params = {"start-date": start_date}
     data = await session._a_get(
-        (f"/market-metrics/historic-corporate-events/" f"earnings-reports/{symbol}"),
+        (f"/market-metrics/historic-corporate-events/earnings-reports/{symbol}"),
         params=params,
     )
     return [EarningsInfo(**i) for i in data["items"]]
@@ -197,7 +195,7 @@ def get_earnings(session: Session, symbol: str, start_date: date) -> list[Earnin
     symbol = symbol.replace("/", "%2F")
     params = {"start-date": start_date}
     data = session._get(
-        (f"/market-metrics/historic-corporate-events/" f"earnings-reports/{symbol}"),
+        (f"/market-metrics/historic-corporate-events/earnings-reports/{symbol}"),
         params=params,
     )
     return [EarningsInfo(**i) for i in data["items"]]

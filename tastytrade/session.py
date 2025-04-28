@@ -9,13 +9,13 @@ from httpx import AsyncClient, Client
 from tastytrade import API_URL, CERT_URL, logger
 from tastytrade.utils import (
     TastytradeError,
-    TastytradeJsonDataclass,
+    TastytradeData,
     validate_and_parse,
     validate_response,
 )
 
 
-class Address(TastytradeJsonDataclass):
+class Address(TastytradeData):
     """
     Dataclass containing customer address information.
     """
@@ -31,7 +31,7 @@ class Address(TastytradeJsonDataclass):
     street_three: Optional[str] = None
 
 
-class EntityOfficer(TastytradeJsonDataclass):
+class EntityOfficer(TastytradeData):
     """
     Dataclass containing entity officer information.
     """
@@ -67,7 +67,7 @@ class EntityOfficer(TastytradeJsonDataclass):
     work_phone_number: str
 
 
-class EntitySuitability(TastytradeJsonDataclass):
+class EntitySuitability(TastytradeData):
     """
     Dataclass containing entity suitability information.
     """
@@ -84,7 +84,7 @@ class EntitySuitability(TastytradeJsonDataclass):
     uncovered_options_trading_experience: str
 
 
-class CustomerAccountMarginType(TastytradeJsonDataclass):
+class CustomerAccountMarginType(TastytradeData):
     """
     Dataclass containing margin information for a customer account type.
     """
@@ -93,7 +93,7 @@ class CustomerAccountMarginType(TastytradeJsonDataclass):
     is_margin: bool
 
 
-class CustomerAccountType(TastytradeJsonDataclass):
+class CustomerAccountType(TastytradeData):
     """
     Dataclass containing information for a type of customer account.
     """
@@ -106,7 +106,7 @@ class CustomerAccountType(TastytradeJsonDataclass):
     margin_types: list[CustomerAccountMarginType]
 
 
-class CustomerEntity(TastytradeJsonDataclass):
+class CustomerEntity(TastytradeData):
     """
     Dataclass containing customer entity information.
     """
@@ -133,7 +133,7 @@ class CustomerEntity(TastytradeJsonDataclass):
     tax_number: str
 
 
-class CustomerPerson(TastytradeJsonDataclass):
+class CustomerPerson(TastytradeData):
     """
     Dataclass containing customer person information.
     """
@@ -158,7 +158,7 @@ class CustomerPerson(TastytradeJsonDataclass):
     job_title: Optional[str] = None
 
 
-class CustomerSuitability(TastytradeJsonDataclass):
+class CustomerSuitability(TastytradeData):
     """
     Dataclass containing customer suitability information.
     """
@@ -181,7 +181,7 @@ class CustomerSuitability(TastytradeJsonDataclass):
     tax_bracket: Optional[str] = None
 
 
-class Customer(TastytradeJsonDataclass):
+class Customer(TastytradeData):
     """
     Dataclass containing customer information.
     """
@@ -240,7 +240,7 @@ class Customer(TastytradeJsonDataclass):
     user_id: Optional[str] = None
 
 
-class TwoFactorInfo(TastytradeJsonDataclass):
+class TwoFactorInfo(TastytradeData):
     """
     Dataclass containing information about two-factor authentication.
     """
@@ -249,7 +249,7 @@ class TwoFactorInfo(TastytradeJsonDataclass):
     type: Optional[str] = None
 
 
-class User(TastytradeJsonDataclass):
+class User(TastytradeData):
     """
     Dataclass containing information about a Tastytrade user.
     """

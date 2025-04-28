@@ -4,10 +4,10 @@ from typing_extensions import Self
 
 from tastytrade.instruments import InstrumentType
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeJsonDataclass
+from tastytrade.utils import TastytradeData
 
 
-class Pair(TastytradeJsonDataclass):
+class Pair(TastytradeData):
     """
     Dataclass that represents a specific pair in a pairs watchlist.
     """
@@ -20,7 +20,7 @@ class Pair(TastytradeJsonDataclass):
     right_quantity: int
 
 
-class PairsWatchlist(TastytradeJsonDataclass):
+class PairsWatchlist(TastytradeData):
     """
     Dataclass that represents a pairs watchlist object.
     """
@@ -84,7 +84,7 @@ class PairsWatchlist(TastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
 
-class Watchlist(TastytradeJsonDataclass):
+class Watchlist(TastytradeData):
     name: str
     watchlist_entries: Optional[list[dict[str, Any]]] = None
     group_name: str = "default"
