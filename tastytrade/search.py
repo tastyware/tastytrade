@@ -1,8 +1,8 @@
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeJsonDataclass
+from tastytrade.utils import TastytradeData
 
 
-class SymbolData(TastytradeJsonDataclass):
+class SymbolData(TastytradeData):
     """
     Dataclass holding search results for an individual item.
     """

@@ -8,7 +8,7 @@ from pydantic import computed_field, field_serializer, model_validator
 from tastytrade import version_str
 from tastytrade.utils import (
     PriceEffect,
-    TastytradeJsonDataclass,
+    TastytradeData,
     get_sign,
     set_sign_for,
 )
@@ -108,7 +108,7 @@ class ComplexOrderType(str, Enum):
     OTOCO = "OTOCO"
 
 
-class FillInfo(TastytradeJsonDataclass):
+class FillInfo(TastytradeData):
     """
     Dataclass that contains information about an order fill.
     """
@@ -122,7 +122,7 @@ class FillInfo(TastytradeJsonDataclass):
     ext_exec_id: Optional[str] = None
 
 
-class Leg(TastytradeJsonDataclass):
+class Leg(TastytradeData):
     """
     Dataclass that represents an order leg.
 
@@ -138,7 +138,7 @@ class Leg(TastytradeJsonDataclass):
     fills: Optional[list[FillInfo]] = None
 
 
-class TradeableTastytradeJsonDataclass(TastytradeJsonDataclass):
+class TradeableTastytradeJsonDataclass(TastytradeData):
     """
     Dataclass that represents a tradeable instrument.
 
@@ -167,7 +167,7 @@ class TradeableTastytradeJsonDataclass(TastytradeJsonDataclass):
         )
 
 
-class Message(TastytradeJsonDataclass):
+class Message(TastytradeData):
     """
     Dataclass that represents a message from the Tastytrade API, usually
     a warning or an error.
@@ -181,7 +181,7 @@ class Message(TastytradeJsonDataclass):
         return f"{self.code}: {self.message}"
 
 
-class OrderConditionPriceComponent(TastytradeJsonDataclass):
+class OrderConditionPriceComponent(TastytradeData):
     """
     Dataclass that represents a price component of an order condition.
     """
@@ -192,7 +192,7 @@ class OrderConditionPriceComponent(TastytradeJsonDataclass):
     quantity_direction: str
 
 
-class OrderCondition(TastytradeJsonDataclass):
+class OrderCondition(TastytradeData):
     """
     Dataclass that represents an order condition for an order rule.
     """
@@ -210,7 +210,7 @@ class OrderCondition(TastytradeJsonDataclass):
     price_components: list[OrderConditionPriceComponent]
 
 
-class OrderRule(TastytradeJsonDataclass):
+class OrderRule(TastytradeData):
     """
     Dataclass that represents an order rule for a complex order.
     """
@@ -222,7 +222,7 @@ class OrderRule(TastytradeJsonDataclass):
     order_conditions: list[OrderCondition]
 
 
-class AdvancedInstructions(TastytradeJsonDataclass):
+class AdvancedInstructions(TastytradeData):
     """
     Dataclass containing advanced order rules.
     """
@@ -233,7 +233,7 @@ class AdvancedInstructions(TastytradeJsonDataclass):
     strict_position_effect_validation: bool = False
 
 
-class NewOrder(TastytradeJsonDataclass):
+class NewOrder(TastytradeData):
     """
     Dataclass containing information about a new order. Also used for
     modifying existing orders.
@@ -270,7 +270,7 @@ class NewOrder(TastytradeJsonDataclass):
         return abs(field) if field else None
 
 
-class NewComplexOrder(TastytradeJsonDataclass):
+class NewComplexOrder(TastytradeData):
     """
     Dataclass containing information about a new OTOCO order.
     Also used for modifying existing orders.
@@ -287,7 +287,7 @@ class NewComplexOrder(TastytradeJsonDataclass):
             self.type = ComplexOrderType.OTOCO
 
 
-class PlacedOrder(TastytradeJsonDataclass):
+class PlacedOrder(TastytradeData):
     """
     Dataclass containing information about an existing order, whether it's
     been filled or not.
@@ -337,7 +337,7 @@ class PlacedOrder(TastytradeJsonDataclass):
         return set_sign_for(data, ["price", "value"])
 
 
-class PlacedComplexOrder(TastytradeJsonDataclass):
+class PlacedComplexOrder(TastytradeData):
     """
     Dataclass containing information about an already placed complex order.
     """
@@ -355,7 +355,7 @@ class PlacedComplexOrder(TastytradeJsonDataclass):
     related_orders: Optional[list[dict[str, str]]] = None
 
 
-class BuyingPowerEffect(TastytradeJsonDataclass):
+class BuyingPowerEffect(TastytradeData):
     """
     Dataclass containing information about the effect of a trade on buying
     power.
@@ -385,7 +385,7 @@ class BuyingPowerEffect(TastytradeJsonDataclass):
         )
 
 
-class FeeCalculation(TastytradeJsonDataclass):
+class FeeCalculation(TastytradeData):
     """
     Dataclass containing information about the fees associated with a trade.
     """
@@ -411,7 +411,7 @@ class FeeCalculation(TastytradeJsonDataclass):
         )
 
 
-class PlacedComplexOrderResponse(TastytradeJsonDataclass):
+class PlacedComplexOrderResponse(TastytradeData):
     """
     Dataclass grouping together information about a placed complex order.
     """
@@ -423,7 +423,7 @@ class PlacedComplexOrderResponse(TastytradeJsonDataclass):
     errors: Optional[list[Message]] = None
 
 
-class PlacedOrderResponse(TastytradeJsonDataclass):
+class PlacedOrderResponse(TastytradeData):
     """
     Dataclass grouping together information about a placed order.
     """
@@ -435,7 +435,7 @@ class PlacedOrderResponse(TastytradeJsonDataclass):
     errors: Optional[list[Message]] = None
 
 
-class OrderChainEntry(TastytradeJsonDataclass):
+class OrderChainEntry(TastytradeData):
     """
     Dataclass containing information about a single order in an order chain.
     """
@@ -447,7 +447,7 @@ class OrderChainEntry(TastytradeJsonDataclass):
     quantity_numeric: Decimal
 
 
-class OrderChainLeg(TastytradeJsonDataclass):
+class OrderChainLeg(TastytradeData):
     """
     Dataclass containing information about a single leg in an order
     from an order chain.
@@ -460,7 +460,7 @@ class OrderChainLeg(TastytradeJsonDataclass):
     order_quantity: Decimal
 
 
-class OrderChainNode(TastytradeJsonDataclass):
+class OrderChainNode(TastytradeData):
     """
     Dataclass containing information about a single node in an order chain.
     """
@@ -491,7 +491,7 @@ class OrderChainNode(TastytradeJsonDataclass):
         )
 
 
-class ComputedData(TastytradeJsonDataclass):
+class ComputedData(TastytradeData):
     """
     Dataclass containing computed data about an order chain.
     """
@@ -536,7 +536,7 @@ class ComputedData(TastytradeJsonDataclass):
         )
 
 
-class OrderChain(TastytradeJsonDataclass):
+class OrderChain(TastytradeData):
     """
     Dataclass containing information about an order chain: a group of orders
     for a specific underlying, such as total P/L, rolls, current P/L in a

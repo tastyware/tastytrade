@@ -5,12 +5,12 @@ from typing import Optional
 from pydantic import Field
 
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeJsonDataclass
+from tastytrade.utils import TastytradeData
 
 
 class ExchangeType(str, Enum):
     """
-    Contains the valid exchanges to get market sessions for.
+    Contains the valid exchanges to get futures market sessions for.
     """
 
     CME = "CME"
@@ -30,7 +30,7 @@ class MarketStatus(str, Enum):
     EXTENDED = "Extended"
 
 
-class MarketSessionSnapshot(TastytradeJsonDataclass):
+class MarketSessionSnapshot(TastytradeData):
     """
     Dataclass containing information about the upcoming or previous market session.
     """
@@ -43,7 +43,7 @@ class MarketSessionSnapshot(TastytradeJsonDataclass):
     start_at: datetime
 
 
-class MarketSession(TastytradeJsonDataclass):
+class MarketSession(TastytradeData):
     """
     Dataclass representing the current session as well as the next and previous sessions.
     """
@@ -58,7 +58,7 @@ class MarketSession(TastytradeJsonDataclass):
     status: MarketStatus = Field(alias="state")
 
 
-class MarketCalendar(TastytradeJsonDataclass):
+class MarketCalendar(TastytradeData):
     """
     Dataclass containing information about market holidays and shortened days.
     """
@@ -116,4 +116,9 @@ def get_market_holidays(session: Session) -> MarketCalendar:
     :param session: active user session to use
     """
     data = session._get("/market-time/equities/holidays")
+    return MarketCalendar(**data)
+
+
+def get_futures_holidays(session: Session, exchange: ExchangeType) -> MarketCalendar:
+    data = session._get(f"/market-time/futures/holidays/{exchange.value}")
     return MarketCalendar(**data)

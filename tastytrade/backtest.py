@@ -15,7 +15,7 @@ from tastytrade.utils import (
 )
 
 
-class BacktestJsonDataclass(BaseModel):
+class BacktestData(BaseModel):
     """
     Dataclass for converting backtest JSON naming conventions to snake case.
     """
@@ -25,7 +25,7 @@ class BacktestJsonDataclass(BaseModel):
         populate_by_name = True
 
 
-class BacktestEntry(BacktestJsonDataclass):
+class BacktestEntry(BacktestData):
     """
     Dataclass of parameters for backtest trade entry.
     """
@@ -38,7 +38,7 @@ class BacktestEntry(BacktestJsonDataclass):
     frequency: str = "every day"
 
 
-class BacktestExit(BacktestJsonDataclass):
+class BacktestExit(BacktestData):
     """
     Dataclass of parameters for backtest trade exit.
     """
@@ -49,7 +49,7 @@ class BacktestExit(BacktestJsonDataclass):
     at_days_to_expiration: Optional[int] = None
 
 
-class BacktestLeg(BacktestJsonDataclass):
+class BacktestLeg(BacktestData):
     """
     Dataclass of parameters for placing legs of backtest trades.
     Leg delta must be a multiple of 5.
@@ -62,10 +62,9 @@ class BacktestLeg(BacktestJsonDataclass):
     side: Literal["call", "put"] = "call"
 
 
-class Backtest(BacktestJsonDataclass):
+class Backtest(BacktestData):
     """
     Dataclass of configuration options for a backtest.
-    Date must be <= 2024-07-31.
     """
 
     symbol: str
@@ -77,7 +76,7 @@ class Backtest(BacktestJsonDataclass):
     status: str = "pending"
 
 
-class BacktestSnapshot(BacktestJsonDataclass):
+class BacktestSnapshot(BacktestData):
     """
     Dataclass containing a snapshot in time during the backtest.
     """
@@ -88,7 +87,7 @@ class BacktestSnapshot(BacktestJsonDataclass):
     underlying_price: Optional[Decimal] = None
 
 
-class BacktestTrial(BacktestJsonDataclass):
+class BacktestTrial(BacktestData):
     """
     Dataclass containing information on trades placed during the backtest.
     """
@@ -96,6 +95,16 @@ class BacktestTrial(BacktestJsonDataclass):
     close_date_time: datetime
     open_date_time: datetime
     profit_loss: Decimal
+
+
+class BacktestParameters(BacktestData):
+    """
+    Dataclass containing valid start/end dates for a symbol.
+    """
+
+    symbol: str
+    start_date: date
+    end_date: date
 
 
 class BacktestStatistics(BaseModel):
@@ -133,7 +142,7 @@ class BacktestStatistics(BaseModel):
     worst_loss: Decimal = Field(validation_alias="Worst loss")
 
 
-class BacktestResults(BacktestJsonDataclass):
+class BacktestResults(BacktestData):
     """
     Dataclass containing partial or finished results of a backtest.
     """
@@ -190,14 +199,52 @@ class BacktestSession:
         self.client = httpx.AsyncClient(base_url=BACKTEST_URL, headers=headers)
 
     async def run(self, backtest: Backtest) -> AsyncGenerator[BacktestResponse, None]:
+        """
+        Run the given backtest and yield results progresively.
+
+        :param backtest: configuration for the backtest
+        """
         json = backtest.model_dump_json(by_alias=True, exclude_none=True)
-        response = await self.client.post("/backtests", data=json)  # type: ignore
-        validate_response(response)
-        results = BacktestResponse(**response.json())
+        res = await self.client.post("/backtests", data=json)  # type: ignore
+        validate_response(res)
+        results = BacktestResponse(**res.json())
         while results.status != "completed":
             yield results
             await asyncio.sleep(0.5)
-            response = await self.client.get(f"/backtests/{results.id}")
-            validate_response(response)
-            results = BacktestResponse(**response.json())
+            res = await self.client.get(f"/backtests/{results.id}")
+            validate_response(res)
+            results = BacktestResponse(**res.json())
         yield results
+
+    async def cancel(self, backtest_id: str) -> bool:
+        """
+        Cancel the running backtest with the given ID.
+
+        :param backtest_id: ID of the backtest to cancel
+        """
+        res = await self.client.post(f"/backtests/{backtest_id}/cancel")
+        return res.status_code // 100 == 2
+
+    async def delete(self) -> bool:
+        """
+        Delete the active backtesting session.
+        """
+        res = await self.client.delete("/sessions")
+        return res.status_code // 100 == 2
+
+    async def get(self, backtest_id: str) -> BacktestResponse:
+        """
+        Fetch a specific past backtest by ID.
+        """
+        res = await self.client.get(f"/backtests/{backtest_id}")
+        validate_response(res)
+        return BacktestResponse(**res.json())
+
+    async def available_parameters(self) -> list[BacktestParameters]:
+        """
+        Get a list of available symbols for backtesting, as well as valid testing dates
+        for each symbol.
+        """
+        res = await self.client.get("/backtests/const/available-dates")
+        validate_response(res)
+        return [BacktestParameters(**i) for i in res.json()]

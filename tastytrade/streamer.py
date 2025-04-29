@@ -42,7 +42,7 @@ from tastytrade.order import (
     PlacedOrder,
 )
 from tastytrade.session import OAuthSession, Session
-from tastytrade.utils import TastytradeError, TastytradeJsonDataclass, set_sign_for
+from tastytrade.utils import TastytradeError, TastytradeData, set_sign_for
 from tastytrade.watchlists import Watchlist
 
 CERT_STREAMER_URL = "wss://streamer.cert.tastyworks.com"
@@ -51,7 +51,7 @@ STREAMER_URL = "wss://streamer.tastyworks.com"
 DXLINK_VERSION = "0.1-DXF-JS/0.3.0"
 
 
-class QuoteAlert(TastytradeJsonDataclass):
+class QuoteAlert(TastytradeData):
     """
     Dataclass that contains information about a quote alert
     """
@@ -70,7 +70,7 @@ class QuoteAlert(TastytradeJsonDataclass):
     dx_symbol: str
 
 
-class UnderlyingYearGainSummary(TastytradeJsonDataclass):
+class UnderlyingYearGainSummary(TastytradeData):
     """
     Dataclass that contains information about the yearly gain
     or loss for an underlying
