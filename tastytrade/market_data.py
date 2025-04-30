@@ -70,10 +70,9 @@ class MarketData(TastytradeData):
     ask_size: Decimal
     mark: Decimal
     close_price_type: ClosePriceType
-    prev_close: Decimal
-    prev_close_price_type: ClosePriceType
     summary_date: date
     prev_close_date: date
+    prev_close_price_type: ClosePriceType
     halt_start_time: int
     halt_end_time: int
     ask: Optional[Decimal] = None
@@ -97,6 +96,7 @@ class MarketData(TastytradeData):
     low_limit_price: Optional[Decimal] = None
     mid: Optional[Decimal] = None
     open: Optional[Decimal] = None
+    prev_close: Optional[Decimal] = None
     prev_day_close: Optional[Decimal] = None
     trading_halted: Optional[bool] = None
     trading_halted_reason: Optional[str] = None

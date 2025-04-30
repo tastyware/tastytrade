@@ -8,7 +8,7 @@ from typing import Optional, Union, overload
 from pydantic import model_validator
 from typing_extensions import Self
 
-from tastytrade.order import InstrumentType, TradeableTastytradeJsonDataclass
+from tastytrade.order import InstrumentType, TradeableTastytradeData
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeData, validate_response
 
@@ -183,7 +183,7 @@ class Roll(TastytradeData):
     first_notice: bool
 
 
-class Cryptocurrency(TradeableTastytradeJsonDataclass):
+class Cryptocurrency(TradeableTastytradeData):
     """
     Dataclass that represents a Tastytrade cryptocurrency object. Contains
     information about the cryptocurrency and methods to populate that data
@@ -262,7 +262,7 @@ class Cryptocurrency(TradeableTastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
 
-class Equity(TradeableTastytradeJsonDataclass):
+class Equity(TradeableTastytradeData):
     """
     Dataclass that represents a Tastytrade equity object. Contains information
     about the equity and methods to populate that data using equity symbol(s).
@@ -499,7 +499,7 @@ class Equity(TradeableTastytradeJsonDataclass):
         return [cls(**i) for i in data["items"]]
 
 
-class Option(TradeableTastytradeJsonDataclass):
+class Option(TradeableTastytradeData):
     """
     Dataclass that represents a Tastytrade option object. Contains information
     about the option and methods to populate that data using option symbol(s).
@@ -832,7 +832,7 @@ class FutureProduct(TastytradeData):
         return [cls(**i) for i in data["items"]]
 
 
-class Future(TradeableTastytradeJsonDataclass):
+class Future(TradeableTastytradeData):
     """
     Dataclass that represents a Tastytrade future object. Contains information
     about the future and methods to fetch futures for symbol(s).
@@ -1051,7 +1051,7 @@ class FutureOptionProduct(TastytradeData):
         return [cls(**i) for i in data["items"]]
 
 
-class FutureOption(TradeableTastytradeJsonDataclass):
+class FutureOption(TradeableTastytradeData):
     """
     Dataclass that represents a Tastytrade future option object. Contains
     information about the future option, and methods to get future options.

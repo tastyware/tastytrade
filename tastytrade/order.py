@@ -138,7 +138,7 @@ class Leg(TastytradeData):
     fills: Optional[list[FillInfo]] = None
 
 
-class TradeableTastytradeJsonDataclass(TastytradeData):
+class TradeableTastytradeData(TastytradeData):
     """
     Dataclass that represents a tradeable instrument.
 
