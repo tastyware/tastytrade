@@ -19,7 +19,7 @@ from typing import (
 
 from pydantic import model_validator
 from websockets.asyncio.client import ClientConnection, connect
-from websockets.exceptions import ConnectionClosed
+from websockets.exceptions import ConnectionClosed, ConnectionClosedError
 
 from tastytrade import logger, version_str
 from tastytrade.account import Account, AccountBalance, CurrentPosition, TradingStatus
@@ -614,6 +614,9 @@ class DXLinkStreamer:
                 await asyncio.sleep(30)
         except asyncio.CancelledError:
             logger.debug("Websocket interrupted, cancelling heartbeat.")
+            return
+        except ConnectionClosedError as closed_error:
+            logger.debug(f"WebSocket closed. Reason: {closed_error.reason}")
             return
 
     async def subscribe(
