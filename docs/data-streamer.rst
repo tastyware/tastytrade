@@ -149,14 +149,15 @@ Now, we can access the quotes and greeks at any time, and they'll be up-to-date 
 
 Disconnect callback
 -------------------
-The data streamer got a "callback" function which can be used to get notified when the WebSocket connection has been disconnected.
-This is useful for notification purposes in your application or for handling the connection yourself.
+
+The disconnect callback can be used to run arbitrary code when the websocket connection has been disconnected.
+This is useful for notification purposes in your application when you need high availability.
 The callback function should look something like this:
 
 .. code-block:: python
 
     async def disconnect_callback(streamer: DXLinkStreamer):
-        print("Disconnected from the data streamer")
+        print("Disconnected!")
 
 The requirements are that the first parameter be the `DXLinkStreamer` instance, and the function should be asynchronous.
 This callback can then be used when creating the streamer:

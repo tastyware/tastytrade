@@ -41,14 +41,15 @@ Probably the most important information the account streamer handles is order fi
 
 Disconnect callback
 -------------------
-The Alert Streamer got a "callback" function which can be used to get notified when the WebSocket connection has been disconnected.
-This is useful for notification purposes in your application or for handling the connection yourself.
+
+The disconnect callback can be used to run arbitrary code when the websocket connection has been disconnected.
+This is useful for notification purposes in your application when you need high availability.
 The callback function should look something like this:
 
 .. code-block:: python
 
     async def disconnect_callback(streamer: AlertStreamer):
-        print("Disconnected from the Alert streamer")
+        print("Disconnected!")
 
 The requirements are that the first parameter be the `AlertStreamer` instance, and the function should be asynchronous.
 This callback can then be used when creating the streamer:
@@ -78,3 +79,4 @@ This callback can then be used when creating the streamer:
         # ...
 
 The reconnection uses `websockets`' exponential backoff algorithm, which can be configured through environment variables `here <https://websockets.readthedocs.io/en/14.1/reference/variables.html>`_.
+The difference between the disconnect and reconnect callbacks is that the disconnect will be called immediately when the connection is broken, whereas the reconnect callback will only be called once the connection is re-established.

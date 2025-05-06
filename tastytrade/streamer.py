@@ -19,7 +19,7 @@ from typing import (
 
 from pydantic import model_validator
 from websockets.asyncio.client import ClientConnection, connect
-from websockets.exceptions import ConnectionClosed, ConnectionClosedError
+from websockets.exceptions import ConnectionClosed
 
 from tastytrade import logger, version_str
 from tastytrade.account import Account, AccountBalance, CurrentPosition, TradingStatus
@@ -164,6 +164,10 @@ EventType = Union[
 U = TypeVar("U", bound=EventType)
 
 
+async def _do_nothing(streamer):
+    pass
+
+
 class AlertStreamer:
     """
     Used to subscribe to account-level updates (balances, orders, positions),
@@ -198,9 +202,10 @@ class AlertStreamer:
     def __init__(
         self,
         session: Session,
+        disconnect_args: tuple[Any, ...] = (),
+        disconnect_fn: Callable[..., Coroutine[Any, Any, None]] = _do_nothing,
         reconnect_args: tuple[Any, ...] = (),
-        reconnect_fn: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
-        disconnect_fn: Optional[Callable[..., Coroutine[Any, Any, None]]] = None
+        reconnect_fn: Callable[..., Coroutine[Any, Any, None]] = _do_nothing,
     ):
         #: The active session used to initiate the streamer or make requests
         self.token: str = session.session_token
@@ -216,6 +221,8 @@ class AlertStreamer:
         #: An async function to be called upon disconnection. The first argument must be
         #: of type `AlertStreamer` and will be a reference to the streamer object.
         self.disconnect_fn = disconnect_fn
+        #: Variable number of arguments to pass to the reconnect function
+        self.disconnect_args = disconnect_args
         #: The proxy URL, if any, associated with the session
         self.proxy = session.proxy
         #: Counter used to track the request ID for the streamer
@@ -242,14 +249,6 @@ class AlertStreamer:
     async def __aexit__(self, *exc):
         await self.close()
 
-    async def _notify_disconnect(self) -> None:
-        """
-        Notify the disconnect function if provided.
-        """
-        if self.disconnect_fn is not None and not self._disconnect_called:
-            await self.disconnect_fn(self)
-            self._disconnect_called = True
-
     async def close(self) -> None:
         """
         Closes the websocket connection and cancels the pending tasks.
@@ -261,7 +260,6 @@ class AlertStreamer:
             self._reconnect_task.cancel()
             tasks.append(self._reconnect_task)
         await asyncio.gather(*tasks)
-        await self._notify_disconnect()
         await self._websocket.wait_closed()  # type: ignore
 
     async def _connect(self) -> None:
@@ -276,7 +274,7 @@ class AlertStreamer:
             self._heartbeat_task = asyncio.create_task(self._heartbeat())
             logger.debug("Websocket connection established.")
 
-            if reconnecting and self.reconnect_fn is not None:
+            if reconnecting:
                 self._reconnect_task = asyncio.create_task(
                     self.reconnect_fn(self, *self.reconnect_args)
                 )
@@ -291,9 +289,11 @@ class AlertStreamer:
                 logger.error(f"Websocket connection closed with {e}")
             except asyncio.CancelledError:
                 logger.debug("Websocket interrupted, cancelling main loop.")
+                asyncio.create_task(self.close())
                 return
+            finally:
+                asyncio.create_task(self.disconnect_fn(self, *self.disconnect_args))
             logger.debug("Websocket connection closed, retrying...")
-            asyncio.create_task(self._notify_disconnect())
             reconnecting = True
 
     async def listen(self, alert_class: Type[T]) -> AsyncIterator[T]:
@@ -355,16 +355,15 @@ class AlertStreamer:
         Sends a heartbeat message every 15 seconds to keep the connection
         alive.
         """
-        while True:
-            try:
+        try:
+            while True:
                 # send the heartbeat every 15 seconds
                 await asyncio.sleep(15)
                 await self._subscribe(SubscriptionType.HEARTBEAT)
-            except asyncio.CancelledError:
-                logger.debug("Websocket interrupted, cancelling heartbeat.")
-                break
-            except ConnectionClosed:  # if the message fires while reconnecting
-                continue
+        except asyncio.CancelledError:
+            logger.debug("Websocket interrupted, cancelling heartbeat.")
+        except ConnectionClosed:  # if the message fires while reconnecting
+            pass
 
     async def _subscribe(
         self,
@@ -416,9 +415,10 @@ class DXLinkStreamer:
     def __init__(
         self,
         session: Session,
+        disconnect_args: tuple[Any, ...] = (),
+        disconnect_fn: Callable[..., Coroutine[Any, Any, None]] = _do_nothing,
         reconnect_args: tuple[Any, ...] = (),
-        reconnect_fn: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
-        disconnect_fn: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
+        reconnect_fn: Callable[..., Coroutine[Any, Any, None]] = _do_nothing,
         ssl_context: SSLContext = create_default_context(),
     ):
         self._queues: dict[str, Queue] = defaultdict(Queue)
@@ -442,6 +442,8 @@ class DXLinkStreamer:
         #: An async function to be called upon disconnection. The first argument must be
         #: of type `DXLinkStreamer` and will be a reference to the streamer object.
         self.disconnect_fn = disconnect_fn
+        #: Variable number of arguments to pass to the disconnect function
+        self.disconnect_args = disconnect_args
         #: The proxy URL, if any, associated with the session
         self.proxy = session.proxy
 
@@ -469,14 +471,6 @@ class DXLinkStreamer:
     async def __aexit__(self, *exc):
         await self.close()
 
-    async def _notify_disconnect(self) -> None:
-        """
-        Notify the disconnect function if provided.
-        """
-        if self.disconnect_fn is not None and not self._disconnect_called:
-            await self.disconnect_fn(self)
-            self._disconnect_called = True
-
     async def close(self) -> None:
         """
         Closes the websocket connection and cancels the heartbeat task.
@@ -488,7 +482,6 @@ class DXLinkStreamer:
             self._reconnect_task.cancel()
             tasks.append(self._reconnect_task)
         await asyncio.gather(*tasks)
-        await self._notify_disconnect()
         await self._websocket.wait_closed()
 
     async def _connect(self) -> None:
@@ -521,7 +514,7 @@ class DXLinkStreamer:
                                 self._heartbeat()
                             )
                         # run reconnect hook upon auth completion
-                        if reconnecting and self.reconnect_fn is not None:
+                        if reconnecting:
                             self._subscription_state.clear()
                             reconnecting = False
                             self._reconnect_task = asyncio.create_task(
@@ -565,8 +558,9 @@ class DXLinkStreamer:
                 logger.debug("Websocket interrupted, cancelling main loop.")
                 asyncio.create_task(self.close())
                 return
+            finally:
+                asyncio.create_task(self.disconnect_fn(self, *self.disconnect_args))
             logger.debug("Websocket connection closed, retrying...")
-            asyncio.create_task(self._notify_disconnect())
             reconnecting = True
 
     async def _setup_connection(self) -> None:
@@ -645,10 +639,8 @@ class DXLinkStreamer:
                 await asyncio.sleep(30)
         except asyncio.CancelledError:
             logger.debug("Websocket interrupted, cancelling heartbeat.")
-            return
-        except ConnectionClosedError as closed_error:
-            logger.debug(f"WebSocket closed. Reason: {closed_error.reason}")
-            return
+        except ConnectionClosed:  # if the message fires while reconnecting
+            pass
 
     async def subscribe(
         self,
