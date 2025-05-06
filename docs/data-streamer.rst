@@ -147,6 +147,26 @@ Now, we can access the quotes and greeks at any time, and they'll be up-to-date 
 
 >>> Quote(event_symbol='.SPY230721C387', event_time=0, sequence=0, time_nano_part=0, bid_time=1689365699000, bid_exchange_code='X', bid_price=62.01, bid_size=50.0, ask_time=1689365699000, ask_exchange_code='X', ask_price=62.83, ask_size=50.0) Greeks(event_symbol='.SPY230721C387', event_time=0, event_flags=0, index=7255910303911641088, time=1689398266363, sequence=0, price=62.6049270064687, volatility=0.536152815048564, delta=0.971506591907638, gamma=0.001814464566110275, theta=-0.1440768557397271, rho=0.0831882577866199, vega=0.0436861878838861)
 
+Disconnect callback
+-------------------
+
+The disconnect callback can be used to run arbitrary code when the websocket connection has been disconnected.
+This is useful for notification purposes in your application when you need high availability.
+The callback function should look something like this:
+
+.. code-block:: python
+
+    async def disconnect_callback(streamer: DXLinkStreamer):
+        print("Disconnected!")
+
+The requirements are that the first parameter be the `DXLinkStreamer` instance, and the function should be asynchronous.
+This callback can then be used when creating the streamer:
+
+.. code-block:: python
+
+    async with DXLinkStreamer(session, disconnect_fn=disconnect_callback) as streamer:
+        # ...
+
 Retry callback
 --------------
 

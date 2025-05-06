@@ -39,6 +39,26 @@ Probably the most important information the account streamer handles is order fi
         async for order in streamer.listen(PlacedOrder):
             print(order)
 
+Disconnect callback
+-------------------
+
+The disconnect callback can be used to run arbitrary code when the websocket connection has been disconnected.
+This is useful for notification purposes in your application when you need high availability.
+The callback function should look something like this:
+
+.. code-block:: python
+
+    async def disconnect_callback(streamer: AlertStreamer):
+        print("Disconnected!")
+
+The requirements are that the first parameter be the `AlertStreamer` instance, and the function should be asynchronous.
+This callback can then be used when creating the streamer:
+
+.. code-block:: python
+
+    async with AlertStreamer(session, disconnect_fn=disconnect_callback) as streamer:
+        # ...
+
 Retry callback
 --------------
 
@@ -47,7 +67,7 @@ The callback function should look something like this:
 
 .. code-block:: python
 
-    async def callback(streamer: AlertStreamer, arg1, arg2):
+    async def reconnect_callback(streamer: AlertStreamer, arg1, arg2):
         await streamer.subscribe_quote_alerts()
 
 The requirements are that the first parameter be the `AlertStreamer` instance, and the function should be asynchronous. Other than that, you have the flexibility to decide what arguments you want to use.
@@ -55,7 +75,8 @@ This callback can then be used when creating the streamer:
 
 .. code-block:: python
 
-    async with AlertStreamer(session, reconnect_fn=callback, reconnect_args=(arg1, arg2)) as streamer:
+    async with AlertStreamer(session, reconnect_fn=reconnect_callback, reconnect_args=(arg1, arg2)) as streamer:
         # ...
 
 The reconnection uses `websockets`' exponential backoff algorithm, which can be configured through environment variables `here <https://websockets.readthedocs.io/en/14.1/reference/variables.html>`_.
+The difference between the disconnect and reconnect callbacks is that the disconnect will be called immediately when the connection is broken, whereas the reconnect callback will only be called once the connection is re-established.
