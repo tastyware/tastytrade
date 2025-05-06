@@ -52,6 +52,7 @@ A simple, reverse-engineered, sync/async SDK for Tastytrade built on their (now 
    api/backtesting
    api/dxfeed
    api/instruments
+   api/market-data
    api/market-sessions
    api/metrics
    api/order

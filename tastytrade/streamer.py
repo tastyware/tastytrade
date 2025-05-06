@@ -292,7 +292,6 @@ class AlertStreamer:
         token provided during initialization.
         """
         reconnecting = False
-        self._disconnect_called = False
         async for websocket in connect(self.base_url, proxy=self.proxy):
             self._websocket = websocket
             self._heartbeat_task = asyncio.create_task(self._heartbeat())
@@ -515,7 +514,6 @@ class DXLinkStreamer:
         authorization token provided during initialization.
         """
         reconnecting = False
-        self._disconnect_called = False
         async for websocket in connect(
             self._wss_url, ssl=self._ssl_context, proxy=self.proxy
         ):
@@ -722,7 +720,7 @@ class DXLinkStreamer:
         logger.debug("sending subscription: %s", message)
         await self._websocket.send(json.dumps(message))
         time_out = 100
-        while not self._subscription_state[event_type] == "CHANNEL_OPENED":
+        while self._subscription_state[event_type] != "CHANNEL_OPENED":
             await asyncio.sleep(0.1)
             time_out -= 1
             if time_out <= 0:
