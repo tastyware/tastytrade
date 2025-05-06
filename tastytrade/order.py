@@ -126,7 +126,7 @@ class Leg(TastytradeData):
     """
     Dataclass that represents an order leg.
 
-    Classes that inherit from :class:`TradeableTastytradeJsonDataclass` can
+    Classes that inherit from :class:`TradeableTastytradeData` can
     call :meth:`build_leg` to build a leg from the dataclass.
     """
 

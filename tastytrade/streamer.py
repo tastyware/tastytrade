@@ -2,7 +2,7 @@ import asyncio
 import json
 from asyncio import Queue, QueueEmpty
 from collections import defaultdict
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from ssl import SSLContext, create_default_context
@@ -70,6 +70,28 @@ class QuoteAlert(TastytradeData):
     dx_symbol: str
 
 
+class ExternalTransaction(TastytradeData):
+    """
+    Dataclass containing information on an external transaction (eg money movement).
+    """
+
+    id: int
+    account_number: str
+    amount: Decimal
+    bank_account_type: str
+    banking_date: date
+    created_at: datetime
+    direction: str
+    disbursement_type: str
+    ext_transfer_id: str
+    funds_available_date: date
+    is_cancelable: bool
+    is_clearing_accepted: bool
+    state: str
+    transfer_method: str
+    updated_at: datetime
+
+
 class UnderlyingYearGainSummary(TastytradeData):
     """
     Dataclass that contains information about the yearly gain
@@ -115,6 +137,7 @@ class SubscriptionType(str, Enum):
 MAP_ALERTS = {
     "AccountBalance": AccountBalance,
     "ComplexOrder": PlacedComplexOrder,
+    "ExternalTransaction": ExternalTransaction,
     "Order": PlacedOrder,
     "OrderChain": OrderChain,
     "CurrentPosition": CurrentPosition,
@@ -126,6 +149,7 @@ MAP_ALERTS = {
 #: List of all possible types to stream with the alert streamer
 AlertType = Union[
     AccountBalance,
+    ExternalTransaction,
     PlacedComplexOrder,
     PlacedOrder,
     OrderChain,
@@ -315,10 +339,11 @@ class AlertStreamer:
         I'm not sure what the user-status messages look like, so they're absent.
         """
         if type_str not in MAP_ALERTS:
-            raise NotImplementedError(
-                f"Unknown message type {type_str} received: {data}"
+            logger.fatal(
+                f"Unknown message type {type_str} received: {data}, please open an issue!"
             )
-        await self._queues[type_str].put(MAP_ALERTS[type_str](**data))
+        else:
+            await self._queues[type_str].put(MAP_ALERTS[type_str](**data))
 
     async def subscribe_accounts(self, accounts: list[Account]) -> None:
         """
@@ -835,10 +860,11 @@ class DXLinkStreamer:
         data = message[1]
         # parse type or warn for unknown type
         if msg_type not in MAP_EVENTS:
-            raise NotImplementedError(
-                f"Unknown message type {msg_type} received: {data}"
+            logger.fatal(
+                f"Unknown message type {msg_type} received: {data}, please open an issue!"
             )
-        cls: Event = MAP_EVENTS[msg_type]
-        results = cls.from_stream(data)
-        for r in results:
-            await self._queues[msg_type].put(r)
+        else:
+            cls: Event = MAP_EVENTS[msg_type]
+            results = cls.from_stream(data)
+            for r in results:
+                await self._queues[msg_type].put(r)
