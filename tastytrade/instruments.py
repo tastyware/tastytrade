@@ -3,9 +3,9 @@ from collections import defaultdict
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional, Union, overload
+from typing import Any, Optional, Union, overload
 
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from typing_extensions import Self
 
 from tastytrade.order import InstrumentType, TradeableTastytradeData
@@ -159,6 +159,13 @@ class NestedFutureOptionFuture(TastytradeData):
     active_month: bool
     stops_trading_at: datetime
     maturity_date: Optional[date] = None
+
+    @field_validator("maturity_date", mode="before")
+    @classmethod
+    def parse_date_with_utc(cls, value: Any) -> str:
+        if isinstance(value, str):
+            return value.split(" ")[0]
+        return value
 
 
 class FutureEtfEquivalent(TastytradeData):
@@ -1090,6 +1097,13 @@ class FutureOption(TradeableTastytradeData):
     sx_id: str
     instrument_type: InstrumentType = InstrumentType.FUTURE_OPTION
     future_option_product: Optional["FutureOptionProduct"] = None
+
+    @field_validator("maturity_date", mode="before")
+    @classmethod
+    def parse_date_with_utc(cls, value: Any) -> str:
+        if isinstance(value, str):
+            return value.split(" ")[0]
+        return value
 
     @overload
     @classmethod
