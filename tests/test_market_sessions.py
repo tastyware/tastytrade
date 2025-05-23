@@ -3,10 +3,10 @@ from pytest import fixture
 from tastytrade import Session
 from tastytrade.market_sessions import (
     ExchangeType,
-    a_get_market_sessions,
     a_get_market_holidays,
-    get_market_sessions,
+    a_get_market_sessions,
     get_market_holidays,
+    get_market_sessions,
 )
 
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import json
 from asyncio import Queue, QueueEmpty
@@ -6,15 +8,18 @@ from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from ssl import SSLContext, create_default_context
+from types import TracebackType
 from typing import (
     Any,
     AsyncIterator,
     Callable,
     Coroutine,
+    Generator,
     Optional,
     Type,
     TypeVar,
     Union,
+    cast,
 )
 
 from pydantic import model_validator
@@ -24,8 +29,8 @@ from websockets.exceptions import ConnectionClosed
 from tastytrade import logger, version_str
 from tastytrade.account import Account, AccountBalance, CurrentPosition, TradingStatus
 from tastytrade.dxfeed import (
-    Event,
     Candle,
+    Event,
     Greeks,
     Profile,
     Quote,
@@ -42,7 +47,7 @@ from tastytrade.order import (
     PlacedOrder,
 )
 from tastytrade.session import OAuthSession, Session
-from tastytrade.utils import TastytradeError, TastytradeData, set_sign_for
+from tastytrade.utils import TastytradeData, TastytradeError, set_sign_for
 from tastytrade.watchlists import Watchlist
 
 CERT_STREAMER_URL = "wss://streamer.cert.tastyworks.com"
@@ -134,18 +139,6 @@ class SubscriptionType(str, Enum):
     USER_MESSAGE = "user-message-subscribe"
 
 
-MAP_ALERTS = {
-    "AccountBalance": AccountBalance,
-    "ComplexOrder": PlacedComplexOrder,
-    "ExternalTransaction": ExternalTransaction,
-    "Order": PlacedOrder,
-    "OrderChain": OrderChain,
-    "CurrentPosition": CurrentPosition,
-    "QuoteAlert": QuoteAlert,
-    "TradingStatus": TradingStatus,
-    "UnderlyingYearGainSummary": UnderlyingYearGainSummary,
-    "PublicWatchlists": Watchlist,
-}
 #: List of all possible types to stream with the alert streamer
 AlertType = Union[
     AccountBalance,
@@ -159,20 +152,20 @@ AlertType = Union[
     UnderlyingYearGainSummary,
     Watchlist,
 ]
-T = TypeVar("T", bound=AlertType)
-
-MAP_EVENTS = {
-    "Candle": Candle,
-    "Greeks": Greeks,
-    "Profile": Profile,
-    "Quote": Quote,
-    "Summary": Summary,
-    "TheoPrice": TheoPrice,
-    "TimeAndSale": TimeAndSale,
-    "Trade": Trade,
-    "Underlying": Underlying,
+T = TypeVar("T", bound=AlertType, covariant=True)
+MAP_ALERTS: dict[str, type[AlertType]] = {
+    "AccountBalance": AccountBalance,
+    "ComplexOrder": PlacedComplexOrder,
+    "ExternalTransaction": ExternalTransaction,
+    "Order": PlacedOrder,
+    "OrderChain": OrderChain,
+    "CurrentPosition": CurrentPosition,
+    "QuoteAlert": QuoteAlert,
+    "TradingStatus": TradingStatus,
+    "UnderlyingYearGainSummary": UnderlyingYearGainSummary,
+    "PublicWatchlists": Watchlist,
 }
-MAP_EVENTS_REVERSE = {v: k for k, v in MAP_EVENTS.items()}
+
 #: List of all possible types to stream with the data streamer
 EventType = Union[
     Candle,
@@ -186,9 +179,21 @@ EventType = Union[
     Underlying,
 ]
 U = TypeVar("U", bound=EventType)
+MAP_EVENTS: dict[str, type[EventType]] = {
+    "Candle": Candle,
+    "Greeks": Greeks,
+    "Profile": Profile,
+    "Quote": Quote,
+    "Summary": Summary,
+    "TheoPrice": TheoPrice,
+    "TimeAndSale": TimeAndSale,
+    "Trade": Trade,
+    "Underlying": Underlying,
+}
+MAP_EVENTS_REVERSE = {v: k for k, v in MAP_EVENTS.items()}
 
 
-async def _do_nothing(streamer):
+async def _do_nothing(streamer: AlertStreamer | DXLinkStreamer) -> None:
     pass
 
 
@@ -252,12 +257,12 @@ class AlertStreamer:
         #: Counter used to track the request ID for the streamer
         self.request_id = 0
 
-        self._queues: dict[str, Queue] = defaultdict(Queue)
+        self._queues: dict[str, Queue[AlertType]] = defaultdict(Queue)
         self._websocket: Optional[ClientConnection] = None
         self._connect_task = asyncio.create_task(self._connect())
         self._reconnect_task = None
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> AlertStreamer:
         time_out = 100
         while not self._websocket:
             await asyncio.sleep(0.1)
@@ -267,10 +272,15 @@ class AlertStreamer:
 
         return self
 
-    def __await__(self):
+    def __await__(self) -> Generator[Any, None, AlertStreamer]:
         return self.__aenter__().__await__()
 
-    async def __aexit__(self, *exc):
+    async def __aexit__(
+        self,
+        exc_type: Type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         await self.close()
 
     async def close(self) -> None:
@@ -327,11 +337,13 @@ class AlertStreamer:
         This is designed to be friendly for type checking; the return
         type will be the same class you pass in.
 
-        :param alert_class: the type of alert to listen for, should be of :any:`AlertType`
+        :param alert_class:
+            the type of alert to listen for, should be of :any:`AlertType`
         """
         cls_str = next(k for k, v in MAP_ALERTS.items() if v == alert_class)
         while True:
-            yield await self._queues[cls_str].get()
+            item = await self._queues[cls_str].get()
+            yield cast(T, item)
 
     async def _map_message(self, type_str: str, data: dict) -> None:
         """
@@ -339,10 +351,11 @@ class AlertStreamer:
         """
         if type_str not in MAP_ALERTS:
             logger.fatal(
-                f"Unknown message type {type_str} received: {data}, please open an issue!"
+                f"Unknown message type {type_str} received: {data}, please open an "
+                f"issue!"
             )
         else:
-            await self._queues[type_str].put(MAP_ALERTS[type_str](**data))
+            await self._queues[type_str].put(MAP_ALERTS[type_str](**data))  # type: ignore
 
     async def subscribe_accounts(self, accounts: list[Account]) -> None:
         """
@@ -573,7 +586,8 @@ class DXLinkStreamer:
                 logger.error(f"Websocket connection closed with {e}")
                 if e.rcvd and e.rcvd.code == 1009:
                     logger.error(
-                        "Subscription message too long! Try reducing the number of symbols."
+                        "Subscription message too long! Try reducing the number of "
+                        "symbols."
                     )
                     asyncio.create_task(self.close())
                     return
@@ -613,7 +627,8 @@ class DXLinkStreamer:
         This is designed to be friendly for type checking; the return
         type will be the same class you pass in.
 
-        :param event_class: the type of alert to listen for, should be of :any:`EventType`
+        :param event_class:
+            the type of alert to listen for, should be of :any:`EventType`
         """
         cls_str = MAP_EVENTS_REVERSE[event_class]
         while True:
@@ -627,7 +642,8 @@ class DXLinkStreamer:
         This is designed to be friendly for type checking; the return
         type will be the same class you pass in.
 
-        :param event_class: the type of alert to listen for, should be of :any:`EventType`
+        :param event_class:
+            the type of alert to listen for, should be of :any:`EventType`
         """
         cls_str = MAP_EVENTS_REVERSE[event_class]
         try:
@@ -643,7 +659,8 @@ class DXLinkStreamer:
         This is designed to be friendly for type checking; the return
         type will be the same class you pass in.
 
-        :param event_class: the type of alert to listen for, should be of :any:`EventType`
+        :param event_class:
+            the type of alert to listen for, should be of :any:`EventType`
         """
         cls_str = MAP_EVENTS_REVERSE[event_class]
         return await self._queues[cls_str].get()
@@ -678,9 +695,11 @@ class DXLinkStreamer:
 
         :param event_class: type of subscription to add, should be of :any:`EventType`
         :param symbols: list of symbols to subscribe for
-        :param refresh_interval: Time in seconds between fetching new events from dxfeed for this event_class.
-            You can try a higher value if processing quote updates quickly is not a high priority.
-            Once refresh_interval is set for this event_class and channel is opened, it cannot be changed later.
+        :param refresh_interval:
+            Time in seconds between fetching new events from dxfeed for this event type.
+            You can try a higher value if processing quote updates quickly is not a high
+            priority. Once refresh_interval is set for this event type and channel is
+            opened, it cannot be changed later.
         """
         cls_str = MAP_EVENTS_REVERSE[event_class]
         if self._subscription_state[cls_str] != "CHANNEL_OPENED":
@@ -788,9 +807,11 @@ class DXLinkStreamer:
         :param start_time: starting time for the data range
         :param end_time: ending time for the data range
         :param extended_trading_hours: whether to include extended trading
-        :param refresh_interval: Time in seconds between fetching new events from dxfeed for this event_class.
-            You can try a higher value if processing quote updates quickly is not a high priority.
-            Once refresh_interval is set for this event_class and channel is opened, it cannot be changed later.
+        :param refresh_interval:
+            Time in seconds between fetching new events from dxfeed for this event type.
+            You can try a higher value if processing quote updates quickly is not a high
+            priority. Once refresh_interval is set for this event type and channel is
+            opened, it cannot be changed later.
         """
         cls_str = "Candle"
         if self._subscription_state[cls_str] != "CHANNEL_OPENED":
@@ -859,7 +880,8 @@ class DXLinkStreamer:
         # parse type or warn for unknown type
         if msg_type not in MAP_EVENTS:
             logger.fatal(
-                f"Unknown message type {msg_type} received: {data}, please open an issue!"
+                f"Unknown message type {msg_type} received: {data}, please open an "
+                f"issue!"
             )
         else:
             cls: Event = MAP_EVENTS[msg_type]

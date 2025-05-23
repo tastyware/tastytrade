@@ -1,18 +1,21 @@
+import json
 import time
 from datetime import date, datetime
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
+
+from httpx import AsyncClient, Client
 from typing_extensions import Self
 
-import json
-from httpx import AsyncClient, Client
-
-from tastytrade import API_URL, CERT_URL, logger
+from tastytrade import API_URL, CERT_URL, SANDBOX_URL, logger
 from tastytrade.utils import (
-    TastytradeError,
     TastytradeData,
+    TastytradeError,
     validate_and_parse,
     validate_response,
 )
+
+if TYPE_CHECKING:
+    from tastytrade import Account
 
 
 class Address(TastytradeData):
@@ -646,3 +649,35 @@ class OAuthSession(Session):  # pragma: no cover
             base_url=base_url, headers=headers, proxy=self.proxy
         )
         return self
+
+
+class SandboxSession(Session):
+    def __init__(
+        self,
+        api_key: str,
+        proxy: Optional[str] = None,
+    ):
+        #: Proxy URL to use for requests and web sockets
+        self.proxy = proxy
+        # The headers to use for API requests
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": api_key,
+        }
+        #: httpx client for sync requests
+        self.sync_client = Client(base_url=SANDBOX_URL, headers=headers, proxy=proxy)
+        response = self.sync_client.post("/validate")
+        assert response.status_code // 100 == 2
+        #: httpx client for async requests
+        self.async_client = AsyncClient(
+            base_url=SANDBOX_URL, headers=headers, proxy=proxy
+        )
+
+    def create_account(self, account_name: str, is_margin: bool = True) -> Account:
+        body = {
+            "account-name": account_name,
+            "margin-or-cash": "Margin" if is_margin else "Cash",
+        }
+        data = self._post("/accounts", json=body)
+        return Account(**data)

@@ -22,8 +22,8 @@ from tastytrade.order import (
 from tastytrade.session import Session
 from tastytrade.utils import (
     PriceEffect,
-    TastytradeError,
     TastytradeData,
+    TastytradeError,
     set_sign_for,
     today_in_new_york,
     validate_response,
@@ -614,7 +614,8 @@ class Account(TastytradeData):
         :param end_date: the ending date of the range.
         :param snapshot_date: the date of the snapshot to get.
         :param time_of_day:
-            the time of day of the snapshots to get, either 'EOD' (End Of Day) or 'BOD' (Beginning Of Day).
+            the time of day of the snapshots to get, either 'EOD' (End Of Day) or 'BOD'
+            (Beginning Of Day).
         """
         paginate = False
         if page_offset is None:
@@ -677,7 +678,8 @@ class Account(TastytradeData):
         :param end_date: the ending date of the range.
         :param snapshot_date: the date of the snapshot to get.
         :param time_of_day:
-            the time of day of the snapshots to get, either 'EOD' (End Of Day) or 'BOD' (Beginning Of Day).
+            the time of day of the snapshots to get, either 'EOD' (End Of Day) or 'BOD'
+            (Beginning Of Day).
         """
         paginate = False
         if page_offset is None:
