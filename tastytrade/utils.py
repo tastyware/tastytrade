@@ -5,7 +5,7 @@ from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
 from httpx._models import Response  # type: ignore
-from pandas_market_calendars import get_calendar
+from pandas_market_calendars import get_calendar  # type: ignore[import-untyped]
 from pydantic import BaseModel, ConfigDict
 
 NYSE = get_calendar("NYSE")
@@ -131,7 +131,7 @@ def get_future_treasury_monthly(day: Optional[date] = None) -> date:
         day = today_in_new_york()
     last_day = _get_last_day_of_month(day)
     first_day = last_day.replace(day=1)
-    valid_range = [d.date() for d in NYSE.valid_days(first_day, last_day)]
+    valid_range: list[date] = [d.date() for d in NYSE.valid_days(first_day, last_day)]
     itr = valid_range[-2] - timedelta(days=1)
     while itr.weekday() != 4:  # Friday
         itr -= timedelta(days=1)
@@ -155,7 +155,7 @@ def get_future_metal_monthly(day: Optional[date] = None) -> date:
         day = today_in_new_york()
     last_day = _get_last_day_of_month(day)
     first_day = last_day.replace(day=1)
-    valid_range = [d.date() for d in NYSE.valid_days(first_day, last_day)]
+    valid_range: list[date] = [d.date() for d in NYSE.valid_days(first_day, last_day)]
     itr = valid_range[-4]
     next_day = itr + timedelta(days=1)
     if itr.weekday() == 4 or next_day not in valid_range:
@@ -177,7 +177,7 @@ def get_future_grain_monthly(day: Optional[date] = None) -> date:
         day = today_in_new_york()
     last_day = _get_last_day_of_month(day)
     first_day = last_day.replace(day=1)
-    valid_range = [d.date() for d in NYSE.valid_days(first_day, last_day)]
+    valid_range: list[date] = [d.date() for d in NYSE.valid_days(first_day, last_day)]
     itr = valid_range[-3]
     while itr.weekday() != 4:  # Friday
         itr -= timedelta(days=1)
@@ -199,7 +199,7 @@ def get_future_oil_monthly(day: Optional[date] = None) -> date:
         day = today_in_new_york()
     last_day = day.replace(day=25)
     first_day = last_day.replace(day=1)
-    valid_range = [d.date() for d in NYSE.valid_days(first_day, last_day)]
+    valid_range: list[date] = [d.date() for d in NYSE.valid_days(first_day, last_day)]
     return valid_range[-7]
 
 
@@ -217,7 +217,7 @@ def get_future_index_monthly(day: Optional[date] = None) -> date:
         day = today_in_new_york()
     last_day = _get_last_day_of_month(day)
     first_day = last_day.replace(day=1)
-    valid_range = [d.date() for d in NYSE.valid_days(first_day, last_day)]
+    valid_range: list[date] = [d.date() for d in NYSE.valid_days(first_day, last_day)]
     return valid_range[-1]
 
 
@@ -277,7 +277,11 @@ def validate_response(response: Response) -> None:
 
 def validate_and_parse(response: Response) -> dict[str, Any]:
     validate_response(response)
-    return response.json()["data"]
+    json = response.json()
+    data: Optional[dict[str, Any]] = json.get("data")
+    if data is None:
+        raise TastytradeError(f"No data present in response: {json}")
+    return data
 
 
 def get_sign(value: Optional[Decimal]) -> Optional[PriceEffect]:
