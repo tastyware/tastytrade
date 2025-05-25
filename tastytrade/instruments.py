@@ -162,7 +162,7 @@ class NestedFutureOptionFuture(TastytradeData):
 
     @field_validator("maturity_date", mode="before")
     @classmethod
-    def parse_date_with_utc(cls, value: Any) -> str:
+    def parse_date_with_utc(cls, value: Any) -> Any:
         if isinstance(value, str):
             return value.split(" ")[0]
         return value
@@ -327,7 +327,7 @@ class Equity(TradeableTastytradeData):
             "lendability": lendability,
         }
         # loop through pages and get all active equities
-        equities = []
+        equities: list[Self] = []
         while True:
             response = await session.async_client.get(
                 "/instruments/equities/active",
@@ -378,7 +378,7 @@ class Equity(TradeableTastytradeData):
             "lendability": lendability,
         }
         # loop through pages and get all active equities
-        equities = []
+        equities: list[Self] = []
         while True:
             response = session.sync_client.get(
                 "/instruments/equities/active",
@@ -581,10 +581,10 @@ class Option(TradeableTastytradeData):
                 f"/instruments/equity-options/{symbol}", params=params
             )
             return cls(**data)
-        params = {"symbol[]": symbols, "active": active, "with-expired": with_expired}
+        _params = {"symbol[]": symbols, "active": active, "with-expired": with_expired}
         data = await session._a_get(
             "/instruments/equity-options",
-            params={k: v for k, v in params.items() if v is not None},
+            params={k: v for k, v in _params.items() if v is not None},
         )
         return [cls(**i) for i in data["items"]]
 
@@ -628,10 +628,10 @@ class Option(TradeableTastytradeData):
             params = {"active": active} if active is not None else None
             data = session._get(f"/instruments/equity-options/{symbol}", params=params)
             return cls(**data)
-        params = {"symbol[]": symbols, "active": active, "with-expired": with_expired}
+        _params = {"symbol[]": symbols, "active": active, "with-expired": with_expired}
         data = session._get(
             "/instruments/equity-options",
-            params={k: v for k, v in params.items() if v is not None},
+            params={k: v for k, v in _params.items() if v is not None},
         )
         return [cls(**i) for i in data["items"]]
 
@@ -649,7 +649,7 @@ class Option(TradeableTastytradeData):
         )
 
     @classmethod
-    def streamer_symbol_to_occ(cls, streamer_symbol) -> str:
+    def streamer_symbol_to_occ(cls, streamer_symbol: str) -> str:
         """
         Returns the OCC 2010 symbol equivalent to the given streamer symbol.
 
@@ -670,7 +670,7 @@ class Option(TradeableTastytradeData):
         return f"{symbol}{exp}{option_type}{strike}{decimal}"
 
     @classmethod
-    def occ_to_streamer_symbol(cls, occ) -> str:
+    def occ_to_streamer_symbol(cls, occ: str) -> str:
         """
         Returns the dxfeed symbol for use in the streamer from the given OCC
         2010 symbol.
@@ -1100,7 +1100,7 @@ class FutureOption(TradeableTastytradeData):
 
     @field_validator("maturity_date", mode="before")
     @classmethod
-    def parse_date_with_utc(cls, value: Any) -> str:
+    def parse_date_with_utc(cls, value: Any) -> Any:
         if isinstance(value, str):
             return value.split(" ")[0]
         return value
@@ -1386,7 +1386,7 @@ async def a_get_option_chain(session: Session, symbol: str) -> dict[date, list[O
     """
     symbol = symbol.replace("/", "%2F")
     data = await session._a_get(f"/option-chains/{symbol}")
-    chain = defaultdict(list)
+    chain: dict[date, list[Option]] = defaultdict(list)
     for i in data["items"]:
         option = Option(**i)
         chain[option.expiration_date].append(option)
@@ -1409,7 +1409,7 @@ def get_option_chain(session: Session, symbol: str) -> dict[date, list[Option]]:
     """
     symbol = symbol.replace("/", "%2F")
     data = session._get(f"/option-chains/{symbol}")
-    chain = defaultdict(list)
+    chain: dict[date, list[Option]] = defaultdict(list)
     for i in data["items"]:
         option = Option(**i)
         chain[option.expiration_date].append(option)
@@ -1434,7 +1434,7 @@ async def a_get_future_option_chain(
     """
     symbol = symbol.replace("/", "")
     data = await session._a_get(f"/futures-option-chains/{symbol}")
-    chain = defaultdict(list)
+    chain: dict[date, list[FutureOption]] = defaultdict(list)
     for i in data["items"]:
         option = FutureOption(**i)
         chain[option.expiration_date].append(option)
@@ -1459,7 +1459,7 @@ def get_future_option_chain(
     """
     symbol = symbol.replace("/", "")
     data = session._get(f"/futures-option-chains/{symbol}")
-    chain = defaultdict(list)
+    chain: dict[date, list[FutureOption]] = defaultdict(list)
     for i in data["items"]:
         option = FutureOption(**i)
         chain[option.expiration_date].append(option)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
@@ -33,7 +35,7 @@ class Event(BaseModel):
         return v
 
     @classmethod
-    def from_stream(cls, data: list) -> list["Event"]:
+    def from_stream(cls, data: list[Any]) -> list[Event]:
         """
         Makes a list of event objects from a list of raw trade data fetched by
         a :class:`~tastyworks.streamer.DXFeedStreamer`.
@@ -42,7 +44,7 @@ class Event(BaseModel):
 
         :return: list of event objects from data
         """
-        objs = []
+        objs: list[Event] = []
         size = len(cls.model_fields)
         multiples = len(data) / size
         if not multiples.is_integer():

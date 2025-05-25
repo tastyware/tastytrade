@@ -1,21 +1,16 @@
+from __future__ import annotations
+
 import asyncio
 import json
 from asyncio import Queue, QueueEmpty
 from collections import defaultdict
+from collections.abc import AsyncIterator, Coroutine, Generator
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from ssl import SSLContext, create_default_context
-from typing import (
-    Any,
-    AsyncIterator,
-    Callable,
-    Coroutine,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-)
+from types import TracebackType
+from typing import Any, Callable, Optional, TypedDict, TypeVar, Union, cast
 
 from pydantic import model_validator
 from websockets.asyncio.client import ClientConnection, connect
@@ -24,7 +19,6 @@ from websockets.exceptions import ConnectionClosed
 from tastytrade import logger, version_str
 from tastytrade.account import Account, AccountBalance, CurrentPosition, TradingStatus
 from tastytrade.dxfeed import (
-    Event,
     Candle,
     Greeks,
     Profile,
@@ -42,7 +36,7 @@ from tastytrade.order import (
     PlacedOrder,
 )
 from tastytrade.session import OAuthSession, Session
-from tastytrade.utils import TastytradeError, TastytradeData, set_sign_for
+from tastytrade.utils import TastytradeData, TastytradeError, set_sign_for
 from tastytrade.watchlists import Watchlist
 
 CERT_STREAMER_URL = "wss://streamer.cert.tastyworks.com"
@@ -134,18 +128,6 @@ class SubscriptionType(str, Enum):
     USER_MESSAGE = "user-message-subscribe"
 
 
-MAP_ALERTS = {
-    "AccountBalance": AccountBalance,
-    "ComplexOrder": PlacedComplexOrder,
-    "ExternalTransaction": ExternalTransaction,
-    "Order": PlacedOrder,
-    "OrderChain": OrderChain,
-    "CurrentPosition": CurrentPosition,
-    "QuoteAlert": QuoteAlert,
-    "TradingStatus": TradingStatus,
-    "UnderlyingYearGainSummary": UnderlyingYearGainSummary,
-    "PublicWatchlists": Watchlist,
-}
 #: List of all possible types to stream with the alert streamer
 AlertType = Union[
     AccountBalance,
@@ -160,19 +142,19 @@ AlertType = Union[
     Watchlist,
 ]
 T = TypeVar("T", bound=AlertType)
-
-MAP_EVENTS = {
-    "Candle": Candle,
-    "Greeks": Greeks,
-    "Profile": Profile,
-    "Quote": Quote,
-    "Summary": Summary,
-    "TheoPrice": TheoPrice,
-    "TimeAndSale": TimeAndSale,
-    "Trade": Trade,
-    "Underlying": Underlying,
+MAP_ALERTS: dict[str, type[AlertType]] = {
+    "AccountBalance": AccountBalance,
+    "ComplexOrder": PlacedComplexOrder,
+    "ExternalTransaction": ExternalTransaction,
+    "Order": PlacedOrder,
+    "OrderChain": OrderChain,
+    "CurrentPosition": CurrentPosition,
+    "QuoteAlert": QuoteAlert,
+    "TradingStatus": TradingStatus,
+    "UnderlyingYearGainSummary": UnderlyingYearGainSummary,
+    "PublicWatchlists": Watchlist,
 }
-MAP_EVENTS_REVERSE = {v: k for k, v in MAP_EVENTS.items()}
+
 #: List of all possible types to stream with the data streamer
 EventType = Union[
     Candle,
@@ -186,9 +168,21 @@ EventType = Union[
     Underlying,
 ]
 U = TypeVar("U", bound=EventType)
+MAP_EVENTS: dict[str, type[EventType]] = {
+    "Candle": Candle,
+    "Greeks": Greeks,
+    "Profile": Profile,
+    "Quote": Quote,
+    "Summary": Summary,
+    "TheoPrice": TheoPrice,
+    "TimeAndSale": TimeAndSale,
+    "Trade": Trade,
+    "Underlying": Underlying,
+}
+MAP_EVENTS_REVERSE = {v: k for k, v in MAP_EVENTS.items()}
 
 
-async def _do_nothing(streamer):
+async def _do_nothing(streamer: AlertStreamer | DXLinkStreamer) -> None:
     pass
 
 
@@ -252,12 +246,14 @@ class AlertStreamer:
         #: Counter used to track the request ID for the streamer
         self.request_id = 0
 
-        self._queues: dict[str, Queue] = defaultdict(Queue)
+        self._queues: dict[str, Queue[AlertType]] = defaultdict(Queue)
         self._websocket: Optional[ClientConnection] = None
         self._connect_task = asyncio.create_task(self._connect())
-        self._reconnect_task = None
+        self._reconnect_task: Optional[asyncio.Task[None]] = None
+        self._heartbeat_task: Optional[asyncio.Task[None]] = None
+        self._closing = False
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> AlertStreamer:
         time_out = 100
         while not self._websocket:
             await asyncio.sleep(0.1)
@@ -267,20 +263,28 @@ class AlertStreamer:
 
         return self
 
-    def __await__(self):
+    def __await__(self) -> Generator[Any, None, AlertStreamer]:
         return self.__aenter__().__await__()
 
-    async def __aexit__(self, *exc):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         await self.close()
 
     async def close(self) -> None:
         """
         Closes the websocket connection and cancels the pending tasks.
         """
+        self._closing = True
         self._connect_task.cancel()
-        self._heartbeat_task.cancel()
-        tasks = [self._connect_task, self._heartbeat_task]
-        if self._reconnect_task is not None and not self._reconnect_task.done():
+        tasks = [self._connect_task]
+        if self._heartbeat_task and not self._heartbeat_task.done():
+            self._heartbeat_task.cancel()
+            tasks.append(self._heartbeat_task)
+        if self._reconnect_task and not self._reconnect_task.done():
             self._reconnect_task.cancel()
             tasks.append(self._reconnect_task)
         await asyncio.gather(*tasks)
@@ -312,14 +316,15 @@ class AlertStreamer:
                 logger.error(f"Websocket connection closed with {e}")
             except asyncio.CancelledError:
                 logger.debug("Websocket interrupted, cancelling main loop.")
-                asyncio.create_task(self.close())
+                if not self._closing:
+                    await self.close()
                 return
             finally:
                 asyncio.create_task(self.disconnect_fn(self, *self.disconnect_args))
             logger.debug("Websocket connection closed, retrying...")
             reconnecting = True
 
-    async def listen(self, alert_class: Type[T]) -> AsyncIterator[T]:
+    async def listen(self, alert_class: type[T]) -> AsyncIterator[T]:
         """
         Iterate over non-heartbeat messages received from the streamer,
         mapping them to their appropriate data class and yielding them.
@@ -327,22 +332,25 @@ class AlertStreamer:
         This is designed to be friendly for type checking; the return
         type will be the same class you pass in.
 
-        :param alert_class: the type of alert to listen for, should be of :any:`AlertType`
+        :param alert_class:
+            the type of alert to listen for, should be of :any:`AlertType`
         """
         cls_str = next(k for k, v in MAP_ALERTS.items() if v == alert_class)
         while True:
-            yield await self._queues[cls_str].get()
+            item = await self._queues[cls_str].get()
+            yield cast(T, item)
 
-    async def _map_message(self, type_str: str, data: dict) -> None:
+    async def _map_message(self, type_str: str, data: dict[str, Any]) -> None:
         """
         I'm not sure what the user-status messages look like, so they're absent.
         """
         if type_str not in MAP_ALERTS:
             logger.fatal(
-                f"Unknown message type {type_str} received: {data}, please open an issue!"
+                f"Unknown message type {type_str} received: {data}, please open an "
+                f"issue!"
             )
         else:
-            await self._queues[type_str].put(MAP_ALERTS[type_str](**data))
+            await self._queues[type_str].put(MAP_ALERTS[type_str](**data))  # type: ignore
 
     async def subscribe_accounts(self, accounts: list[Account]) -> None:
         """
@@ -445,7 +453,7 @@ class DXLinkStreamer:
         reconnect_fn: Callable[..., Coroutine[Any, Any, None]] = _do_nothing,
         ssl_context: SSLContext = create_default_context(),
     ):
-        self._queues: dict[str, Queue] = defaultdict(Queue)
+        self._queues: dict[str, Queue[EventType]] = defaultdict(Queue)
         self._channels: dict[str, int] = {
             "Candle": 1,
             "Greeks": 3,
@@ -475,10 +483,13 @@ class DXLinkStreamer:
         self._wss_url = session.dxlink_url
         self._auth_token = session.streamer_token
         self._ssl_context = ssl_context
-        self._reconnect_task = None
         self._disconnect_called = False
+        self._heartbeat_task: Optional[asyncio.Task[None]] = None
+        self._reconnect_task: Optional[asyncio.Task[None]] = None
+        self._closing = False
+        self._websocket: ClientConnection
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> DXLinkStreamer:
         self._connect_task = asyncio.create_task(self._connect())
         time_out = 100
         while not self._authenticated:
@@ -489,19 +500,27 @@ class DXLinkStreamer:
 
         return self
 
-    def __await__(self):
+    def __await__(self) -> Generator[Any, None, DXLinkStreamer]:
         return self.__aenter__().__await__()
 
-    async def __aexit__(self, *exc):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         await self.close()
 
     async def close(self) -> None:
         """
         Closes the websocket connection and cancels the heartbeat task.
         """
+        self._closing = True
         self._connect_task.cancel()
-        self._heartbeat_task.cancel()
-        tasks = [self._connect_task, self._heartbeat_task]
+        tasks = [self._connect_task]
+        if self._heartbeat_task:
+            self._heartbeat_task.cancel()
+            tasks.append(self._heartbeat_task)
         if self._reconnect_task is not None and not self._reconnect_task.done():
             self._reconnect_task.cancel()
             tasks.append(self._reconnect_task)
@@ -514,6 +533,14 @@ class DXLinkStreamer:
         authorization token provided during initialization.
         """
         reconnecting = False
+
+        class DXLinkMessage(TypedDict):
+            channel: int
+            data: list[Any]
+            message: str
+            state: str
+            type: str
+
         async for websocket in connect(
             self._wss_url, ssl=self._ssl_context, proxy=self.proxy
         ):
@@ -521,7 +548,7 @@ class DXLinkStreamer:
             await self._setup_connection()
             try:
                 async for raw_message in websocket:
-                    message = json.loads(raw_message)
+                    message = cast(DXLinkMessage, json.loads(raw_message))
                     logger.debug("received: %s", message)
                     if (
                         message["type"] == "FEED_DATA"
@@ -565,7 +592,7 @@ class DXLinkStreamer:
                         pass
                     elif message["type"] == "ERROR":
                         logger.error(f"Fatal streamer error: {message['message']}")
-                        asyncio.create_task(self.close())
+                        await self.close()
                         return
                     else:
                         logger.error(f"Unknown message: {message}")
@@ -573,13 +600,15 @@ class DXLinkStreamer:
                 logger.error(f"Websocket connection closed with {e}")
                 if e.rcvd and e.rcvd.code == 1009:
                     logger.error(
-                        "Subscription message too long! Try reducing the number of symbols."
+                        "Subscription message too long! Try reducing the number of "
+                        "symbols."
                     )
-                    asyncio.create_task(self.close())
+                    await self.close()
                     return
             except asyncio.CancelledError:
                 logger.debug("Websocket interrupted, cancelling main loop.")
-                asyncio.create_task(self.close())
+                if not self._closing:
+                    await self.close()
                 return
             finally:
                 asyncio.create_task(self.disconnect_fn(self, *self.disconnect_args))
@@ -604,7 +633,7 @@ class DXLinkStreamer:
         }
         await self._websocket.send(json.dumps(message))
 
-    async def listen(self, event_class: Type[U]) -> AsyncIterator[U]:
+    async def listen(self, event_class: type[U]) -> AsyncIterator[U]:
         """
         Using the existing subscriptions, pulls events of the given type and
         yield returns them. Never exits unless there's an error or the channel
@@ -613,13 +642,13 @@ class DXLinkStreamer:
         This is designed to be friendly for type checking; the return
         type will be the same class you pass in.
 
-        :param event_class: the type of alert to listen for, should be of :any:`EventType`
+        :param event_class:
+            the type of alert to listen for, should be of :any:`EventType`
         """
-        cls_str = MAP_EVENTS_REVERSE[event_class]
         while True:
-            yield await self._queues[cls_str].get()
+            yield await self._queues[MAP_EVENTS_REVERSE[event_class]].get()  # type: ignore
 
-    def get_event_nowait(self, event_class: Type[U]) -> Optional[U]:
+    def get_event_nowait(self, event_class: type[U]) -> Optional[U]:
         """
         Using the existing subscriptions, pulls an event of the given type and
         returns it. If the queue is empty None is returned.
@@ -627,15 +656,15 @@ class DXLinkStreamer:
         This is designed to be friendly for type checking; the return
         type will be the same class you pass in.
 
-        :param event_class: the type of alert to listen for, should be of :any:`EventType`
+        :param event_class:
+            the type of alert to listen for, should be of :any:`EventType`
         """
-        cls_str = MAP_EVENTS_REVERSE[event_class]
         try:
-            return self._queues[cls_str].get_nowait()
+            return self._queues[MAP_EVENTS_REVERSE[event_class]].get_nowait()  # type: ignore
         except QueueEmpty:
             return None
 
-    async def get_event(self, event_class: Type[U]) -> U:
+    async def get_event(self, event_class: type[U]) -> U:
         """
         Using the existing subscription, pulls an event of the given type and
         returns it.
@@ -643,10 +672,10 @@ class DXLinkStreamer:
         This is designed to be friendly for type checking; the return
         type will be the same class you pass in.
 
-        :param event_class: the type of alert to listen for, should be of :any:`EventType`
+        :param event_class:
+            the type of alert to listen for, should be of :any:`EventType`
         """
-        cls_str = MAP_EVENTS_REVERSE[event_class]
-        return await self._queues[cls_str].get()
+        return await self._queues[MAP_EVENTS_REVERSE[event_class]].get()  # type: ignore
 
     async def _heartbeat(self) -> None:
         """
@@ -667,7 +696,7 @@ class DXLinkStreamer:
 
     async def subscribe(
         self,
-        event_class: Type[EventType],
+        event_class: type[EventType],
         symbols: list[str],
         refresh_interval: float = 0.1,
     ) -> None:
@@ -678,9 +707,11 @@ class DXLinkStreamer:
 
         :param event_class: type of subscription to add, should be of :any:`EventType`
         :param symbols: list of symbols to subscribe for
-        :param refresh_interval: Time in seconds between fetching new events from dxfeed for this event_class.
-            You can try a higher value if processing quote updates quickly is not a high priority.
-            Once refresh_interval is set for this event_class and channel is opened, it cannot be changed later.
+        :param refresh_interval:
+            Time in seconds between fetching new events from dxfeed for this event type.
+            You can try a higher value if processing quote updates quickly is not a high
+            priority. Once refresh_interval is set for this event type and channel is
+            opened, it cannot be changed later.
         """
         cls_str = MAP_EVENTS_REVERSE[event_class]
         if self._subscription_state[cls_str] != "CHANNEL_OPENED":
@@ -693,7 +724,7 @@ class DXLinkStreamer:
         logger.debug("sending subscription: %s", message)
         await self._websocket.send(json.dumps(message))
 
-    async def unsubscribe_all(self, event_class: Type[EventType]) -> None:
+    async def unsubscribe_all(self, event_class: type[EventType]) -> None:
         """
         Unsubscribes to all events of the given event type.
 
@@ -731,14 +762,14 @@ class DXLinkStreamer:
     async def _channel_setup(
         self, event_type: str, refresh_interval: float = 0.1
     ) -> None:
-        message = {
+        message: dict[str, Any] = {
             "type": "FEED_SETUP",
             "channel": self._channels[event_type],
             "acceptAggregationPeriod": refresh_interval,
             "acceptDataFormat": "COMPACT",
         }
 
-        def dict_from_schema(event_class: Any):
+        def dict_from_schema(event_class: Any) -> dict[str, list[Any]]:
             schema = event_class.schema()
             return {schema["title"]: list(schema["properties"].keys())}
 
@@ -750,7 +781,7 @@ class DXLinkStreamer:
         await self._websocket.send(json.dumps(message))
 
     async def unsubscribe(
-        self, event_class: Type[EventType], symbols: list[str]
+        self, event_class: type[EventType], symbols: list[str]
     ) -> None:
         """
         Removes existing subscription for given list of symbols.
@@ -788,9 +819,11 @@ class DXLinkStreamer:
         :param start_time: starting time for the data range
         :param end_time: ending time for the data range
         :param extended_trading_hours: whether to include extended trading
-        :param refresh_interval: Time in seconds between fetching new events from dxfeed for this event_class.
-            You can try a higher value if processing quote updates quickly is not a high priority.
-            Once refresh_interval is set for this event_class and channel is opened, it cannot be changed later.
+        :param refresh_interval:
+            Time in seconds between fetching new events from dxfeed for this event type.
+            You can try a higher value if processing quote updates quickly is not a high
+            priority. Once refresh_interval is set for this event type and channel is
+            opened, it cannot be changed later.
         """
         cls_str = "Candle"
         if self._subscription_state[cls_str] != "CHANNEL_OPENED":
@@ -843,7 +876,7 @@ class DXLinkStreamer:
         }
         await self._websocket.send(json.dumps(message))
 
-    async def _map_message(self, message) -> None:
+    async def _map_message(self, message: list[Any]) -> None:
         """
         Takes the raw JSON data, parses the events and places them into their
         respective queues.
@@ -859,10 +892,11 @@ class DXLinkStreamer:
         # parse type or warn for unknown type
         if msg_type not in MAP_EVENTS:
             logger.fatal(
-                f"Unknown message type {msg_type} received: {data}, please open an issue!"
+                f"Unknown message type {msg_type} received: {data}, please open an "
+                f"issue!"
             )
         else:
-            cls: Event = MAP_EVENTS[msg_type]
+            cls = MAP_EVENTS[msg_type]
             results = cls.from_stream(data)
             for r in results:
-                await self._queues[msg_type].put(r)
+                await self._queues[msg_type].put(r)  # type: ignore

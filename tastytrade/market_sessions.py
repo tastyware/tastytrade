@@ -45,7 +45,7 @@ class MarketSessionSnapshot(TastytradeData):
 
 class MarketSession(TastytradeData):
     """
-    Dataclass representing the current session as well as the next and previous sessions.
+    Dataclass representing the current, next, and previous sessions.
     """
 
     close_at: Optional[datetime] = None

@@ -177,7 +177,7 @@ class Message(TastytradeData):
     message: str
     preflight_id: Optional[str] = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.code}: {self.message}"
 
 
@@ -255,12 +255,12 @@ class NewOrder(TastytradeData):
     rules: Optional[OrderRule] = None
     advanced_instructions: Optional[AdvancedInstructions] = None
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def price_effect(self) -> Optional[PriceEffect]:
         return get_sign(self.price)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def value_effect(self) -> Optional[PriceEffect]:
         return get_sign(self.value)
@@ -281,7 +281,7 @@ class NewComplexOrder(TastytradeData):
     trigger_order: Optional[NewOrder] = None
     type: ComplexOrderType = ComplexOrderType.OCO
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
         if self.trigger_order is not None:
             self.type = ComplexOrderType.OTOCO

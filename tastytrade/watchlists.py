@@ -2,7 +2,7 @@ from typing import Any, Optional, Union, overload
 
 from typing_extensions import Self
 
-from tastytrade.instruments import InstrumentType
+from tastytrade.order import InstrumentType
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeData
 

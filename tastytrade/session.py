@@ -1,15 +1,18 @@
-import time
-from datetime import date, datetime
-from typing import Any, Optional, Union
-from typing_extensions import Self
+from __future__ import annotations
 
 import json
+import time
+from datetime import date, datetime
+from types import TracebackType
+from typing import Any, Optional, Union
+
 from httpx import AsyncClient, Client
+from typing_extensions import Self
 
 from tastytrade import API_URL, CERT_URL, logger
 from tastytrade.utils import (
-    TastytradeError,
     TastytradeData,
+    TastytradeError,
     validate_and_parse,
     validate_response,
 )
@@ -367,41 +370,46 @@ class Session:
             datetime.fromisoformat(exp.replace("Z", "+00:00")) if exp else None
         )
 
-    def __enter__(self):
+    def __enter__(self) -> Session:
         return self
 
-    def __exit__(self, *exc):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         self.destroy()
 
-    async def _a_get(self, url, **kwargs) -> dict[str, Any]:
+    async def _a_get(self, url: str, **kwargs: Any) -> dict[str, Any]:
         response = await self.async_client.get(url, timeout=30, **kwargs)
         return validate_and_parse(response)
 
-    def _get(self, url, **kwargs) -> dict[str, Any]:
+    def _get(self, url: str, **kwargs: Any) -> dict[str, Any]:
         response = self.sync_client.get(url, timeout=30, **kwargs)
         return validate_and_parse(response)
 
-    async def _a_delete(self, url, **kwargs) -> None:
+    async def _a_delete(self, url: str, **kwargs: Any) -> None:
         response = await self.async_client.delete(url, **kwargs)
         validate_response(response)
 
-    def _delete(self, url, **kwargs) -> None:
+    def _delete(self, url: str, **kwargs: Any) -> None:
         response = self.sync_client.delete(url, **kwargs)
         validate_response(response)
 
-    async def _a_post(self, url, **kwargs) -> dict[str, Any]:
+    async def _a_post(self, url: str, **kwargs: Any) -> dict[str, Any]:
         response = await self.async_client.post(url, **kwargs)
         return validate_and_parse(response)
 
-    def _post(self, url, **kwargs) -> dict[str, Any]:
+    def _post(self, url: str, **kwargs: Any) -> dict[str, Any]:
         response = self.sync_client.post(url, **kwargs)
         return validate_and_parse(response)
 
-    async def _a_put(self, url, **kwargs) -> dict[str, Any]:
+    async def _a_put(self, url: str, **kwargs: Any) -> dict[str, Any]:
         response = await self.async_client.put(url, **kwargs)
         return validate_and_parse(response)
 
-    def _put(self, url, **kwargs) -> dict[str, Any]:
+    def _put(self, url: str, **kwargs: Any) -> dict[str, Any]:
         response = self.sync_client.put(url, **kwargs)
         return validate_and_parse(response)
 
@@ -562,9 +570,7 @@ class OAuthSession(Session):  # pragma: no cover
         )
         #: httpx client for async requests
         self.async_client = AsyncClient(
-            base_url=self.sync_client.base_url,
-            headers=self.sync_client.headers.copy(),
-            proxy=proxy,
+            base_url=self.sync_client.base_url, headers=headers, proxy=proxy
         )
         self.refresh()
 
@@ -639,7 +645,7 @@ class OAuthSession(Session):  # pragma: no cover
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "Authorization": self.session_token,
+            "Authorization": f"Bearer {self.session_token}",
         }
         self.sync_client = Client(base_url=base_url, headers=headers, proxy=self.proxy)
         self.async_client = AsyncClient(

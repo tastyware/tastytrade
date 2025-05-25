@@ -25,6 +25,9 @@ jobs:
     - name: Type check with pyright
       run: |
         uv run pyright tastytrade/ tests/
+    - name: Type check with mypy
+      run: |
+        uv run mypy tastytrade/
     - name: Test with pytest
       run: |
         uv run pytest --cov=tastytrade --cov-report=term-missing tests/ --cov-fail-under=95
