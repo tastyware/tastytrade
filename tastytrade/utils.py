@@ -1,14 +1,14 @@
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Optional, cast
 from zoneinfo import ZoneInfo
 
 from httpx._models import Response  # type: ignore
 from pandas_market_calendars import get_calendar  # type: ignore[import-untyped]
 from pydantic import BaseModel, ConfigDict
 
-NYSE = get_calendar("NYSE")
+NYSE: Any = get_calendar("NYSE")
 TZ = ZoneInfo("US/Eastern")
 
 
@@ -252,7 +252,7 @@ class TastytradeData(BaseModel):
         return " ".join(f"{a}={v!r}" for a, v in self.__repr_args__() if v)
 
     def __repr__(self) -> str:
-        return f"{self.__repr_name__()}({str(self)})"
+        return f"{self.__repr_name__()}({str(self)})"  # type: ignore
 
 
 def validate_response(response: Response) -> None:
@@ -262,7 +262,10 @@ def validate_response(response: Response) -> None:
     :param response: response to check for errors
     """
     if response.status_code // 100 != 2:
-        content = response.json()["error"]
+        json: dict[str, Any] = response.json()
+        content = json.get("error")
+        if not content:
+            raise TastytradeError(f"Couldn't parse response: {json}")
         error_message = f"{content['code']}: {content['message']}"
         errors = content.get("errors")
         if errors is not None:
@@ -298,6 +301,7 @@ def set_sign_for(data: Any, properties: list[str]) -> Any:
     :param properties: the name of the number fields to set
     """
     if isinstance(data, dict):
+        data = cast(dict[str, Any], data)
         for property in properties:
             key = _dasherize(property)
             effect = data.get(f"{key}-effect")

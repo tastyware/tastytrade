@@ -44,7 +44,7 @@ class Event(BaseModel):
 
         :return: list of event objects from data
         """
-        objs = []
+        objs: list[Event] = []
         size = len(cls.model_fields)
         multiples = len(data) / size
         if not multiples.is_integer():

@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any, Optional, cast
 
 from pydantic import (
     ValidationError,
@@ -17,7 +17,7 @@ def zero_from_none(
     v: Any, handler: ValidatorFunctionWrapHandler, info: ValidationInfo
 ) -> Decimal:
     try:
-        return handler(v)
+        return cast(Decimal, handler(v))
     except ValidationError:
         return ZERO
 

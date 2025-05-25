@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Literal, Optional, Union, overload
+from typing import Any, Literal, Optional, Union, cast, overload
 
 import httpx
 from pydantic import BaseModel, model_validator
@@ -94,9 +94,10 @@ class AccountBalance(TastytradeData):
     @classmethod
     def validate_price_effects(cls, data: Any) -> Any:
         if isinstance(data, dict):
+            data = cast(dict[str, Any], data)
             key = "unsettled-cryptocurrency-fiat-amount"
-            effect = data.get("unsettled-cryptocurrency-fiat-effect")
-            if effect == PriceEffect.DEBIT:
+            effect: Any = data.get("unsettled-cryptocurrency-fiat-effect")
+            if effect == PriceEffect.DEBIT.value:
                 data[key] = -abs(Decimal(data[key]))
         return set_sign_for(data, ["pending_cash", "buying_power_adjustment"])
 
@@ -149,8 +150,9 @@ class AccountBalanceSnapshot(TastytradeData):
     @classmethod
     def validate_price_effects(cls, data: Any) -> Any:
         if isinstance(data, dict):
+            data = cast(dict[str, Any], data)
             key = "unsettled-cryptocurrency-fiat-amount"
-            effect = data.get("unsettled-cryptocurrency-fiat-effect")
+            effect: Any = data.get("unsettled-cryptocurrency-fiat-effect")
             if effect == PriceEffect.DEBIT:
                 data[key] = -abs(Decimal(data[key]))
         return set_sign_for(data, ["pending_cash"])
@@ -630,7 +632,7 @@ class Account(TastytradeData):
             "snapshot-date": snapshot_date,
             "time-of-day": time_of_day,
         }
-        snapshots = []
+        snapshots: list[AccountBalanceSnapshot] = []
         while True:
             response = await session.async_client.get(
                 f"/accounts/{self.account_number}/balance-snapshots",
@@ -694,7 +696,7 @@ class Account(TastytradeData):
             "snapshot-date": snapshot_date,
             "time-of-day": time_of_day,
         }
-        snapshots = []
+        snapshots: list[AccountBalanceSnapshot] = []
         while True:
             response = session.sync_client.get(
                 f"/accounts/{self.account_number}/balance-snapshots",
@@ -880,7 +882,7 @@ class Account(TastytradeData):
             "end-at": end_at,
         }
         # loop through pages and get all transactions
-        txns = []
+        txns: list[Transaction] = []
         while True:
             response = await session.async_client.get(
                 f"/accounts/{self.account_number}/transactions",
@@ -975,7 +977,7 @@ class Account(TastytradeData):
             "end-at": end_at,
         }
         # loop through pages and get all transactions
-        txns = []
+        txns: list[Transaction] = []
         while True:
             response = session.sync_client.get(
                 f"/accounts/{self.account_number}/transactions",
@@ -1378,7 +1380,7 @@ class Account(TastytradeData):
             "end-at": end_at,
         }
         # loop through pages and get all transactions
-        orders = []
+        orders: list[PlacedOrder] = []
         while True:
             response = await session.async_client.get(
                 f"/accounts/{self.account_number}/orders",
@@ -1459,7 +1461,7 @@ class Account(TastytradeData):
             "end-at": end_at,
         }
         # loop through pages and get all transactions
-        orders = []
+        orders: list[PlacedOrder] = []
         while True:
             response = session.sync_client.get(
                 f"/accounts/{self.account_number}/orders",
@@ -1502,11 +1504,11 @@ class Account(TastytradeData):
             paginate = True
         params = {"per-page": per_page, "page-offset": page_offset}
         # loop through pages and get all transactions
-        orders = []
+        orders: list[PlacedComplexOrder] = []
         while True:
             response = await session.async_client.get(
                 f"/accounts/{self.account_number}/complex-orders",
-                params={k: v for k, v in params.items() if v is not None},
+                params=params,
             )
             validate_response(response)
             json = response.json()
@@ -1541,11 +1543,11 @@ class Account(TastytradeData):
             paginate = True
         params = {"per-page": per_page, "page-offset": page_offset}
         # loop through pages and get all transactions
-        orders = []
+        orders: list[PlacedComplexOrder] = []
         while True:
             response = session.sync_client.get(
                 f"/accounts/{self.account_number}/complex-orders",
-                params={k: v for k, v in params.items() if v is not None},
+                params=params,
             )
             validate_response(response)
             json = response.json()
@@ -1700,7 +1702,7 @@ class Account(TastytradeData):
             response = await client.get(
                 f"{VAST_URL}/order-chains",
                 headers=headers,
-                params=params,
+                params=params,  # type: ignore[arg-type]
             )
             validate_response(response)
             chains = response.json()["data"]["items"]
@@ -1738,7 +1740,7 @@ class Account(TastytradeData):
         response = httpx.get(
             f"{VAST_URL}/order-chains",
             headers=headers,
-            params=params,
+            params=params,  # type: ignore[arg-type]
         )
         validate_response(response)
         chains = response.json()["data"]["items"]

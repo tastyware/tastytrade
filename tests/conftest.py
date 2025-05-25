@@ -1,5 +1,5 @@
 import os
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator
 
 from pytest import fixture
 
@@ -30,5 +30,5 @@ async def session(
 
 
 @fixture(scope="class")
-def inject_credentials(request, credentials: tuple[str, str]):
+def inject_credentials(request: Any, credentials: tuple[str, str]):
     request.cls.credentials = credentials
