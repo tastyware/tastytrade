@@ -4,7 +4,7 @@ import json
 import time
 from datetime import date, datetime
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import Any, Optional, Union
 
 from httpx import AsyncClient, Client
 from typing_extensions import Self
@@ -16,9 +16,6 @@ from tastytrade.utils import (
     validate_and_parse,
     validate_response,
 )
-
-if TYPE_CHECKING:
-    from tastytrade import Account
 
 
 class Address(TastytradeData):
