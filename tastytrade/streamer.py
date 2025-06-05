@@ -278,17 +278,18 @@ class AlertStreamer:
         """
         Closes the websocket connection and cancels the pending tasks.
         """
-        self._closing = True
-        self._connect_task.cancel()
-        tasks = [self._connect_task]
-        if self._heartbeat_task and not self._heartbeat_task.done():
-            self._heartbeat_task.cancel()
-            tasks.append(self._heartbeat_task)
-        if self._reconnect_task and not self._reconnect_task.done():
-            self._reconnect_task.cancel()
-            tasks.append(self._reconnect_task)
-        await asyncio.gather(*tasks)
-        await self._websocket.wait_closed()  # type: ignore
+        if not self._closing:  # can only be called once
+            self._closing = True
+            self._connect_task.cancel()
+            tasks = [self._connect_task]
+            if self._heartbeat_task and not self._heartbeat_task.done():
+                self._heartbeat_task.cancel()
+                tasks.append(self._heartbeat_task)
+            if self._reconnect_task and not self._reconnect_task.done():
+                self._reconnect_task.cancel()
+                tasks.append(self._reconnect_task)
+            await asyncio.gather(*tasks)
+            await self._websocket.wait_closed()  # type: ignore
 
     async def _connect(self) -> None:
         """
@@ -316,9 +317,7 @@ class AlertStreamer:
                 logger.error(f"Websocket connection closed with {e}")
             except asyncio.CancelledError:
                 logger.debug("Websocket interrupted, cancelling main loop.")
-                if not self._closing:
-                    await self.close()
-                return
+                return await self.close()
             finally:
                 asyncio.create_task(self.disconnect_fn(self, *self.disconnect_args))
             logger.debug("Websocket connection closed, retrying...")
@@ -336,9 +335,12 @@ class AlertStreamer:
             the type of alert to listen for, should be of :any:`AlertType`
         """
         cls_str = next(k for k, v in MAP_ALERTS.items() if v == alert_class)
-        while True:
-            item = await self._queues[cls_str].get()
-            yield cast(T, item)
+        try:
+            while True:
+                item = await self._queues[cls_str].get()
+                yield cast(T, item)
+        except GeneratorExit:  # no cleanup needed
+            pass
 
     async def _map_message(self, type_str: str, data: dict[str, Any]) -> None:
         """
@@ -515,17 +517,18 @@ class DXLinkStreamer:
         """
         Closes the websocket connection and cancels the heartbeat task.
         """
-        self._closing = True
-        self._connect_task.cancel()
-        tasks = [self._connect_task]
-        if self._heartbeat_task:
-            self._heartbeat_task.cancel()
-            tasks.append(self._heartbeat_task)
-        if self._reconnect_task is not None and not self._reconnect_task.done():
-            self._reconnect_task.cancel()
-            tasks.append(self._reconnect_task)
-        await asyncio.gather(*tasks)
-        await self._websocket.wait_closed()
+        if not self._closing:  # can only be called once
+            self._closing = True
+            self._connect_task.cancel()
+            tasks = [self._connect_task]
+            if self._heartbeat_task:
+                self._heartbeat_task.cancel()
+                tasks.append(self._heartbeat_task)
+            if self._reconnect_task is not None and not self._reconnect_task.done():
+                self._reconnect_task.cancel()
+                tasks.append(self._reconnect_task)
+            await asyncio.gather(*tasks)
+            await self._websocket.wait_closed()
 
     async def _connect(self) -> None:
         """
@@ -592,8 +595,7 @@ class DXLinkStreamer:
                         pass
                     elif message["type"] == "ERROR":
                         logger.error(f"Fatal streamer error: {message['message']}")
-                        await self.close()
-                        return
+                        return await self.close()
                     else:
                         logger.error(f"Unknown message: {message}")
             except ConnectionClosed as e:
@@ -603,13 +605,10 @@ class DXLinkStreamer:
                         "Subscription message too long! Try reducing the number of "
                         "symbols."
                     )
-                    await self.close()
-                    return
+                    return await self.close()
             except asyncio.CancelledError:
                 logger.debug("Websocket interrupted, cancelling main loop.")
-                if not self._closing:
-                    await self.close()
-                return
+                return await self.close()
             finally:
                 asyncio.create_task(self.disconnect_fn(self, *self.disconnect_args))
             logger.debug("Websocket connection closed, retrying...")
@@ -645,8 +644,11 @@ class DXLinkStreamer:
         :param event_class:
             the type of alert to listen for, should be of :any:`EventType`
         """
-        while True:
-            yield await self._queues[MAP_EVENTS_REVERSE[event_class]].get()  # type: ignore
+        try:
+            while True:
+                yield await self._queues[MAP_EVENTS_REVERSE[event_class]].get()  # type: ignore
+        except GeneratorExit:  # no cleanup needed
+            pass
 
     def get_event_nowait(self, event_class: type[U]) -> Optional[U]:
         """
