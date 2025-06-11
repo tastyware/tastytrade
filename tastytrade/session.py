@@ -578,7 +578,8 @@ class OAuthSession(Session):  # pragma: no cover
         """
         Refreshes the acccess token using the stored refresh token.
         """
-        response = self.sync_client.post(
+        request = self.sync_client.build_request(
+            "POST",
             "/oauth/token",
             json={
                 "grant_type": "refresh_token",
@@ -586,6 +587,9 @@ class OAuthSession(Session):  # pragma: no cover
                 "refresh_token": self.refresh_token,
             },
         )
+        # Don't send the Authorization header for this request
+        request.headers.pop("Authorization", None)
+        response = self.sync_client.send(request)
         validate_response(response)
         data = response.json()
         # update the relevant tokens
@@ -602,7 +606,8 @@ class OAuthSession(Session):  # pragma: no cover
         """
         Refreshes the acccess token using the stored refresh token.
         """
-        response = await self.async_client.post(
+        request = self.async_client.build_request(
+            "POST",
             "/oauth/token",
             json={
                 "grant_type": "refresh_token",
@@ -610,6 +615,9 @@ class OAuthSession(Session):  # pragma: no cover
                 "refresh_token": self.refresh_token,
             },
         )
+        # Don't send the Authorization header for this request
+        request.headers.pop("Authorization", None)
+        response = await self.async_client.send(request)
         validate_response(response)
         data = response.json()
         # update the relevant tokens

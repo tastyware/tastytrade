@@ -147,7 +147,10 @@ async def test_get_option_chain_async(session: Session):
     chain = await a_get_option_chain(session, "SPY")
     assert chain != {}
     for options in chain.values():
-        await Option.a_get(session, options[0].symbol)
+        single = await Option.a_get(session, options[0].symbol)
+        multiple = await Option.a_get(session, [options[0].symbol, options[1].symbol])
+        assert isinstance(single, Option)
+        assert isinstance(multiple, list)
         break
 
 
@@ -155,7 +158,14 @@ def test_get_option_chain(session: Session):
     chain = get_option_chain(session, "SPY")
     assert chain != {}
     for options in chain.values():
-        Option.get(session, options[0].symbol)
+        single = Option.get(session, options[0].symbol)
+        # test setting symbol
+        old = single.streamer_symbol
+        single._set_streamer_symbol()
+        assert single.streamer_symbol == old
+        multiple = Option.get(session, [options[0].symbol, options[1].symbol])
+        assert isinstance(single, Option)
+        assert isinstance(multiple, list)
         break
 
 
