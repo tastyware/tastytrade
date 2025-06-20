@@ -96,8 +96,10 @@ class AccountBalance(TastytradeData):
         if isinstance(data, dict):
             data = cast(dict[str, Any], data)
             key = "unsettled-cryptocurrency-fiat-amount"
-            effect: Any = data.get("unsettled-cryptocurrency-fiat-effect")
-            if effect == PriceEffect.DEBIT.value:
+            if (
+                data.get("unsettled-cryptocurrency-fiat-effect")
+                == PriceEffect.DEBIT.value
+            ):
                 data[key] = -abs(Decimal(data[key]))
         return set_sign_for(data, ["pending_cash", "buying_power_adjustment"])
 
@@ -152,8 +154,7 @@ class AccountBalanceSnapshot(TastytradeData):
         if isinstance(data, dict):
             data = cast(dict[str, Any], data)
             key = "unsettled-cryptocurrency-fiat-amount"
-            effect: Any = data.get("unsettled-cryptocurrency-fiat-effect")
-            if effect == PriceEffect.DEBIT:
+            if data.get("unsettled-cryptocurrency-fiat-effect") == PriceEffect.DEBIT:
                 data[key] = -abs(Decimal(data[key]))
         return set_sign_for(data, ["pending_cash"])
 
@@ -816,7 +817,7 @@ class Account(TastytradeData):
         session: Session,
         per_page: int = 250,
         page_offset: Optional[int] = None,
-        sort: str = "Desc",
+        sort: Literal["Asc", "Desc"] = "Desc",
         type: Optional[str] = None,
         types: Optional[list[str]] = None,
         sub_types: Optional[list[str]] = None,
@@ -911,7 +912,7 @@ class Account(TastytradeData):
         session: Session,
         per_page: int = 250,
         page_offset: Optional[int] = None,
-        sort: str = "Desc",
+        sort: Literal["Asc", "Desc"] = "Desc",
         type: Optional[str] = None,
         types: Optional[list[str]] = None,
         sub_types: Optional[list[str]] = None,
@@ -1334,7 +1335,7 @@ class Account(TastytradeData):
         statuses: Optional[list[OrderStatus]] = None,
         futures_symbol: Optional[str] = None,
         underlying_instrument_type: Optional[InstrumentType] = None,
-        sort: Optional[str] = None,
+        sort: Optional[Literal["Asc", "Desc"]] = None,
         start_at: Optional[datetime] = None,
         end_at: Optional[datetime] = None,
     ) -> list[PlacedOrder]:
@@ -1415,7 +1416,7 @@ class Account(TastytradeData):
         statuses: Optional[list[OrderStatus]] = None,
         futures_symbol: Optional[str] = None,
         underlying_instrument_type: Optional[InstrumentType] = None,
-        sort: Optional[str] = None,
+        sort: Optional[Literal["Asc", "Desc"]] = None,
         start_at: Optional[datetime] = None,
         end_at: Optional[datetime] = None,
     ) -> list[PlacedOrder]:

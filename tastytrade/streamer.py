@@ -335,12 +335,9 @@ class AlertStreamer:
             the type of alert to listen for, should be of :any:`AlertType`
         """
         cls_str = next(k for k, v in MAP_ALERTS.items() if v == alert_class)
-        try:
-            while True:
-                item = await self._queues[cls_str].get()
-                yield cast(T, item)
-        except GeneratorExit:  # no cleanup needed
-            pass
+        while True:
+            item = await self._queues[cls_str].get()
+            yield cast(T, item)
 
     async def _map_message(self, type_str: str, data: dict[str, Any]) -> None:
         """
@@ -644,11 +641,8 @@ class DXLinkStreamer:
         :param event_class:
             the type of alert to listen for, should be of :any:`EventType`
         """
-        try:
-            while True:
-                yield await self._queues[MAP_EVENTS_REVERSE[event_class]].get()  # type: ignore
-        except GeneratorExit:  # no cleanup needed
-            pass
+        while True:
+            yield await self._queues[MAP_EVENTS_REVERSE[event_class]].get()  # type: ignore
 
     def get_event_nowait(self, event_class: type[U]) -> Optional[U]:
         """
@@ -819,7 +813,6 @@ class DXLinkStreamer:
             the width of each candle in time, e.g. '15s', '5m', '1h', '3d',
             '1w', '1mo'
         :param start_time: starting time for the data range
-        :param end_time: ending time for the data range
         :param extended_trading_hours: whether to include extended trading
         :param refresh_interval:
             Time in seconds between fetching new events from dxfeed for this event type.
@@ -830,6 +823,7 @@ class DXLinkStreamer:
         cls_str = "Candle"
         if self._subscription_state[cls_str] != "CHANNEL_OPENED":
             await self._channel_request(cls_str, refresh_interval)
+        ts = int(start_time.timestamp() * 1000)
         message = {
             "type": "FEED_SUBSCRIPTION",
             "channel": self._channels[cls_str],
@@ -841,7 +835,7 @@ class DXLinkStreamer:
                         else f"{ticker}{{={interval},tho=true}}"
                     ),
                     "type": "Candle",
-                    "fromTime": int(start_time.timestamp() * 1000),
+                    "fromTime": ts,
                 }
                 for ticker in symbols
             ],

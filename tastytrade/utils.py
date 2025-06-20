@@ -50,8 +50,7 @@ def is_market_open_on(day: Optional[date] = None) -> bool:
 
     :return: whether the market opens on given day
     """
-    if not day:
-        day = today_in_new_york()
+    day = day or today_in_new_york()
     date_range = NYSE.valid_days(day, day)
     return not date_range.empty
 
@@ -65,10 +64,7 @@ def get_third_friday(day: Optional[date] = None) -> date:
 
     :return: the associated monthly
     """
-    if not day:
-        day = today_in_new_york()
-    day = day.replace(day=1)
-    day += timedelta(weeks=2)
+    day = (day or today_in_new_york()).replace(day=1) + timedelta(weeks=2)
     while day.weekday() != 4:  # Friday
         day += timedelta(days=1)
     return day
@@ -105,10 +101,7 @@ def get_future_fx_monthly(day: Optional[date] = None) -> date:
 
     :return: the associated monthly
     """
-    if not day:
-        day = today_in_new_york()
-    day = day.replace(day=1)
-    day += timedelta(weeks=1)
+    day = (day or today_in_new_york()).replace(day=1) + timedelta(weeks=1)
     while day.weekday() != 2:  # Wednesday
         day += timedelta(days=1)
     while day.weekday() != 4:  # Friday
@@ -127,8 +120,7 @@ def get_future_treasury_monthly(day: Optional[date] = None) -> date:
 
     :return: the associated monthly
     """
-    if not day:
-        day = today_in_new_york()
+    day = day or today_in_new_york()
     last_day = _get_last_day_of_month(day)
     first_day = last_day.replace(day=1)
     valid_range: list[date] = [d.date() for d in NYSE.valid_days(first_day, last_day)]
@@ -151,8 +143,7 @@ def get_future_metal_monthly(day: Optional[date] = None) -> date:
 
     :return: the associated monthly
     """
-    if not day:
-        day = today_in_new_york()
+    day = day or today_in_new_york()
     last_day = _get_last_day_of_month(day)
     first_day = last_day.replace(day=1)
     valid_range: list[date] = [d.date() for d in NYSE.valid_days(first_day, last_day)]
@@ -173,8 +164,7 @@ def get_future_grain_monthly(day: Optional[date] = None) -> date:
 
     :return: the associated monthly
     """
-    if not day:
-        day = today_in_new_york()
+    day = day or today_in_new_york()
     last_day = _get_last_day_of_month(day)
     first_day = last_day.replace(day=1)
     valid_range: list[date] = [d.date() for d in NYSE.valid_days(first_day, last_day)]
@@ -195,9 +185,7 @@ def get_future_oil_monthly(day: Optional[date] = None) -> date:
 
     :return: the associated monthly
     """
-    if not day:
-        day = today_in_new_york()
-    last_day = day.replace(day=25)
+    last_day = (day or today_in_new_york()).replace(day=25)
     first_day = last_day.replace(day=1)
     valid_range: list[date] = [d.date() for d in NYSE.valid_days(first_day, last_day)]
     return valid_range[-7]
@@ -213,8 +201,7 @@ def get_future_index_monthly(day: Optional[date] = None) -> date:
 
     :return: the associated monthly
     """
-    if not day:
-        day = today_in_new_york()
+    day = day or today_in_new_york()
     last_day = _get_last_day_of_month(day)
     first_day = last_day.replace(day=1)
     valid_range: list[date] = [d.date() for d in NYSE.valid_days(first_day, last_day)]
@@ -263,12 +250,10 @@ def validate_response(response: Response) -> None:
     """
     if response.status_code // 100 != 2:
         json: dict[str, Any] = response.json()
-        content = json.get("error")
-        if not content:
+        if not (content := json.get("error")):
             raise TastytradeError(f"Couldn't parse response: {json}")
         error_message = f"{content['code']}: {content['message']}"
-        errors = content.get("errors")
-        if errors is not None:
+        if errors := content.get("errors"):
             for error in errors:
                 if "code" in error:
                     error_message += f"\n{error['code']}: {error['message']}"
@@ -281,10 +266,9 @@ def validate_response(response: Response) -> None:
 def validate_and_parse(response: Response) -> dict[str, Any]:
     validate_response(response)
     json = response.json()
-    data: Optional[dict[str, Any]] = json.get("data")
-    if data is None:
+    if not (data := json.get("data")):
         raise TastytradeError(f"No data present in response: {json}")
-    return data
+    return cast(dict[str, Any], data)
 
 
 def get_sign(value: Optional[Decimal]) -> Optional[PriceEffect]:
@@ -304,7 +288,6 @@ def set_sign_for(data: Any, properties: list[str]) -> Any:
         data = cast(dict[str, Any], data)
         for property in properties:
             key = _dasherize(property)
-            effect = data.get(f"{key}-effect")
-            if effect == PriceEffect.DEBIT:
+            if data.get(f"{key}-effect") == PriceEffect.DEBIT:
                 data[key] = -abs(Decimal(data[key]))
     return data
