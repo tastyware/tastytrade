@@ -5,6 +5,7 @@ from tastytrade.market_data import (
     a_get_market_data_by_type,
     get_market_data,
     get_market_data_by_type,
+    MarketData
 )
 from tastytrade.order import InstrumentType
 from tastytrade.session import Session
@@ -35,3 +36,10 @@ async def test_get_market_data_by_type_async(session: Session):
         cryptocurrencies=["ETH/USD", "BTC/USD"],
         equities=["SPLG", "SPY"],
     )
+
+# pytest -k test_get_market_data_by_type_equity_option tests/test_market_data.py
+def test_get_market_data_by_type_equity_option(get_tastytrade_json):
+    items = get_tastytrade_json('market_data_equity_option_response')
+    md = MarketData(**items['items'][0])
+    assert(md.open_interest == 927)
+               

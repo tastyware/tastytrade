@@ -103,6 +103,7 @@ class MarketData(TastytradeData):
     volume: Optional[Decimal] = None
     year_low_price: Optional[Decimal] = None
     year_high_price: Optional[Decimal] = None
+    open_interest: Optional[Decimal] = None
 
 
 def get_market_data(

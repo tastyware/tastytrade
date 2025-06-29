@@ -32,3 +32,21 @@ async def session(
 @fixture(scope="class")
 def inject_credentials(request: Any, credentials: tuple[str, str]):
     request.cls.credentials = credentials
+
+
+@fixture(scope="session")
+def get_tastytrade_json():
+    import json
+    from pathlib import Path
+
+    def _get_tastytrade_json(name: str) -> Any:
+        path = (
+            Path(__file__).parent.parent
+            / "docs/tastytrade_api_examples"
+            / "responses"
+            / f"{name}.json"
+        )
+        with open(path) as f:
+            return json.load(f)
+
+    return _get_tastytrade_json
