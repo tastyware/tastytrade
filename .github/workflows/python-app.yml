@@ -37,3 +37,5 @@ jobs:
         TT_USERNAME_SANDBOX: ${{ secrets.TT_USERNAME_SANDBOX }}
         TT_PASSWORD_SANDBOX: ${{ secrets.TT_PASSWORD_SANDBOX }}
         TT_ACCOUNT: ${{ secrets.TT_ACCOUNT }}
+        TT_REFRESH: ${{ secrets.TT_REFRESH }}
+        TT_SECRET: ${{ secrets.TT_SECRET }}
