@@ -57,7 +57,7 @@ class BacktestLeg(BacktestData):
 
     days_until_expiration: int = 45
     delta: int = 15
-    direction: Literal["buy", "sell"] = "sell"
+    direction: Literal["long", "short"] = "short"
     quantity: int = 1
     side: Literal["call", "put"] = "call"
 
@@ -159,7 +159,7 @@ class BacktestResponse(Backtest):
 
     created_at: datetime
     id: str
-    results: BacktestResults
+    results: Optional[BacktestResults] = None
     eta: Optional[int] = None
     progress: Optional[Decimal] = None
 

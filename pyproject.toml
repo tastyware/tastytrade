@@ -77,6 +77,9 @@ where = ["tastytrade"]
 [tool.ruff.lint]
 select = ["E", "F", "I"]
 
+[tool.coverage.run]
+omit = ["tastytrade/oauth.py"]
+
 [tool.pyright]
 pythonVersion = "3.9"
 include = ["tastytrade", "tests"]

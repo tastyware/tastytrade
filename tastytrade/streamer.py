@@ -252,6 +252,7 @@ class AlertStreamer:
         self._reconnect_task: Optional[asyncio.Task[None]] = None
         self._heartbeat_task: Optional[asyncio.Task[None]] = None
         self._closing = False
+        self._tasks: set[asyncio.Task[Any]] = set()
 
     async def __aenter__(self) -> AlertStreamer:
         time_out = 100
@@ -319,7 +320,9 @@ class AlertStreamer:
                 logger.debug("Websocket interrupted, cancelling main loop.")
                 return await self.close()
             finally:
-                asyncio.create_task(self.disconnect_fn(self, *self.disconnect_args))
+                self._tasks.add(  # prevent garbage collection
+                    asyncio.create_task(self.disconnect_fn(self, *self.disconnect_args))
+                )
             logger.debug("Websocket connection closed, retrying...")
             reconnecting = True
 
@@ -487,6 +490,7 @@ class DXLinkStreamer:
         self._reconnect_task: Optional[asyncio.Task[None]] = None
         self._closing = False
         self._websocket: ClientConnection
+        self._tasks: set[asyncio.Task[Any]] = set()
 
     async def __aenter__(self) -> DXLinkStreamer:
         self._connect_task = asyncio.create_task(self._connect())
@@ -607,7 +611,9 @@ class DXLinkStreamer:
                 logger.debug("Websocket interrupted, cancelling main loop.")
                 return await self.close()
             finally:
-                asyncio.create_task(self.disconnect_fn(self, *self.disconnect_args))
+                self._tasks.add(  # prevent garbage collection
+                    asyncio.create_task(self.disconnect_fn(self, *self.disconnect_args))
+                )
             logger.debug("Websocket connection closed, retrying...")
             reconnecting = True
 

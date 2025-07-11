@@ -17,7 +17,10 @@ async def test_backtest_simple(session: Session):
         symbol="SPY",
         entry_conditions=BacktestEntry(),
         exit_conditions=BacktestExit(at_days_to_expiration=21),
-        legs=[BacktestLeg(), BacktestLeg(side="put")],
+        legs=[
+            BacktestLeg(direction="short"),
+            BacktestLeg(direction="long", side="put"),
+        ],
         start_date=today_in_new_york() - timedelta(days=365),
     )
     results = [r async for r in backtest_session.run(backtest)]

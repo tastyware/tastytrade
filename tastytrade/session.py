@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import json
-import time
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from types import TracebackType
 from typing import Any, Optional, Union
 
@@ -11,6 +10,7 @@ from typing_extensions import Self
 
 from tastytrade import API_URL, CERT_URL, logger
 from tastytrade.utils import (
+    TZ,
     TastytradeData,
     TastytradeError,
     validate_and_parse,
@@ -300,7 +300,7 @@ class Session:
         remember_token: Optional[str] = None,
         is_test: bool = False,
         two_factor_authentication: Optional[str] = None,
-        dxfeed_tos_compliant: bool = False,
+        dxfeed_tos_compliant: bool = True,
         proxy: Optional[str] = None,
     ):
         body = {"login": login, "remember-me": remember_me}
@@ -359,15 +359,13 @@ class Session:
             else "/quote-streamer-tokens"
         )
         data = self._get(url)
-
         #: Auth token for dxfeed websocket
         self.streamer_token = data["token"]
         #: URL for dxfeed websocket
         self.dxlink_url = data["dxlink-url"]
         #: expiration for streamer token
-        exp = data.get("expires-at")
-        self.streamer_expiration = (
-            datetime.fromisoformat(exp.replace("Z", "+00:00")) if exp else None
+        self.streamer_expiration = datetime.fromisoformat(
+            data["expires-at"].replace("Z", "+00:00")
         )
 
     def __enter__(self) -> Session:
@@ -486,13 +484,10 @@ class Session:
         attrs = self.__dict__.copy()
         del attrs["async_client"]
         del attrs["sync_client"]
-        attrs["user"] = attrs["user"].model_dump()
+        if "user" in attrs:
+            attrs["user"] = attrs["user"].model_dump()
         attrs["session_expiration"] = self.session_expiration.strftime(_fmt)
-        attrs["streamer_expiration"] = (
-            self.streamer_expiration.strftime(_fmt)
-            if self.streamer_expiration
-            else None
-        )
+        attrs["streamer_expiration"] = self.streamer_expiration.strftime(_fmt)
         return json.dumps(attrs)
 
     @classmethod
@@ -501,20 +496,24 @@ class Session:
         Create a new Session object from a serialized string.
         """
         deserialized = json.loads(serialized)
-        deserialized["user"] = User(**deserialized["user"])
+        if "user" in deserialized:
+            deserialized["user"] = User(**deserialized["user"])
         self = cls.__new__(cls)
         self.__dict__ = deserialized
         base_url = CERT_URL if self.is_test else API_URL
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "Authorization": self.session_token,
+            "Authorization": self.session_token
+            if "user" in deserialized
+            else f"Bearer {self.session_token}",
         }
         self.session_expiration = datetime.strptime(
             deserialized["session_expiration"], _fmt
         )
-        exp = deserialized.get("streamer_expiration")
-        self.streamer_expiration = datetime.strptime(exp, _fmt) if exp else None
+        self.streamer_expiration = datetime.strptime(
+            deserialized["streamer_expiration"], _fmt
+        )
         self.sync_client = Client(base_url=base_url, headers=headers, proxy=self.proxy)
         self.async_client = AsyncClient(
             base_url=base_url, headers=headers, proxy=self.proxy
@@ -522,11 +521,7 @@ class Session:
         return self
 
 
-def _now_ms() -> int:
-    return round(time.time() * 1000)
-
-
-class OAuthSession(Session):  # pragma: no cover
+class OAuthSession(Session):
     """
     Contains a managed user login which can then be used to interact with the
     remote API.
@@ -557,8 +552,6 @@ class OAuthSession(Session):  # pragma: no cover
         self.provider_secret = provider_secret
         #: Refresh token for the user
         self.refresh_token = refresh_token
-        #: Unix timestamp for when the session token expires
-        self.expires_at = 0
         # The headers to use for API requests
         headers = {
             "Accept": "application/json",
@@ -572,11 +565,25 @@ class OAuthSession(Session):  # pragma: no cover
         self.async_client = AsyncClient(
             base_url=self.sync_client.base_url, headers=headers, proxy=proxy
         )
+        #: expiration for streamer token
+        self.streamer_expiration = datetime.now(TZ)
         self.refresh()
+
+    def _streamer_refresh(self) -> None:
+        # Pull streamer tokens and urls
+        data = self._get("/api-quote-tokens")
+        # Auth token for dxfeed websocket
+        self.streamer_token = data["token"]
+        # URL for dxfeed websocket
+        self.dxlink_url = data["dxlink-url"]
+        self.streamer_expiration = datetime.fromisoformat(
+            data["expires-at"].replace("Z", "+00:00")
+        )
 
     def refresh(self) -> None:
         """
         Refreshes the acccess token using the stored refresh token.
+        Also refreshes the streamer token if necessary.
         """
         request = self.sync_client.build_request(
             "POST",
@@ -592,19 +599,24 @@ class OAuthSession(Session):  # pragma: no cover
         response = self.sync_client.send(request)
         validate_response(response)
         data = response.json()
-        # update the relevant tokens
+        #: The session token used to authenticate requests
         self.session_token = data["access_token"]
-        token_lifetime = data.get("expires_in", 900) * 1000
-        self.expires_at = _now_ms() + token_lifetime
+        token_lifetime: int = data.get("expires_in", 900)
+        #: expiration for session token
+        self.session_expiration = datetime.now(TZ) + timedelta(seconds=token_lifetime)
         logger.debug(f"Refreshed token, expires in {token_lifetime}ms")
         auth_headers = {"Authorization": f"Bearer {self.session_token}"}
         # update the httpx clients with the new token
         self.sync_client.headers.update(auth_headers)
         self.async_client.headers.update(auth_headers)
+        # update the streamer token if necessary
+        if self.streamer_expiration < self.session_expiration:
+            self._streamer_refresh()
 
     async def a_refresh(self) -> None:
         """
         Refreshes the acccess token using the stored refresh token.
+        Also refreshes the streamer token if necessary.
         """
         request = self.async_client.build_request(
             "POST",
@@ -622,41 +634,21 @@ class OAuthSession(Session):  # pragma: no cover
         data = response.json()
         # update the relevant tokens
         self.session_token = data["access_token"]
-        token_lifetime = data.get("expires_in", 900) * 1000
-        self.expires_at = _now_ms() + token_lifetime
+        token_lifetime: int = data.get("expires_in", 900)
+        self.session_expiration = datetime.now(TZ) + timedelta(token_lifetime)
         logger.debug(f"Refreshed token, expires in {token_lifetime}ms")
         auth_headers = {"Authorization": f"Bearer {self.session_token}"}
         # update the httpx clients with the new token
         self.sync_client.headers.update(auth_headers)
         self.async_client.headers.update(auth_headers)
-
-    def serialize(self) -> str:
-        """
-        Serializes the session to a string, useful for storing
-        a session for later use.
-        Could be used with pickle, Redis, etc.
-        """
-        attrs = self.__dict__.copy()
-        del attrs["async_client"]
-        del attrs["sync_client"]
-        return json.dumps(attrs)
-
-    @classmethod
-    def deserialize(cls, serialized: str) -> Self:
-        """
-        Create a new Session object from a serialized string.
-        """
-        deserialized = json.loads(serialized)
-        self = cls.__new__(cls)
-        self.__dict__ = deserialized
-        base_url = CERT_URL if self.is_test else API_URL
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.session_token}",
-        }
-        self.sync_client = Client(base_url=base_url, headers=headers, proxy=self.proxy)
-        self.async_client = AsyncClient(
-            base_url=base_url, headers=headers, proxy=self.proxy
-        )
-        return self
+        # update the streamer token if necessary
+        if self.streamer_expiration < self.session_expiration:
+            # Pull streamer tokens and urls
+            data = await self._a_get("/api-quote-tokens")
+            # Auth token for dxfeed websocket
+            self.streamer_token = data["token"]
+            # URL for dxfeed websocket
+            self.dxlink_url = data["dxlink-url"]
+            self.streamer_expiration = datetime.fromisoformat(
+                data["expires-at"].replace("Z", "+00:00")
+            )

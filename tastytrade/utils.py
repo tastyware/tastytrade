@@ -1,6 +1,7 @@
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from enum import Enum
+from json import JSONDecodeError
 from typing import Any, Optional, cast
 from zoneinfo import ZoneInfo
 
@@ -249,18 +250,21 @@ def validate_response(response: Response) -> None:
     :param response: response to check for errors
     """
     if response.status_code // 100 != 2:
-        json: dict[str, Any] = response.json()
+        try:
+            json: dict[str, Any] = response.json()
+        except JSONDecodeError as e:
+            raise TastytradeError(f"Couldn't parse response: {response.text}") from e
         if not (content := json.get("error")):
             raise TastytradeError(f"Couldn't parse response: {json}")
-        error_message = f"{content['code']}: {content['message']}"
-        if errors := content.get("errors"):
-            for error in errors:
-                if "code" in error:
-                    error_message += f"\n{error['code']}: {error['message']}"
-                else:
-                    error_message += f"\n{error['domain']}: {error['reason']}"
+        errors = content.get("errors") or [content]
+        message = ""
+        for error in errors:
+            if "code" in error:
+                message += f"{error['code']}: {error['message']}\n"
+            else:
+                message += f"{error['domain']}: {error['reason']}\n"
 
-        raise TastytradeError(error_message)
+        raise TastytradeError(message)
 
 
 def validate_and_parse(response: Response) -> dict[str, Any]:

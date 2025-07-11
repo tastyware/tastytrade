@@ -3,7 +3,7 @@ import os
 import pytest
 from proxy import TestCase
 
-from tastytrade import Session
+from tastytrade import Account, OAuthSession, Session
 
 
 def test_get_customer(session: Session):
@@ -56,3 +56,26 @@ def test_cert_session():
     assert username and password
     session = Session(username, password, is_test=True)
     session.destroy()
+
+
+@pytest.fixture(scope="module")
+async def oauth(aiolib: str) -> OAuthSession:
+    refresh = os.getenv("TT_REFRESH")
+    secret = os.getenv("TT_SECRET")
+    assert refresh and secret
+    return OAuthSession(secret, refresh)
+
+
+def test_oauth_refresh(oauth: OAuthSession):
+    pass
+
+
+def test_oauth_serialization(oauth: OAuthSession):
+    session_str = oauth.serialize()
+    session2 = OAuthSession.deserialize(session_str)
+    print(oauth.session_token == session2.session_token)
+    Account.get(session2)
+
+
+async def test_oauth_refresh_async(oauth: OAuthSession):
+    await oauth.a_refresh()
