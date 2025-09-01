@@ -9,6 +9,8 @@ from httpx._models import Response  # type: ignore
 from pandas_market_calendars import get_calendar  # type: ignore[import-untyped]
 from pydantic import BaseModel, ConfigDict
 
+from tastytrade import logger
+
 NYSE: Any = get_calendar("NYSE")
 TZ = ZoneInfo("US/Eastern")
 
@@ -259,10 +261,12 @@ def validate_response(response: Response) -> None:
         errors = content.get("errors") or [content]
         message = ""
         for error in errors:
-            if "code" in error:
+            if "code" in error and "message" in error:
                 message += f"{error['code']}: {error['message']}\n"
-            else:
+            elif "domain" in error and "reason" in error:
                 message += f"{error['domain']}: {error['reason']}\n"
+            else:
+                logger.debug(f"Unknown error type: {error}")
 
         raise TastytradeError(message)
 

@@ -4,7 +4,7 @@ API_URL = "https://api.tastyworks.com"
 BACKTEST_URL = "https://backtester.vast.tastyworks.com"
 CERT_URL = "https://api.cert.tastyworks.com"
 VAST_URL = "https://vast.tastyworks.com"
-VERSION = "10.3.0"
+VERSION = "10.3.1"
 
 __version__ = VERSION
 version_str: str = f"tastyware/tastytrade:v{VERSION}"

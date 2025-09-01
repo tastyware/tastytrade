@@ -131,7 +131,7 @@ Note that to cancel complex orders, you need to use the ``delete_complex_order``
 Notional market orders
 ----------------------
 
-Notional orders are slightly different from normal orders. Since the market will determine both the quantity and the price for you, you need to pass `value` instead of price, and pass `None` for the `quantity` parameter to ``build_leg``.
+Notional orders are slightly different from normal orders. Since the market will determine both the quantity and the price for you, you need to pass ``value`` instead of price, and pass ``None`` for the ``quantity`` parameter to ``build_leg``.
 
 .. code-block:: python
 
@@ -145,3 +145,23 @@ Notional orders are slightly different from normal orders. Since the market will
         ]
     )
     resp = account.place_order(session, order, dry_run=False)
+
+Cryptocurrency orders
+---------------------
+
+Cryptocurrency orders should use the special ``IOC`` TIF:
+
+.. code-block:: python
+
+    order = NewOrder(
+        time_in_force=OrderTimeInForce.IOC,
+        order_type=OrderType.NOTIONAL_MARKET,
+        value=-Decimal(100),  # buy $100 of ETH
+        legs=[
+            Leg(
+                instrument_type=InstrumentType.CRYPTOCURRENCY,
+                action=OrderAction.BUY_TO_OPEN,
+                symbol="ETH/USD",
+            ),
+        ],
+    )
