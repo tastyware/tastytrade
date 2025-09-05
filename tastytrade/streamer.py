@@ -35,7 +35,7 @@ from tastytrade.order import (
     PlacedComplexOrder,
     PlacedOrder,
 )
-from tastytrade.session import OAuthSession, Session
+from tastytrade.session import Session
 from tastytrade.utils import TastytradeData, TastytradeError, set_sign_for
 from tastytrade.watchlists import Watchlist
 
@@ -125,7 +125,6 @@ class SubscriptionType(str, Enum):
     HEARTBEAT = "heartbeat"
     PUBLIC_WATCHLISTS = "public-watchlists-subscribe"
     QUOTE_ALERTS = "quote-alerts-subscribe"
-    USER_MESSAGE = "user-message-subscribe"
 
 
 #: List of all possible types to stream with the alert streamer
@@ -226,9 +225,7 @@ class AlertStreamer:
         reconnect_fn: Callable[..., Coroutine[Any, Any, None]] = _do_nothing,
     ):
         #: The active session used to initiate the streamer or make requests
-        self.token: str = session.session_token
-        if isinstance(session, OAuthSession):
-            self.token = "Bearer " + self.token
+        self.token: str = "Bearer " + session.session_token
         #: The base url for the streamer websocket
         self.base_url: str = CERT_STREAMER_URL if session.is_test else STREAMER_URL
         #: An async function to be called upon reconnection. The first argument must be
@@ -375,14 +372,6 @@ class AlertStreamer:
         Subscribes to quote alerts (which are configured at a user level).
         """
         await self._subscribe(SubscriptionType.QUOTE_ALERTS)
-
-    async def subscribe_user_messages(self, session: Session) -> None:
-        """
-        Subscribes to user-level messages, e.g. new account creation.
-        """
-        await self._subscribe(
-            SubscriptionType.USER_MESSAGE, value=session.user.external_id
-        )
 
     async def _heartbeat(self) -> None:
         """

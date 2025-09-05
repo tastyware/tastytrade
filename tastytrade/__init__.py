@@ -1,10 +1,9 @@
 import logging
 
 API_URL = "https://api.tastyworks.com"
-BACKTEST_URL = "https://backtester.vast.tastyworks.com"
 CERT_URL = "https://api.cert.tastyworks.com"
 VAST_URL = "https://vast.tastyworks.com"
-VERSION = "10.3.1"
+VERSION = "11.0.0"
 
 __version__ = VERSION
 version_str: str = f"tastyware/tastytrade:v{VERSION}"
@@ -15,13 +14,7 @@ logger.setLevel(logging.DEBUG)
 # ruff: noqa: E402
 
 from .account import Account
-from .session import OAuthSession, Session
+from .session import Session
 from .streamer import AlertStreamer, DXLinkStreamer
 
-__all__ = [
-    "Account",
-    "AlertStreamer",
-    "DXLinkStreamer",
-    "OAuthSession",
-    "Session",
-]
+__all__ = ["Account", "AlertStreamer", "DXLinkStreamer", "Session"]
