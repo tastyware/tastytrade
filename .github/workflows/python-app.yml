@@ -32,10 +32,8 @@ jobs:
       run: |
         uv run pytest --cov=tastytrade --cov-report=term-missing tests/ --cov-fail-under=95
       env:
-        TT_USERNAME: ${{ secrets.TT_USERNAME }}
-        TT_PASSWORD: ${{ secrets.TT_PASSWORD }}
-        TT_USERNAME_SANDBOX: ${{ secrets.TT_USERNAME_SANDBOX }}
-        TT_PASSWORD_SANDBOX: ${{ secrets.TT_PASSWORD_SANDBOX }}
+        TT_REFRESH_SANDBOX: ${{ secrets.TT_REFRESH_SANDBOX }}
+        TT_SECRET_SANDBOX: ${{ secrets.TT_SECRET_SANDBOX }}
         TT_ACCOUNT: ${{ secrets.TT_ACCOUNT }}
         TT_REFRESH: ${{ secrets.TT_REFRESH }}
         TT_SECRET: ${{ secrets.TT_SECRET }}
