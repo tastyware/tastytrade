@@ -13,7 +13,6 @@ async def test_account_streamer(session: Session):
     async with AlertStreamer(session) as streamer:
         await streamer.subscribe_public_watchlists()
         await streamer.subscribe_quote_alerts()
-        await streamer.subscribe_user_messages(session)
         accounts = Account.get(session)
         await streamer.subscribe_accounts(accounts)
 
@@ -47,7 +46,6 @@ async def test_account_streamer_reconnect(session: Session):
         session, reconnect_args=(True,), reconnect_fn=reconnect_alerts
     )
     await streamer.subscribe_public_watchlists()
-    await streamer.subscribe_user_messages(session)
     await streamer._websocket.close()  # type: ignore
     await asyncio.sleep(3)
     accounts = await Account.a_get(session)
@@ -75,11 +73,11 @@ class TestProxy(TestCase, IsolatedAsyncioTestCase):
     @pytest.mark.asyncio
     async def test_streamer_with_proxy(self):
         assert self.PROXY is not None
-        with Session(
+        session = Session(
             *self.credentials,  # type: ignore
             proxy=f"http://127.0.0.1:{self.PROXY.flags.port}",
-        ) as session:
-            assert session.validate()
-            async with DXLinkStreamer(session) as streamer:
-                await streamer.subscribe(Quote, ["SPY"])
-                _ = await streamer.get_event(Quote)
+        )
+        assert session.validate()
+        async with DXLinkStreamer(session) as streamer:
+            await streamer.subscribe(Quote, ["SPY"])
+            _ = await streamer.get_event(Quote)

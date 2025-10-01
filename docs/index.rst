@@ -39,7 +39,6 @@ A simple, reverse-engineered, sync/async SDK for Tastytrade built on their (now 
    account-streamer
    data-streamer
    market-data
-   backtest
    market-sessions
    watchlists
 
@@ -49,7 +48,6 @@ A simple, reverse-engineered, sync/async SDK for Tastytrade built on their (now 
    :hidden:
 
    api/account
-   api/backtesting
    api/dxfeed
    api/instruments
    api/market-data

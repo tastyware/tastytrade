@@ -1681,6 +1681,8 @@ class Account(TastytradeData):
         Get a list of order chains (open + rolls + close) for given symbol
         over the given time frame, with total P/L, commissions, etc.
 
+        Not supported for OAuth sessions--write Tasty to get this added!
+
         :param session: the session to use for the request.
         :param symbol: the underlying symbol for the chains.
         :param start_time: the beginning time of the query.
@@ -1719,6 +1721,8 @@ class Account(TastytradeData):
         """
         Get a list of order chains (open + rolls + close) for given symbol
         over the given time frame, with total P/L, commissions, etc.
+
+        Not supported for OAuth sessions--write Tasty to get this added!
 
         :param session: the session to use for the request.
         :param symbol: the underlying symbol for the chains.
