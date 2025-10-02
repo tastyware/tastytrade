@@ -70,7 +70,6 @@ async def test_dxlink_streamer_reconnect(session: Session):
 
 @pytest.mark.usefixtures("inject_credentials")
 class TestProxy(TestCase, IsolatedAsyncioTestCase):
-    @pytest.mark.asyncio
     async def test_streamer_with_proxy(self):
         assert self.PROXY is not None
         session = Session(

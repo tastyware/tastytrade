@@ -377,7 +377,6 @@ async def a_paginate(
     params = {k: v for k, v in params.items() if v is not None}
     # loop through pages and get all transactions
     while True:
-        print(str(client.base_url) + url, params, client.headers)
         response = await client.get(url, params=params)
         validate_response(response)
         json = response.json()

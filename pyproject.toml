@@ -87,7 +87,6 @@ include = ["tastytrade", "tests"]
 exclude = ["**/__pycache__"]
 typeCheckingMode = "strict"
 reportPrivateUsage = false
-reportDeprecated = "warning"
 
 [tool.mypy]
 strict = true

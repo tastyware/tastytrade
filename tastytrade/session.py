@@ -7,7 +7,7 @@ from typing import Any, Optional, Union
 from httpx import AsyncClient, Client
 from typing_extensions import Self
 
-from tastytrade import API_URL, CERT_URL, logger
+from tastytrade import API_URL, API_VERSION, CERT_URL, logger
 from tastytrade.utils import (
     TZ,
     TastytradeData,
@@ -276,7 +276,7 @@ class Session:
         # The headers to use for API requests
         headers = {
             "Accept": "application/json",
-            # "Accept-Version": API_VERSION,
+            "Accept-Version": API_VERSION,
             "Content-Type": "application/json",
         }
         #: httpx client for sync requests

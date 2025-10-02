@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Any, Literal, Optional, Union, cast, overload
 
 import httpx
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 from typing_extensions import Self
 
 from tastytrade import VAST_URL
@@ -35,8 +35,7 @@ TT_DATE_FMT = "%Y-%m-%dT%H:%M:%SZ"
 
 
 class EmptyDict(BaseModel):
-    class Config:
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class AccountBalance(TastytradeData):
@@ -578,29 +577,35 @@ class Account(TastytradeData):
         data = session._get(f"/accounts/{self.account_number}/trading-status")
         return TradingStatus(**data)
 
-    async def a_get_balances(self, session: Session) -> list[AccountBalance]:
+    async def a_get_balances(
+        self, session: Session, currency: str = "USD"
+    ) -> AccountBalance:
         """
         Get the current balances of the account.
 
-        :param session: the session to use for the request.
+        :param session: the session to use for the request
+        :param currency: the currency to state balances in
         """
-        data = await session._a_get(f"/accounts/{self.account_number}/balances")
-        return [AccountBalance(**i) for i in data["items"]]
+        data = await session._a_get(
+            f"/accounts/{self.account_number}/balances/{currency}"
+        )
+        return AccountBalance(**data)
 
-    def get_balances(self, session: Session) -> list[AccountBalance]:
+    def get_balances(self, session: Session, currency: str = "USD") -> AccountBalance:
         """
         Get the current balances of the account.
 
-        :param session: the session to use for the request.
+        :param session: the session to use for the request
+        :param currency: the currency to state balances in
         """
-        data = session._get(f"/accounts/{self.account_number}/balances")
-        return [AccountBalance(**i) for i in data["items"]]
+        data = session._get(f"/accounts/{self.account_number}/balances/{currency}")
+        return AccountBalance(**data)
 
     async def a_get_balance_snapshots(
         self,
         session: Session,
         per_page: int = 250,
-        page_offset: Optional[int] = None,
+        page_offset: Optional[int] = 0,
         currency: str = "USD",
         end_date: Optional[date] = None,
         start_date: Optional[date] = None,
@@ -645,7 +650,7 @@ class Account(TastytradeData):
         self,
         session: Session,
         per_page: int = 250,
-        page_offset: Optional[int] = None,
+        page_offset: Optional[int] = 0,
         currency: str = "USD",
         end_date: Optional[date] = None,
         start_date: Optional[date] = None,
@@ -661,7 +666,7 @@ class Account(TastytradeData):
         :param session: the session to use for the request.
         :param per_page: the number of results to return per page.
         :param page_offset:
-            provide a specific page to get; if not provided, get all pages
+            provide a specific page to get; if None, get all pages
         :param currency: the currency to show balances in.
         :param start_date: the starting date of the range.
         :param end_date: the ending date of the range.
@@ -780,7 +785,7 @@ class Account(TastytradeData):
         self,
         session: Session,
         per_page: int = 250,
-        page_offset: Optional[int] = None,
+        page_offset: Optional[int] = 0,
         sort: Literal["Asc", "Desc"] = "Desc",
         type: Optional[str] = None,
         types: Optional[list[str]] = None,
@@ -802,7 +807,7 @@ class Account(TastytradeData):
         :param session: the session to use for the request.
         :param per_page: the number of results to return per page.
         :param page_offset:
-            provide a specific page to get; if not provided, get all pages
+            provide a specific page to get; if None, get all pages
         :param sort: the order to sort results in, either 'Desc' or 'Asc'.
         :param type: the type of transaction.
         :param types: a list of transaction types to filter by.
@@ -851,7 +856,7 @@ class Account(TastytradeData):
         self,
         session: Session,
         per_page: int = 250,
-        page_offset: Optional[int] = None,
+        page_offset: Optional[int] = 0,
         sort: Literal["Asc", "Desc"] = "Desc",
         type: Optional[str] = None,
         types: Optional[list[str]] = None,
@@ -873,7 +878,7 @@ class Account(TastytradeData):
         :param session: the session to use for the request.
         :param per_page: the number of results to return per page.
         :param page_offset:
-            provide a specific page to get; if not provided, get all pages
+            provide a specific page to get; if None, get all pages
         :param sort: the order to sort results in, either 'Desc' or 'Asc'.
         :param type: the type of transaction.
         :param types: a list of transaction types to filter by.
@@ -1244,7 +1249,7 @@ class Account(TastytradeData):
         self,
         session: Session,
         per_page: int = 50,
-        page_offset: Optional[int] = None,
+        page_offset: Optional[int] = 0,
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
         underlying_symbol: Optional[str] = None,
@@ -1261,7 +1266,7 @@ class Account(TastytradeData):
         :param session: the session to use for the request.
         :param per_page: the number of results to return per page.
         :param page_offset:
-            provide a specific page to get; if not provided, get all pages
+            provide a specific page to get; if None, get all pages
         :param start_date: the start date of orders to query.
         :param end_date: the end date of orders to query.
         :param underlying_symbol: underlying symbol to filter by.
@@ -1301,7 +1306,7 @@ class Account(TastytradeData):
         self,
         session: Session,
         per_page: int = 50,
-        page_offset: Optional[int] = None,
+        page_offset: Optional[int] = 0,
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
         underlying_symbol: Optional[str] = None,
@@ -1318,7 +1323,7 @@ class Account(TastytradeData):
         :param session: the session to use for the request.
         :param per_page: the number of results to return per page.
         :param page_offset:
-            provide a specific page to get; if not provided, get all pages
+            provide a specific page to get; if None, get all pages
         :param start_date: the start date of orders to query.
         :param end_date: the end date of orders to query.
         :param underlying_symbol: underlying symbol to filter by.
@@ -1355,7 +1360,7 @@ class Account(TastytradeData):
         )
 
     async def a_get_complex_order_history(
-        self, session: Session, per_page: int = 50, page_offset: Optional[int] = None
+        self, session: Session, per_page: int = 50, page_offset: Optional[int] = 0
     ) -> list[PlacedComplexOrder]:
         """
         Get order history of the account.
@@ -1363,7 +1368,7 @@ class Account(TastytradeData):
         :param session: the session to use for the request.
         :param per_page: the number of results to return per page.
         :param page_offset:
-            provide a specific page to get; if not provided, get all pages
+            provide a specific page to get; if None, get all pages
         """
         params = {"per-page": per_page, "page-offset": page_offset}
         return await a_paginate(
@@ -1374,7 +1379,7 @@ class Account(TastytradeData):
         )
 
     def get_complex_order_history(
-        self, session: Session, per_page: int = 50, page_offset: Optional[int] = None
+        self, session: Session, per_page: int = 50, page_offset: Optional[int] = 0
     ) -> list[PlacedComplexOrder]:
         """
         Get order history of the account.
@@ -1382,7 +1387,7 @@ class Account(TastytradeData):
         :param session: the session to use for the request.
         :param per_page: the number of results to return per page.
         :param page_offset:
-            provide a specific page to get; if not provided, get all pages
+            provide a specific page to get; if None, get all pages
         """
         params = {"per-page": per_page, "page-offset": page_offset}
         return paginate(

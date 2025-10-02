@@ -1,7 +1,7 @@
 import logging
 
 API_URL = "https://api.tastyworks.com"
-API_VERSION = "20251001"
+API_VERSION = "20250813"
 CERT_URL = "https://api.cert.tastyworks.com"
 VAST_URL = "https://vast.tastyworks.com"
 VERSION = "11.0.0"

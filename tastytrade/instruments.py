@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Any, Optional, Union, overload
 
 from pydantic import field_validator, model_validator
-from typing_extensions import Self, deprecated
+from typing_extensions import Self
 
 from tastytrade.order import InstrumentType, TradeableTastytradeData
 from tastytrade.session import Session
@@ -301,7 +301,7 @@ class Equity(TradeableTastytradeData):
         cls,
         session: Session,
         per_page: int = 1000,
-        page_offset: Optional[int] = None,
+        page_offset: Optional[int] = 0,
         lendability: Optional[str] = None,
     ) -> list[Self]:
         """
@@ -310,7 +310,7 @@ class Equity(TradeableTastytradeData):
         :param session: the session to use for the request.
         :param per_page: the number of equities to get per page.
         :param page_offset:
-            provide a specific page to get; if not provided, get all pages
+            provide a specific page to get; if None, get all pages
         :param lendability:
             the lendability of the equities; e.g. 'Easy To Borrow',
             'Locate Required', 'Preborrow'
@@ -329,7 +329,7 @@ class Equity(TradeableTastytradeData):
         cls,
         session: Session,
         per_page: int = 1000,
-        page_offset: Optional[int] = None,
+        page_offset: Optional[int] = 0,
         lendability: Optional[str] = None,
     ) -> list[Self]:
         """
@@ -338,7 +338,7 @@ class Equity(TradeableTastytradeData):
         :param session: the session to use for the request.
         :param per_page: the number of equities to get per page.
         :param page_offset:
-            provide a specific page to get; if not provided, get all pages
+            provide a specific page to get; if None, get all pages
         :param lendability:
             the lendability of the equities; e.g. 'Easy To Borrow',
             'Locate Required', 'Preborrow'
@@ -354,12 +354,13 @@ class Equity(TradeableTastytradeData):
 
     @overload
     @classmethod
-    @deprecated("Fetching multiple equities marked deprecated in API docs.")
     async def a_get(
         cls,
         session: Session,
         symbols: list[str],
         *,
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
         lendability: Optional[str] = None,
         is_index: Optional[bool] = None,
         is_etf: Optional[bool] = None,
@@ -374,6 +375,8 @@ class Equity(TradeableTastytradeData):
         cls,
         session: Session,
         symbols: Union[str, list[str]],
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
         lendability: Optional[str] = None,
         is_index: Optional[bool] = None,
         is_etf: Optional[bool] = None,
@@ -384,6 +387,9 @@ class Equity(TradeableTastytradeData):
 
         :param session: the session to use for the request.
         :param symbols: the symbol(s) to get the equities for.
+        :param per_page: the number of options to get per page.
+        :param page_offset:
+            provide a specific page to get; if None, get all pages
         :param lendability:
             the lendability of the equities; e.g. 'Easy To Borrow',
             'Locate Required', 'Preborrow'
@@ -399,12 +405,12 @@ class Equity(TradeableTastytradeData):
             "lendability": lendability,
             "is-index": is_index,
             "is-etf": is_etf,
+            "per-page": per_page,
+            "page-offset": page_offset,
         }
-        data = await session._a_get(
-            "/instruments/equities",
-            params={k: v for k, v in params.items() if v is not None},
+        return await a_paginate(
+            session.async_client, cls, "/instruments/equities", params
         )
-        return [cls(**i) for i in data["items"]]
 
     @overload
     @classmethod
@@ -413,6 +419,8 @@ class Equity(TradeableTastytradeData):
         session: Session,
         symbols: list[str],
         *,
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
         lendability: Optional[str] = None,
         is_index: Optional[bool] = None,
         is_etf: Optional[bool] = None,
@@ -428,6 +436,8 @@ class Equity(TradeableTastytradeData):
         session: Session,
         symbols: Union[str, list[str]],
         *,
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
         lendability: Optional[str] = None,
         is_index: Optional[bool] = None,
         is_etf: Optional[bool] = None,
@@ -438,6 +448,9 @@ class Equity(TradeableTastytradeData):
 
         :param session: the session to use for the request.
         :param symbols: the symbol(s) to get the equities for.
+        :param per_page: the number of options to get per page.
+        :param page_offset:
+            provide a specific page to get; if None, get all pages
         :param lendability:
             the lendability of the equities; e.g. 'Easy To Borrow',
             'Locate Required', 'Preborrow'
@@ -453,12 +466,10 @@ class Equity(TradeableTastytradeData):
             "lendability": lendability,
             "is-index": is_index,
             "is-etf": is_etf,
+            "per-page": per_page,
+            "page-offset": page_offset,
         }
-        data = session._get(
-            "/instruments/equities",
-            params={k: v for k, v in params.items() if v is not None},
-        )
-        return [cls(**i) for i in data["items"]]
+        return paginate(session.sync_client, cls, "/instruments/equities", params)
 
 
 class Option(TradeableTastytradeData):
@@ -496,21 +507,20 @@ class Option(TradeableTastytradeData):
 
     @overload
     @classmethod
-    @deprecated("Fetching multiple options marked deprecated in API docs.")
     async def a_get(
         cls,
         session: Session,
         symbols: list[str],
         *,
         active: Optional[bool] = None,
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
         with_expired: Optional[bool] = None,
     ) -> list[Self]: ...
 
     @overload
     @classmethod
-    async def a_get(
-        cls, session: Session, symbols: str, *, active: Optional[bool] = None
-    ) -> Self: ...
+    async def a_get(cls, session: Session, symbols: str) -> Self: ...
 
     @classmethod
     async def a_get(
@@ -519,6 +529,8 @@ class Option(TradeableTastytradeData):
         symbols: Union[str, list[str]],
         *,
         active: Optional[bool] = None,
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
         with_expired: Optional[bool] = None,
     ) -> Union[Self, list[Self]]:
         """
@@ -528,21 +540,25 @@ class Option(TradeableTastytradeData):
         :param session: the session to use for the request.
         :param symbols: the OCC symbol(s) to get the options for.
         :param active: whether the options are active.
+        :param per_page: the number of options to get per page.
+        :param page_offset:
+            provide a specific page to get; if None, get all pages
         :param with_expired: whether to include expired options.
         """
         if isinstance(symbols, str):
             symbol = symbols.replace("/", "%2F")
-            params = {"active": active} if active is not None else None
-            data = await session._a_get(
-                f"/instruments/equity-options/{symbol}", params=params
-            )
+            data = await session._a_get(f"/instruments/equity-options/{symbol}")
             return cls(**data)
-        _params = {"symbol[]": symbols, "active": active, "with-expired": with_expired}
-        data = await session._a_get(
-            "/instruments/equity-options",
-            params={k: v for k, v in _params.items() if v is not None},
+        params = {
+            "symbol[]": symbols,
+            "active": active,
+            "with-expired": with_expired,
+            "per-page": per_page,
+            "page-offset": page_offset,
+        }
+        return await a_paginate(
+            session.async_client, cls, "/instruments/equity-options", params
         )
-        return [cls(**i) for i in data["items"]]
 
     @overload
     @classmethod
@@ -551,15 +567,15 @@ class Option(TradeableTastytradeData):
         session: Session,
         symbols: list[str],
         *,
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
         active: Optional[bool] = None,
         with_expired: Optional[bool] = None,
     ) -> list[Self]: ...
 
     @overload
     @classmethod
-    def get(
-        cls, session: Session, symbols: str, *, active: Optional[bool] = None
-    ) -> Self: ...
+    def get(cls, session: Session, symbols: str) -> Self: ...
 
     @classmethod
     def get(
@@ -568,6 +584,8 @@ class Option(TradeableTastytradeData):
         symbols: Union[str, list[str]],
         *,
         active: Optional[bool] = None,
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
         with_expired: Optional[bool] = None,
     ) -> Union[Self, list[Self]]:
         """
@@ -577,19 +595,23 @@ class Option(TradeableTastytradeData):
         :param session: the session to use for the request.
         :param symbols: the OCC symbol(s) to get the options for.
         :param active: whether the options are active.
+        :param per_page: the number of options to get per page.
+        :param page_offset:
+            provide a specific page to get; if None, get all pages
         :param with_expired: whether to include expired options.
         """
         if isinstance(symbols, str):
             symbol = symbols.replace("/", "%2F")
-            params = {"active": active} if active is not None else None
-            data = session._get(f"/instruments/equity-options/{symbol}", params=params)
+            data = session._get(f"/instruments/equity-options/{symbol}")
             return cls(**data)
-        _params = {"symbol[]": symbols, "active": active, "with-expired": with_expired}
-        data = session._get(
-            "/instruments/equity-options",
-            params={k: v for k, v in _params.items() if v is not None},
-        )
-        return [cls(**i) for i in data["items"]]
+        params = {
+            "symbol[]": symbols,
+            "active": active,
+            "with-expired": with_expired,
+            "per-page": per_page,
+            "page-offset": page_offset,
+        }
+        return paginate(session.sync_client, cls, "/instruments/equity-options", params)
 
     def _set_streamer_symbol(self) -> None:
         if self.strike_price % 1 == 0:
@@ -736,18 +758,31 @@ class FutureProduct(TastytradeData):
 
     @overload
     @classmethod
-    @deprecated("Fetching multiple future products marked deprecated in API docs.")
-    async def a_get(cls, session: Session) -> list[Self]: ...
+    async def a_get(
+        cls,
+        session: Session,
+        *,
+        per_page: int = 50,
+        page_offset: Optional[int] = 0,
+    ) -> list[Self]: ...
 
     @overload
     @classmethod
     async def a_get(
-        cls, session: Session, code: str, exchange: str = "CME"
+        cls,
+        session: Session,
+        code: str,
+        exchange: str = "CME",
     ) -> Self: ...
 
     @classmethod
     async def a_get(
-        cls, session: Session, code: Optional[str] = None, exchange: str = "CME"
+        cls,
+        session: Session,
+        code: Optional[str] = None,
+        exchange: str = "CME",
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
     ) -> Union[Self, list[Self]]:
         """
         Returns a list of FutureProduct objects available, or a single
@@ -757,6 +792,9 @@ class FutureProduct(TastytradeData):
         :param code: the product code, e.g. 'ES'
         :param exchange:
             the exchange to fetch from: 'CME', 'SMALLS', 'CFE', 'CBOED'
+        :param per_page: the number of options to get per page.
+        :param page_offset:
+            provide a specific page to get; if None, get all pages
         """
         if code:
             code = code.replace("/", "")
@@ -764,20 +802,38 @@ class FutureProduct(TastytradeData):
                 f"/instruments/future-products/{exchange}/{code}"
             )
             return cls(**data)
-        data = await session._a_get("/instruments/future-products")
-        return [cls(**i) for i in data["items"]]
+        params = {"per-page": per_page, "page-offset": page_offset}
+        return await a_paginate(
+            session.async_client, cls, "/instruments/future-products", params
+        )
 
     @overload
     @classmethod
-    def get(cls, session: Session) -> list[Self]: ...
+    def get(
+        cls,
+        session: Session,
+        *,
+        per_page: int = 50,
+        page_offset: Optional[int] = 0,
+    ) -> list[Self]: ...
 
     @overload
     @classmethod
-    def get(cls, session: Session, code: str, exchange: str = "CME") -> Self: ...
+    def get(
+        cls,
+        session: Session,
+        code: str,
+        exchange: str = "CME",
+    ) -> Self: ...
 
     @classmethod
     def get(
-        cls, session: Session, code: Optional[str] = None, exchange: str = "CME"
+        cls,
+        session: Session,
+        code: Optional[str] = None,
+        exchange: str = "CME",
+        per_page: int = 50,
+        page_offset: Optional[int] = 0,
     ) -> Union[Self, list[Self]]:
         """
         Returns a list of FutureProduct objects available, or a single
@@ -787,13 +843,18 @@ class FutureProduct(TastytradeData):
         :param code: the product code, e.g. 'ES'
         :param exchange:
             the exchange to fetch from: 'CME', 'SMALLS', 'CFE', 'CBOED'
+        :param per_page: the number of options to get per page.
+        :param page_offset:
+            provide a specific page to get; if None, get all pages
         """
         if code:
             code = code.replace("/", "")
             data = session._get(f"/instruments/future-products/{exchange}/{code}")
             return cls(**data)
-        data = session._get("/instruments/future-products")
-        return [cls(**i) for i in data["items"]]
+        params = {"per-page": per_page, "page-offset": page_offset}
+        return paginate(
+            session.sync_client, cls, "/instruments/future-products", params
+        )
 
 
 class Future(TradeableTastytradeData):
@@ -836,13 +897,14 @@ class Future(TradeableTastytradeData):
 
     @overload
     @classmethod
-    @deprecated("Fetching multiple futures marked deprecated in API docs.")
     async def a_get(
         cls,
         session: Session,
         symbols: Optional[list[str]] = None,
         *,
         product_codes: Optional[list[str]] = None,
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
     ) -> list[Self]: ...
 
     @overload
@@ -856,6 +918,8 @@ class Future(TradeableTastytradeData):
         symbols: Union[str, list[str], None] = None,
         *,
         product_codes: Optional[list[str]] = None,
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
     ) -> Union[Self, list[Self]]:
         """
         Returns a list of Future objects from the given symbols
@@ -867,17 +931,23 @@ class Future(TradeableTastytradeData):
         :param product_codes:
             the product codes of the futures, e.g. 'ES', '6A'. Ignored if
             symbols are provided.
+        :param per_page: the number of options to get per page.
+        :param page_offset:
+            provide a specific page to get; if None, get all pages
         """
         if isinstance(symbols, str):
             symbol = symbols.replace("/", "")
             data = await session._a_get(f"/instruments/futures/{symbol}")
             return cls(**data)
-        params = {"symbol[]": symbols, "product-code[]": product_codes}
-        data = await session._a_get(
-            "/instruments/futures",
-            params={k: v for k, v in params.items() if v is not None},
+        params = {
+            "symbol[]": symbols,
+            "product-code[]": product_codes,
+            "per-page": per_page,
+            "page-offset": page_offset,
+        }
+        return await a_paginate(
+            session.async_client, cls, "/instruments/futures", params
         )
-        return [cls(**i) for i in data["items"]]
 
     @overload
     @classmethod
@@ -887,6 +957,8 @@ class Future(TradeableTastytradeData):
         symbols: Optional[list[str]] = None,
         *,
         product_codes: Optional[list[str]] = None,
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
     ) -> list[Self]: ...
 
     @overload
@@ -900,6 +972,8 @@ class Future(TradeableTastytradeData):
         symbols: Union[str, list[str], None] = None,
         *,
         product_codes: Optional[list[str]] = None,
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
     ) -> Union[Self, list[Self]]:
         """
         Returns a list of Future objects from the given symbols
@@ -911,17 +985,21 @@ class Future(TradeableTastytradeData):
         :param product_codes:
             the product codes of the futures, e.g. 'ES', '6A'. Ignored if
             symbols are provided.
+        :param per_page: the number of options to get per page.
+        :param page_offset:
+            provide a specific page to get; if None, get all pages
         """
         if isinstance(symbols, str):
             symbol = symbols.replace("/", "")
             data = session._get(f"/instruments/futures/{symbol}")
             return cls(**data)
-        params = {"symbol[]": symbols, "product-code[]": product_codes}
-        data = session._get(
-            "/instruments/futures",
-            params={k: v for k, v in params.items() if v is not None},
-        )
-        return [cls(**i) for i in data["items"]]
+        params = {
+            "symbol[]": symbols,
+            "product-code[]": product_codes,
+            "per-page": per_page,
+            "page-offset": page_offset,
+        }
+        return paginate(session.sync_client, cls, "/instruments/futures", params)
 
 
 class FutureOptionProduct(TastytradeData):
@@ -951,15 +1029,21 @@ class FutureOptionProduct(TastytradeData):
 
     @overload
     @classmethod
-    @deprecated(
-        "Fetching multiple futures options products marked deprecated in API docs."
-    )
-    async def a_get(cls, session: Session) -> list[Self]: ...
+    async def a_get(
+        cls,
+        session: Session,
+        *,
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
+    ) -> list[Self]: ...
 
     @overload
     @classmethod
     async def a_get(
-        cls, session: Session, root_symbol: str, exchange: str = "CME"
+        cls,
+        session: Session,
+        root_symbol: str,
+        exchange: str = "CME",
     ) -> Self: ...
 
     @classmethod
@@ -968,6 +1052,8 @@ class FutureOptionProduct(TastytradeData):
         session: Session,
         root_symbol: Optional[str] = None,
         exchange: str = "CME",
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
     ) -> Union[Self, list[Self]]:
         """
         Returns a list of FutureOptionProduct objects available, or a single
@@ -976,6 +1062,9 @@ class FutureOptionProduct(TastytradeData):
         :param session: the session to use for the request.
         :param root_symbol: the root symbol of the future option
         :param exchange: the exchange to get the product from
+        :param per_page: the number of options to get per page.
+        :param page_offset:
+            provide a specific page to get; if None, get all pages
         """
         if root_symbol:
             root_symbol = root_symbol.replace("/", "")
@@ -983,12 +1072,20 @@ class FutureOptionProduct(TastytradeData):
                 f"/instruments/future-option-products/{exchange}/{root_symbol}"
             )
             return cls(**data)
-        data = await session._a_get("/instruments/future-option-products")
-        return [cls(**i) for i in data["items"]]
+        params = {"per-page": per_page, "page-offset": page_offset}
+        return await a_paginate(
+            session.async_client, cls, "/instruments/future-option-products", params
+        )
 
     @overload
     @classmethod
-    def get(cls, session: Session) -> list[Self]: ...
+    def get(
+        cls,
+        session: Session,
+        *,
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
+    ) -> list[Self]: ...
 
     @overload
     @classmethod
@@ -1000,6 +1097,8 @@ class FutureOptionProduct(TastytradeData):
         session: Session,
         root_symbol: Optional[str] = None,
         exchange: str = "CME",
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
     ) -> Union[Self, list[Self]]:
         """
         Returns a list of FutureOptionProduct objects available, or a single
@@ -1008,6 +1107,9 @@ class FutureOptionProduct(TastytradeData):
         :param session: the session to use for the request.
         :param root_symbol: the root symbol of the future option
         :param exchange: the exchange to get the product from
+        :param per_page: the number of options to get per page.
+        :param page_offset:
+            provide a specific page to get; if None, get all pages
         """
         if root_symbol:
             root_symbol = root_symbol.replace("/", "")
@@ -1015,8 +1117,10 @@ class FutureOptionProduct(TastytradeData):
                 f"/instruments/future-option-products/{exchange}/{root_symbol}"
             )
             return cls(**data)
-        data = session._get("/instruments/future-option-products")
-        return [cls(**i) for i in data["items"]]
+        params = {"per-page": per_page, "page-offset": page_offset}
+        return paginate(
+            session.sync_client, cls, "/instruments/future-option-products", params
+        )
 
 
 class FutureOption(TradeableTastytradeData):
@@ -1068,7 +1172,6 @@ class FutureOption(TradeableTastytradeData):
 
     @overload
     @classmethod
-    @deprecated("Fetching multiple futures options marked deprecated in API docs.")
     async def a_get(
         cls,
         session: Session,
@@ -1078,6 +1181,8 @@ class FutureOption(TradeableTastytradeData):
         expiration_date: Optional[date] = None,
         option_type: Optional[OptionType] = None,
         strike_price: Optional[Decimal] = None,
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
     ) -> list[Self]: ...
 
     @overload
@@ -1094,6 +1199,8 @@ class FutureOption(TradeableTastytradeData):
         expiration_date: Optional[date] = None,
         option_type: Optional[OptionType] = None,
         strike_price: Optional[Decimal] = None,
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
     ) -> Union[Self, list[Self]]:
         """
         Returns a list of FutureOption objects from the given symbols.
@@ -1107,6 +1214,9 @@ class FutureOption(TradeableTastytradeData):
         :param expiration_date: the expiration date for the future options.
         :param option_type: the option type to filter by.
         :param strike_price: the strike price to filter by.
+        :param per_page: the number of options to get per page.
+        :param page_offset:
+            provide a specific page to get; if None, get all pages
         """
         if isinstance(symbols, str):
             symbol = symbols.replace("/", "%2F").replace(" ", "%20")
@@ -1118,12 +1228,12 @@ class FutureOption(TradeableTastytradeData):
             "expiration-date": expiration_date,
             "option-type": option_type.value if option_type else None,
             "strike-price": strike_price,
+            "per-page": per_page,
+            "page-offset": page_offset,
         }
-        data = await session._a_get(
-            "/instruments/future-options",
-            params={k: v for k, v in params.items() if v is not None},
+        return await a_paginate(
+            session.async_client, cls, "/instruments/future-options", params
         )
-        return [cls(**i) for i in data["items"]]
 
     @overload
     @classmethod
@@ -1136,6 +1246,8 @@ class FutureOption(TradeableTastytradeData):
         expiration_date: Optional[date] = None,
         option_type: Optional[OptionType] = None,
         strike_price: Optional[Decimal] = None,
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
     ) -> list[Self]: ...
 
     @overload
@@ -1152,6 +1264,8 @@ class FutureOption(TradeableTastytradeData):
         expiration_date: Optional[date] = None,
         option_type: Optional[OptionType] = None,
         strike_price: Optional[Decimal] = None,
+        per_page: int = 250,
+        page_offset: Optional[int] = 0,
     ) -> Union[Self, list[Self]]:
         """
         Returns a list of FutureOption objects from the given symbols.
@@ -1165,6 +1279,9 @@ class FutureOption(TradeableTastytradeData):
         :param expiration_date: the expiration date for the future options.
         :param option_type: the option type to filter by.
         :param strike_price: the strike price to filter by.
+        :param per_page: the number of options to get per page.
+        :param page_offset:
+            provide a specific page to get; if None, get all pages
         """
         if isinstance(symbols, str):
             symbol = symbols.replace("/", "%2F").replace(" ", "%20")
@@ -1176,12 +1293,10 @@ class FutureOption(TradeableTastytradeData):
             "expiration-date": expiration_date,
             "option-type": option_type.value if option_type else None,
             "strike-price": strike_price,
+            "per-page": per_page,
+            "page-offset": page_offset,
         }
-        data = session._get(
-            "/instruments/future-options",
-            params={k: v for k, v in params.items() if v is not None},
-        )
-        return [cls(**i) for i in data["items"]]
+        return paginate(session.sync_client, cls, "/instruments/future-options", params)
 
 
 class NestedFutureOptionSubchain(TastytradeData):
