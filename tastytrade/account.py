@@ -24,6 +24,8 @@ from tastytrade.utils import (
     PriceEffect,
     TastytradeData,
     TastytradeError,
+    a_paginate,
+    paginate,
     set_sign_for,
     today_in_new_york,
     validate_response,
@@ -576,23 +578,23 @@ class Account(TastytradeData):
         data = session._get(f"/accounts/{self.account_number}/trading-status")
         return TradingStatus(**data)
 
-    async def a_get_balances(self, session: Session) -> AccountBalance:
+    async def a_get_balances(self, session: Session) -> list[AccountBalance]:
         """
         Get the current balances of the account.
 
         :param session: the session to use for the request.
         """
         data = await session._a_get(f"/accounts/{self.account_number}/balances")
-        return AccountBalance(**data)
+        return [AccountBalance(**i) for i in data["items"]]
 
-    def get_balances(self, session: Session) -> AccountBalance:
+    def get_balances(self, session: Session) -> list[AccountBalance]:
         """
         Get the current balances of the account.
 
         :param session: the session to use for the request.
         """
         data = session._get(f"/accounts/{self.account_number}/balances")
-        return AccountBalance(**data)
+        return [AccountBalance(**i) for i in data["items"]]
 
     async def a_get_balance_snapshots(
         self,
@@ -612,6 +614,9 @@ class Account(TastytradeData):
         the given range.
 
         :param session: the session to use for the request.
+        :param per_page: the number of results to return per page.
+        :param page_offset:
+            provide a specific page to get; if None, get all pages
         :param currency: the currency to show balances in.
         :param start_date: the starting date of the range.
         :param end_date: the ending date of the range.
@@ -620,10 +625,6 @@ class Account(TastytradeData):
             the time of day of the snapshots to get, either 'EOD' (End Of Day) or 'BOD'
             (Beginning Of Day).
         """
-        paginate = False
-        if page_offset is None:
-            page_offset = 0
-            paginate = True
         params = {
             "per-page": per_page,
             "page-offset": page_offset,
@@ -633,30 +634,12 @@ class Account(TastytradeData):
             "snapshot-date": snapshot_date,
             "time-of-day": time_of_day,
         }
-        snapshots: list[AccountBalanceSnapshot] = []
-        while True:
-            response = await session.async_client.get(
-                f"/accounts/{self.account_number}/balance-snapshots",
-                params={
-                    k: v  # type: ignore
-                    for k, v in params.items()
-                    if v is not None
-                },
-            )
-            validate_response(response)
-            json = response.json()
-            snapshots.extend(
-                [AccountBalanceSnapshot(**i) for i in json["data"]["items"]]
-            )
-            # handle pagination
-            pagination = json["pagination"]
-            if (
-                pagination["page-offset"] >= pagination["total-pages"] - 1
-                or not paginate
-            ):
-                break
-            params["page-offset"] += 1  # type: ignore
-        return snapshots
+        return await a_paginate(
+            session.async_client,
+            AccountBalanceSnapshot,
+            f"/accounts/{self.account_number}/balance-snapshots",
+            params,
+        )
 
     def get_balance_snapshots(
         self,
@@ -676,6 +659,9 @@ class Account(TastytradeData):
         the given range.
 
         :param session: the session to use for the request.
+        :param per_page: the number of results to return per page.
+        :param page_offset:
+            provide a specific page to get; if not provided, get all pages
         :param currency: the currency to show balances in.
         :param start_date: the starting date of the range.
         :param end_date: the ending date of the range.
@@ -684,10 +670,6 @@ class Account(TastytradeData):
             the time of day of the snapshots to get, either 'EOD' (End Of Day) or 'BOD'
             (Beginning Of Day).
         """
-        paginate = False
-        if page_offset is None:
-            page_offset = 0
-            paginate = True
         params = {
             "per-page": per_page,
             "page-offset": page_offset,
@@ -697,30 +679,12 @@ class Account(TastytradeData):
             "snapshot-date": snapshot_date,
             "time-of-day": time_of_day,
         }
-        snapshots: list[AccountBalanceSnapshot] = []
-        while True:
-            response = session.sync_client.get(
-                f"/accounts/{self.account_number}/balance-snapshots",
-                params={
-                    k: v  # type: ignore
-                    for k, v in params.items()
-                    if v is not None
-                },
-            )
-            validate_response(response)
-            json = response.json()
-            snapshots.extend(
-                [AccountBalanceSnapshot(**i) for i in json["data"]["items"]]
-            )
-            # handle pagination
-            pagination = json["pagination"]
-            if (
-                pagination["page-offset"] >= pagination["total-pages"] - 1
-                or not paginate
-            ):
-                break
-            params["page-offset"] += 1  # type: ignore
-        return snapshots
+        return paginate(
+            session.sync_client,
+            AccountBalanceSnapshot,
+            f"/accounts/{self.account_number}/balance-snapshots",
+            params,
+        )
 
     async def a_get_positions(
         self,
@@ -858,12 +822,6 @@ class Account(TastytradeData):
         :param end_at:
             datetime end range for filtering transactions in full date-time.
         """
-        # if a specific page is provided, we just get that page;
-        # otherwise, we loop through all pages
-        paginate = False
-        if page_offset is None:
-            page_offset = 0
-            paginate = True
         params = {
             "per-page": per_page,
             "page-offset": page_offset,
@@ -882,30 +840,12 @@ class Account(TastytradeData):
             "start-at": start_at,
             "end-at": end_at,
         }
-        # loop through pages and get all transactions
-        txns: list[Transaction] = []
-        while True:
-            response = await session.async_client.get(
-                f"/accounts/{self.account_number}/transactions",
-                params={
-                    k: v  # type: ignore
-                    for k, v in params.items()
-                    if v is not None
-                },
-            )
-            validate_response(response)
-            json = response.json()
-            txns.extend([Transaction(**i) for i in json["data"]["items"]])
-            # handle pagination
-            pagination = json["pagination"]
-            if (
-                pagination["page-offset"] >= pagination["total-pages"] - 1
-                or not paginate
-            ):
-                break
-            params["page-offset"] += 1  # type: ignore
-
-        return txns
+        return await a_paginate(
+            session.async_client,
+            Transaction,
+            f"/accounts/{self.account_number}/transactions",
+            params,
+        )
 
     def get_history(
         self,
@@ -953,12 +893,6 @@ class Account(TastytradeData):
         :param end_at:
             datetime end range for filtering transactions in full date-time.
         """
-        # if a specific page is provided, we just get that page;
-        # otherwise, we loop through all pages
-        paginate = False
-        if page_offset is None:
-            page_offset = 0
-            paginate = True
         params = {
             "per-page": per_page,
             "page-offset": page_offset,
@@ -977,30 +911,12 @@ class Account(TastytradeData):
             "start-at": start_at,
             "end-at": end_at,
         }
-        # loop through pages and get all transactions
-        txns: list[Transaction] = []
-        while True:
-            response = session.sync_client.get(
-                f"/accounts/{self.account_number}/transactions",
-                params={
-                    k: v  # type: ignore
-                    for k, v in params.items()
-                    if v is not None
-                },
-            )
-            validate_response(response)
-            json = response.json()
-            txns.extend([Transaction(**i) for i in json["data"]["items"]])
-            # handle pagination
-            pagination = json["pagination"]
-            if (
-                pagination["page-offset"] >= pagination["total-pages"] - 1
-                or not paginate
-            ):
-                break
-            params["page-offset"] += 1  # type: ignore
-
-        return txns
+        return paginate(
+            session.sync_client,
+            Transaction,
+            f"/accounts/{self.account_number}/transactions",
+            params,
+        )
 
     async def a_get_transaction(self, session: Session, id: int) -> Transaction:
         """
@@ -1359,12 +1275,6 @@ class Account(TastytradeData):
         :param end_at:
             datetime end range for filtering transactions in full date-time.
         """
-        # if a specific page is provided, we just get that page;
-        # otherwise, we loop through all pages
-        paginate = False
-        if page_offset is None:
-            page_offset = 0
-            paginate = True
         params = {
             "per-page": per_page,
             "page-offset": page_offset,
@@ -1380,30 +1290,12 @@ class Account(TastytradeData):
             "start-at": start_at,
             "end-at": end_at,
         }
-        # loop through pages and get all transactions
-        orders: list[PlacedOrder] = []
-        while True:
-            response = await session.async_client.get(
-                f"/accounts/{self.account_number}/orders",
-                params={
-                    k: v  # type: ignore
-                    for k, v in params.items()
-                    if v is not None
-                },
-            )
-            validate_response(response)
-            json = response.json()
-            orders.extend([PlacedOrder(**i) for i in json["data"]["items"]])
-            # handle pagination
-            pagination = json["pagination"]
-            if (
-                pagination["page-offset"] >= pagination["total-pages"] - 1
-                or not paginate
-            ):
-                break
-            params["page-offset"] += 1  # type: ignore
-
-        return orders
+        return await a_paginate(
+            session.async_client,
+            PlacedOrder,
+            f"/accounts/{self.account_number}/orders",
+            params,
+        )
 
     def get_order_history(
         self,
@@ -1440,12 +1332,6 @@ class Account(TastytradeData):
         :param end_at:
             datetime end range for filtering transactions in full date-time.
         """
-        # if a specific page is provided, we just get that page;
-        # otherwise, we loop through all pages
-        paginate = False
-        if page_offset is None:
-            page_offset = 0
-            paginate = True
         params = {
             "per-page": per_page,
             "page-offset": page_offset,
@@ -1461,30 +1347,12 @@ class Account(TastytradeData):
             "start-at": start_at,
             "end-at": end_at,
         }
-        # loop through pages and get all transactions
-        orders: list[PlacedOrder] = []
-        while True:
-            response = session.sync_client.get(
-                f"/accounts/{self.account_number}/orders",
-                params={
-                    k: v  # type: ignore
-                    for k, v in params.items()
-                    if v is not None
-                },
-            )
-            validate_response(response)
-            json = response.json()
-            orders.extend([PlacedOrder(**i) for i in json["data"]["items"]])
-            # handle pagination
-            pagination = json["pagination"]
-            if (
-                pagination["page-offset"] >= pagination["total-pages"] - 1
-                or not paginate
-            ):
-                break
-            params["page-offset"] += 1  # type: ignore
-
-        return orders
+        return paginate(
+            session.sync_client,
+            PlacedOrder,
+            f"/accounts/{self.account_number}/orders",
+            params,
+        )
 
     async def a_get_complex_order_history(
         self, session: Session, per_page: int = 50, page_offset: Optional[int] = None
@@ -1497,33 +1365,13 @@ class Account(TastytradeData):
         :param page_offset:
             provide a specific page to get; if not provided, get all pages
         """
-        # if a specific page is provided, we just get that page;
-        # otherwise, we loop through all pages
-        paginate = False
-        if page_offset is None:
-            page_offset = 0
-            paginate = True
         params = {"per-page": per_page, "page-offset": page_offset}
-        # loop through pages and get all transactions
-        orders: list[PlacedComplexOrder] = []
-        while True:
-            response = await session.async_client.get(
-                f"/accounts/{self.account_number}/complex-orders",
-                params=params,
-            )
-            validate_response(response)
-            json = response.json()
-            orders.extend([PlacedComplexOrder(**i) for i in json["data"]["items"]])
-            # handle pagination
-            pagination = json["pagination"]
-            if (
-                pagination["page-offset"] >= pagination["total-pages"] - 1
-                or not paginate
-            ):
-                break
-            params["page-offset"] += 1  # type: ignore
-
-        return orders
+        return await a_paginate(
+            session.async_client,
+            PlacedComplexOrder,
+            f"/accounts/{self.account_number}/complex-orders",
+            params,
+        )
 
     def get_complex_order_history(
         self, session: Session, per_page: int = 50, page_offset: Optional[int] = None
@@ -1536,33 +1384,13 @@ class Account(TastytradeData):
         :param page_offset:
             provide a specific page to get; if not provided, get all pages
         """
-        # if a specific page is provided, we just get that page;
-        # otherwise, we loop through all pages
-        paginate = False
-        if page_offset is None:
-            page_offset = 0
-            paginate = True
         params = {"per-page": per_page, "page-offset": page_offset}
-        # loop through pages and get all transactions
-        orders: list[PlacedComplexOrder] = []
-        while True:
-            response = session.sync_client.get(
-                f"/accounts/{self.account_number}/complex-orders",
-                params=params,
-            )
-            validate_response(response)
-            json = response.json()
-            orders.extend([PlacedComplexOrder(**i) for i in json["data"]["items"]])
-            # handle pagination
-            pagination = json["pagination"]
-            if (
-                pagination["page-offset"] >= pagination["total-pages"] - 1
-                or not paginate
-            ):
-                break
-            params["page-offset"] += 1  # type: ignore
-
-        return orders
+        return paginate(
+            session.sync_client,
+            PlacedComplexOrder,
+            f"/accounts/{self.account_number}/complex-orders",
+            params,
+        )
 
     async def a_place_order(
         self, session: Session, order: NewOrder, dry_run: bool = True

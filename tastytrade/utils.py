@@ -2,10 +2,10 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from enum import Enum
 from json import JSONDecodeError
-from typing import Any, Optional, cast
+from typing import Any, Optional, Type, TypeVar, cast
 from zoneinfo import ZoneInfo
 
-from httpx._models import Response  # type: ignore
+from httpx import AsyncClient, Client, Response
 from pandas_market_calendars import get_calendar  # type: ignore[import-untyped]
 from pydantic import BaseModel, ConfigDict
 
@@ -272,6 +272,12 @@ def validate_response(response: Response) -> None:
 
 
 def validate_and_parse(response: Response) -> dict[str, Any]:
+    """
+    Checks if the given code is an error; if so, raises an exception.
+    Then, returns the JSON payload.
+
+    :param response: response to check for errors
+    """
     validate_response(response)
     json = response.json()
     if not (data := json.get("data")):
@@ -280,6 +286,11 @@ def validate_and_parse(response: Response) -> dict[str, Any]:
 
 
 def get_sign(value: Optional[Decimal]) -> Optional[PriceEffect]:
+    """
+    Get a PriceEffect for a signed value.
+
+    :param value: value to check
+    """
     if not value:
         return None
     return PriceEffect.DEBIT if value < 0 else PriceEffect.CREDIT
@@ -299,3 +310,83 @@ def set_sign_for(data: Any, properties: list[str]) -> Any:
             if data.get(f"{key}-effect") == PriceEffect.DEBIT:
                 data[key] = -abs(Decimal(data[key]))
     return data
+
+
+T = TypeVar("T", bound=TastytradeData)
+
+
+def paginate(
+    client: Client, model: Type[T], url: str, params: dict[str, Any]
+) -> list[T]:
+    """
+    Helper for paginated endpoints. Excepts params to have at least `page-offset` and
+    `per-page` parameters.
+    If `params["page-offset"]` is None, iterates over all results; otherwise, gets a
+    specific page.
+
+    :param client: the httpx client for making request
+    :param model: the TastytradeData model for results
+    :param url: the endpoint to use
+    :param params: parameters for request
+    """
+    res: list[T] = []
+    # if a specific page is provided, we just get that page;
+    # otherwise, we loop through all pages
+    paginate = False
+    if params["page-offset"] is None:
+        params["page-offset"] = 0
+        paginate = True
+    params = {k: v for k, v in params.items() if v is not None}
+    # loop through pages and get all transactions
+    while True:
+        response = client.get(url, params=params)
+        validate_response(response)
+        json = response.json()
+        res.extend([model(**i) for i in json["data"]["items"]])
+        # handle pagination
+        if (
+            json["pagination"]["page-offset"] >= json["pagination"]["total-pages"] - 1
+            or not paginate
+        ):
+            break
+        params["page-offset"] += 1
+    return res
+
+
+async def a_paginate(
+    client: AsyncClient, model: Type[T], url: str, params: dict[str, Any]
+) -> list[T]:
+    """
+    Helper for paginated endpoints. Excepts params to have at least `page-offset` and
+    `per-page` parameters.
+    If `params["page-offset"]` is None, iterates over all results; otherwise, gets a
+    specific page.
+
+    :param client: the httpx client for making request
+    :param model: the TastytradeData model for results
+    :param url: the endpoint to use
+    :param params: parameters for request
+    """
+    res: list[T] = []
+    # if a specific page is provided, we just get that page;
+    # otherwise, we loop through all pages
+    paginate = False
+    if params["page-offset"] is None:
+        params["page-offset"] = 0
+        paginate = True
+    params = {k: v for k, v in params.items() if v is not None}
+    # loop through pages and get all transactions
+    while True:
+        print(str(client.base_url) + url, params, client.headers)
+        response = await client.get(url, params=params)
+        validate_response(response)
+        json = response.json()
+        res.extend([model(**i) for i in json["data"]["items"]])
+        # handle pagination
+        if (
+            json["pagination"]["page-offset"] >= json["pagination"]["total-pages"] - 1
+            or not paginate
+        ):
+            break
+        params["page-offset"] += 1
+    return res

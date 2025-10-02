@@ -31,12 +31,11 @@ $ pip install tastytrade
 
 ## Creating a session
 
-A session object is required to authenticate your requests to the Tastytrade API.
-You can create a real session using your normal login, or a certification (test) session using your certification login.
+A session object is required to authenticate your requests to the Tastytrade API. See [here](https://tastyworks-api.readthedocs.io/en/latest/sessions.html) for information on how to set up an OAuth application.
 
 ```python
 from tastytrade import Session
-session = Session('username', 'password')
+session = Session('client_secret', 'refresh_token')
 ```
 
 ## Using the streamer

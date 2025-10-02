@@ -276,6 +276,7 @@ class Session:
         # The headers to use for API requests
         headers = {
             "Accept": "application/json",
+            # "Accept-Version": API_VERSION,
             "Content-Type": "application/json",
         }
         #: httpx client for sync requests

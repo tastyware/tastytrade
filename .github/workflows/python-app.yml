@@ -9,16 +9,24 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.9"
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v4
+    - uses: actions/checkout@v5
+    - name: Install uv and Python
+      uses: astral-sh/setup-uv@v6
       with:
-        python-version: '3.9'
-    - uses: yezz123/setup-uv@v4
+        enable-cache: true
+        python-version: ${{ matrix.python-version }}
     - name: Setup uv venv
       run: |
-        uv sync
+        uv sync --locked --all-extras --dev
     - name: Lint with ruff
       run: |
         uv run ruff check tastytrade/ tests/

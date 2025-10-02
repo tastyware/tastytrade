@@ -6,11 +6,11 @@ from enum import Enum
 from typing import Any, Optional, Union, overload
 
 from pydantic import field_validator, model_validator
-from typing_extensions import Self
+from typing_extensions import Self, deprecated
 
 from tastytrade.order import InstrumentType, TradeableTastytradeData
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeData, validate_response
+from tastytrade.utils import TastytradeData, a_paginate, paginate
 
 
 class OptionType(str, Enum):
@@ -315,37 +315,14 @@ class Equity(TradeableTastytradeData):
             the lendability of the equities; e.g. 'Easy To Borrow',
             'Locate Required', 'Preborrow'
         """
-        # if a specific page is provided, we just get that page;
-        # otherwise, we loop through all pages
-        paginate = False
-        if page_offset is None:
-            page_offset = 0
-            paginate = True
         params = {
             "per-page": per_page,
             "page-offset": page_offset,
             "lendability": lendability,
         }
-        # loop through pages and get all active equities
-        equities: list[Self] = []
-        while True:
-            response = await session.async_client.get(
-                "/instruments/equities/active",
-                params={k: v for k, v in params.items() if v is not None},
-            )
-            validate_response(response)
-            json = response.json()
-            equities.extend([cls(**i) for i in json["data"]["items"]])
-            # handle pagination
-            pagination = json["pagination"]
-            if (
-                pagination["page-offset"] >= pagination["total-pages"] - 1
-                or not paginate
-            ):
-                break
-            params["page-offset"] += 1  # type: ignore
-
-        return equities
+        return await a_paginate(
+            session.async_client, cls, "/instruments/equities/active", params
+        )
 
     @classmethod
     def get_active_equities(
@@ -366,40 +343,18 @@ class Equity(TradeableTastytradeData):
             the lendability of the equities; e.g. 'Easy To Borrow',
             'Locate Required', 'Preborrow'
         """
-        # if a specific page is provided, we just get that page;
-        # otherwise, we loop through all pages
-        paginate = False
-        if page_offset is None:
-            page_offset = 0
-            paginate = True
         params = {
             "per-page": per_page,
             "page-offset": page_offset,
             "lendability": lendability,
         }
-        # loop through pages and get all active equities
-        equities: list[Self] = []
-        while True:
-            response = session.sync_client.get(
-                "/instruments/equities/active",
-                params={k: v for k, v in params.items() if v is not None},
-            )
-            validate_response(response)
-            json = response.json()
-            equities.extend([cls(**i) for i in json["data"]["items"]])
-            # handle pagination
-            pagination = json["pagination"]
-            if (
-                pagination["page-offset"] >= pagination["total-pages"] - 1
-                or not paginate
-            ):
-                break
-            params["page-offset"] += 1  # type: ignore
-
-        return equities
+        return paginate(
+            session.sync_client, cls, "/instruments/equities/active", params
+        )
 
     @overload
     @classmethod
+    @deprecated("Fetching multiple equities marked deprecated in API docs.")
     async def a_get(
         cls,
         session: Session,
@@ -541,6 +496,7 @@ class Option(TradeableTastytradeData):
 
     @overload
     @classmethod
+    @deprecated("Fetching multiple options marked deprecated in API docs.")
     async def a_get(
         cls,
         session: Session,
@@ -780,6 +736,7 @@ class FutureProduct(TastytradeData):
 
     @overload
     @classmethod
+    @deprecated("Fetching multiple future products marked deprecated in API docs.")
     async def a_get(cls, session: Session) -> list[Self]: ...
 
     @overload
@@ -879,6 +836,7 @@ class Future(TradeableTastytradeData):
 
     @overload
     @classmethod
+    @deprecated("Fetching multiple futures marked deprecated in API docs.")
     async def a_get(
         cls,
         session: Session,
@@ -993,6 +951,9 @@ class FutureOptionProduct(TastytradeData):
 
     @overload
     @classmethod
+    @deprecated(
+        "Fetching multiple futures options products marked deprecated in API docs."
+    )
     async def a_get(cls, session: Session) -> list[Self]: ...
 
     @overload
@@ -1107,6 +1068,7 @@ class FutureOption(TradeableTastytradeData):
 
     @overload
     @classmethod
+    @deprecated("Fetching multiple futures options marked deprecated in API docs.")
     async def a_get(
         cls,
         session: Session,

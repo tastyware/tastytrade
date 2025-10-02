@@ -6,9 +6,23 @@ Creating an OAuth application
 
 A session object is required to authenticate your requests to the Tastytrade API. Tastytrade uses OAuth logins, which allow you to connect applications (third-party or private) to your trading account to use the API.
 
-To get started, create a new OAuth application `here <https://my.tastytrade.com/app.html#/manage/api-access/oauth-applications>`_. Check all the scopes you plan to use, then create the application. **Save the client secret**, then go to OAuth Applications > Manage > Create Grant to create a new grant with the same scopes. This will give you a refresh token, **which you should also save**.
+To get started, create a new OAuth application `here <https://my.tastytrade.com/app.html#/manage/api-access/oauth-applications>`_. Check all the scopes you plan to use, add `http://localhost:8000` as a valid callback, and create the application. **Save the client secret**, you'll need it later!
 
-At this point, OAuth is now setup correctly! Doing the above once is sufficient for **indefinite usage** of ``Session`` for authentication to the API, since refresh tokens never expire. From now on you can simply authenticate with your client secret and refresh token.
+Generating an initial refresh token
+-----------------------------------
+
+In order to generate an initial refresh token, you have two options. The easiest way is to simply generate one from Tastytrade's website: go to OAuth Applications > Manage > Create Grant to get a new refresh token, **which you should also save**.
+
+The other option (which is actually the only option for sandbox accounts) is to run this helper code:
+
+.. code-block:: python
+
+   from tastytrade.oauth import login
+   login(is_test=True)
+
+This will open up a web interface in your browser where you'll be prompted to paste your client ID and client secret. These credentials will then be used to connect your application to Tastytrade. After following the steps in your browser, you should see your new refresh token in the browser and in the console.
+
+At this point, OAuth is now setup correctly! Doing these steps once is sufficient for **indefinite usage** of ``Session`` for authentication to the API, since refresh tokens never expire. From now on you can simply authenticate with your client secret and refresh token.
 
 Creating a session
 ------------------
