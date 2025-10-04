@@ -797,51 +797,81 @@ class DXLinkStreamer:
         symbols: list[str],
         interval: str,
         start_time: datetime,
-        extended_trading_hours: bool = False,
+        end_time: Optional[datetime] = None,
+        extended_trading_hours: bool = True,  # Needs to be True always, as per DxLink
         refresh_interval: float = 0.1,
+        align_to_session: bool = True,
+        price_type: str = "last",
     ) -> None:
         """
         Subscribes to candle data for the given list of symbols.
 
         :param symbols: list of symbols to get data for
-        :param interval:
-            the width of each candle in time, e.g. '15s', '5m', '1h', '3d',
-            '1w', '1mo'
+        :param interval: candle width (e.g., '15s', '5m', '1h', '1d')
         :param start_time: starting time for the data range
+        :param end_time: ending time for the data range (optional)
         :param extended_trading_hours: whether to include extended trading
         :param refresh_interval:
             Time in seconds between fetching new events from dxfeed for this event type.
             You can try a higher value if processing quote updates quickly is not a high
             priority. Once refresh_interval is set for this event type and channel is
             opened, it cannot be changed later.
+        :param align_to_session: align candles to session start if True
+        :param price_type: price type for candles ("last", "bid", "ask", "mark", "s")
+
+        NOTE: There's an 8_000 candle limit per request, so you'll need to roll the
+        `start_time`/`end_time` range and make multiple requests if you need more data.
         """
         cls_str = "Candle"
         if self._subscription_state[cls_str] != "CHANNEL_OPENED":
             await self._channel_request(cls_str, refresh_interval)
-        ts = int(start_time.timestamp() * 1000)
+
+        ts_start = int(start_time.timestamp() * 1000)
+
+        # Build the message with proper parameters
+        add_items = []
+        for ticker in symbols:
+            # Build candle symbol with proper attributes
+            candle_parts = [f"{ticker}{{={interval}"]
+
+            # Add price type if not default
+            if price_type != "LAST":
+                candle_parts.append(f"price={price_type}")
+
+            # Add alignment if specified
+            if align_to_session:
+                candle_parts.append("a=s")
+
+            # Add trading hours restriction if needed
+            if not extended_trading_hours:
+                candle_parts.append("tho=true")
+
+            candle_symbol = ",".join(candle_parts) + "}"
+
+            # Build subscription item
+            item = {"symbol": candle_symbol, "type": "Candle", "fromTime": ts_start}
+
+            # Add end time if specified
+            if end_time:
+                ts_end = int(end_time.timestamp() * 1000)
+                item["toTime"] = ts_end
+
+            add_items.append(item)
+
         message = {
             "type": "FEED_SUBSCRIPTION",
             "channel": self._channels[cls_str],
-            "add": [
-                {
-                    "symbol": (
-                        f"{ticker}{{={interval}}}"
-                        if extended_trading_hours
-                        else f"{ticker}{{={interval},tho=true}}"
-                    ),
-                    "type": "Candle",
-                    "fromTime": ts,
-                }
-                for ticker in symbols
-            ],
+            "add": add_items,
         }
+
+        logger.debug(f"Sending subscription: {json.dumps(message)}")
         await self._websocket.send(json.dumps(message))
 
     async def unsubscribe_candle(
         self,
         ticker: str,
         interval: Optional[str] = None,
-        extended_trading_hours: bool = False,
+        extended_trading_hours: bool = True,  # Needs to be True always, as per DxLink
     ) -> None:
         """
         Removes existing subscription for a candle.
