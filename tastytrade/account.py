@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Literal, Optional, Union, cast, overload
+from typing import Any, Literal, cast, overload
 
 import httpx
 from pydantic import BaseModel, ConfigDict, model_validator
@@ -87,9 +87,9 @@ class AccountBalance(TastytradeData):
     pending_margin_interest: Decimal
     effective_cryptocurrency_buying_power: Decimal
     updated_at: datetime
-    apex_starting_day_margin_equity: Optional[Decimal] = None
-    buying_power_adjustment: Optional[Decimal] = None
-    time_of_day: Optional[str] = None
+    apex_starting_day_margin_equity: Decimal | None = None
+    buying_power_adjustment: Decimal | None = None
+    time_of_day: str | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -138,16 +138,16 @@ class AccountBalanceSnapshot(TastytradeData):
     day_trade_excess: Decimal
     pending_cash: Decimal
     snapshot_date: date
-    time_of_day: Optional[str] = None
-    long_cryptocurrency_value: Optional[Decimal] = None
-    short_cryptocurrency_value: Optional[Decimal] = None
-    cryptocurrency_margin_requirement: Optional[Decimal] = None
-    unsettled_cryptocurrency_fiat_amount: Optional[Decimal] = None
-    closed_loop_available_balance: Optional[Decimal] = None
-    equity_offering_margin_requirement: Optional[Decimal] = None
-    long_bond_value: Optional[Decimal] = None
-    bond_margin_requirement: Optional[Decimal] = None
-    used_derivative_buying_power: Optional[Decimal] = None
+    time_of_day: str | None = None
+    long_cryptocurrency_value: Decimal | None = None
+    short_cryptocurrency_value: Decimal | None = None
+    cryptocurrency_margin_requirement: Decimal | None = None
+    unsettled_cryptocurrency_fiat_amount: Decimal | None = None
+    closed_loop_available_balance: Decimal | None = None
+    equity_offering_margin_requirement: Decimal | None = None
+    long_bond_value: Decimal | None = None
+    bond_margin_requirement: Decimal | None = None
+    used_derivative_buying_power: Decimal | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -182,16 +182,16 @@ class CurrentPosition(TastytradeData):
     realized_today: Decimal
     created_at: datetime
     updated_at: datetime
-    mark: Optional[Decimal] = None
-    mark_price: Optional[Decimal] = None
-    restricted_quantity: Optional[Decimal] = None
-    expires_at: Optional[datetime] = None
-    fixing_price: Optional[Decimal] = None
-    deliverable_type: Optional[str] = None
-    average_yearly_market_close_price: Optional[Decimal] = None
-    average_daily_market_close_price: Optional[Decimal] = None
-    realized_day_gain_date: Optional[date] = None
-    realized_today_date: Optional[date] = None
+    mark: Decimal | None = None
+    mark_price: Decimal | None = None
+    restricted_quantity: Decimal | None = None
+    expires_at: datetime | None = None
+    fixing_price: Decimal | None = None
+    deliverable_type: str | None = None
+    average_yearly_market_close_price: Decimal | None = None
+    average_daily_market_close_price: Decimal | None = None
+    realized_day_gain_date: date | None = None
+    realized_today_date: date | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -233,16 +233,16 @@ class MarginReportEntry(TastytradeData):
     buying_power: Decimal
     margin_calculation_type: str
     margin_requirement: Decimal
-    expected_price_range_up_percent: Optional[Decimal] = None
-    expected_price_range_down_percent: Optional[Decimal] = None
-    groups: Optional[list[dict[str, Any]]] = None
-    initial_requirement: Optional[Decimal] = None
-    maintenance_requirement: Optional[Decimal] = None
-    point_of_no_return_percent: Optional[Decimal] = None
-    price_increase_percent: Optional[Decimal] = None
-    price_decrease_percent: Optional[Decimal] = None
-    underlying_symbol: Optional[str] = None
-    underlying_type: Optional[str] = None
+    expected_price_range_up_percent: Decimal | None = None
+    expected_price_range_down_percent: Decimal | None = None
+    groups: list[dict[str, Any]] | None = None
+    initial_requirement: Decimal | None = None
+    maintenance_requirement: Decimal | None = None
+    point_of_no_return_percent: Decimal | None = None
+    price_increase_percent: Decimal | None = None
+    price_decrease_percent: Decimal | None = None
+    underlying_symbol: str | None = None
+    underlying_type: str | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -275,8 +275,8 @@ class MarginReport(TastytradeData):
     reg_t_option_buying_power: Decimal
     maintenance_excess: Decimal
     last_state_timestamp: int
-    groups: list[Union[MarginReportEntry, EmptyDict]]
-    initial_requirement: Optional[Decimal] = None
+    groups: list[MarginReportEntry | EmptyDict]
+    initial_requirement: Decimal | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -309,8 +309,8 @@ class MarginRequirement(TastytradeData):
     naked_option_standard: Decimal
     naked_option_minimum: Decimal
     naked_option_floor: Decimal
-    clearing_identifier: Optional[str] = None
-    is_deleted: Optional[bool] = None
+    clearing_identifier: str | None = None
+    is_deleted: bool | None = None
 
 
 class NetLiqOhlc(TastytradeData):
@@ -384,16 +384,16 @@ class TradingStatus(TastytradeData):
     is_equity_offering_enabled: bool
     is_equity_offering_closing_only: bool
     updated_at: datetime
-    is_portfolio_margin_enabled: Optional[bool] = None
-    is_risk_reducing_only: Optional[bool] = None
-    day_trade_count: Optional[int] = None
-    autotrade_account_type: Optional[str] = None
-    clearing_account_number: Optional[str] = None
-    clearing_aggregation_identifier: Optional[str] = None
-    is_cryptocurrency_closing_only: Optional[bool] = None
-    pdt_reset_on: Optional[date] = None
-    cmta_override: Optional[int] = None
-    enhanced_fraud_safeguards_enabled_at: Optional[datetime] = None
+    is_portfolio_margin_enabled: bool | None = None
+    is_risk_reducing_only: bool | None = None
+    day_trade_count: int | None = None
+    autotrade_account_type: str | None = None
+    clearing_account_number: str | None = None
+    clearing_aggregation_identifier: str | None = None
+    is_cryptocurrency_closing_only: bool | None = None
+    pdt_reset_on: date | None = None
+    cmta_override: int | None = None
+    enhanced_fraud_safeguards_enabled_at: datetime | None = None
 
 
 class Transaction(TastytradeData):
@@ -411,34 +411,34 @@ class Transaction(TastytradeData):
     value: Decimal
     net_value: Decimal
     is_estimated_fee: bool
-    symbol: Optional[str] = None
-    instrument_type: Optional[InstrumentType] = None
-    underlying_symbol: Optional[str] = None
-    action: Optional[OrderAction] = None
-    quantity: Optional[Decimal] = None
-    price: Optional[Decimal] = None
-    regulatory_fees: Optional[Decimal] = None
-    clearing_fees: Optional[Decimal] = None
-    commission: Optional[Decimal] = None
-    proprietary_index_option_fees: Optional[Decimal] = None
-    ext_exchange_order_number: Optional[str] = None
-    ext_global_order_number: Optional[int] = None
-    ext_group_id: Optional[str] = None
-    ext_group_fill_id: Optional[str] = None
-    ext_exec_id: Optional[str] = None
-    exec_id: Optional[str] = None
-    exchange: Optional[str] = None
-    order_id: Optional[int] = None
-    exchange_affiliation_identifier: Optional[str] = None
-    leg_count: Optional[int] = None
-    destination_venue: Optional[str] = None
-    other_charge: Optional[Decimal] = None
-    other_charge_description: Optional[str] = None
-    reverses_id: Optional[int] = None
-    cost_basis_reconciliation_date: Optional[date] = None
-    lots: Optional[list[Lot]] = None
-    agency_price: Optional[Decimal] = None
-    principal_price: Optional[Decimal] = None
+    symbol: str | None = None
+    instrument_type: InstrumentType | None = None
+    underlying_symbol: str | None = None
+    action: OrderAction | None = None
+    quantity: Decimal | None = None
+    price: Decimal | None = None
+    regulatory_fees: Decimal | None = None
+    clearing_fees: Decimal | None = None
+    commission: Decimal | None = None
+    proprietary_index_option_fees: Decimal | None = None
+    ext_exchange_order_number: str | None = None
+    ext_global_order_number: int | None = None
+    ext_group_id: str | None = None
+    ext_group_fill_id: str | None = None
+    ext_exec_id: str | None = None
+    exec_id: str | None = None
+    exchange: str | None = None
+    order_id: int | None = None
+    exchange_affiliation_identifier: str | None = None
+    leg_count: int | None = None
+    destination_venue: str | None = None
+    other_charge: Decimal | None = None
+    other_charge_description: str | None = None
+    reverses_id: int | None = None
+    cost_basis_reconciliation_date: date | None = None
+    lots: list[Lot] | None = None
+    agency_price: Decimal | None = None
+    principal_price: Decimal | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -469,7 +469,7 @@ class Account(TastytradeData):
     nickname: str
     account_type_name: str
     is_closed: bool
-    day_trader_status: Union[str, bool]
+    day_trader_status: str | bool
     is_firm_error: bool
     is_firm_proprietary: bool
     is_futures_approved: bool
@@ -477,17 +477,17 @@ class Account(TastytradeData):
     margin_or_cash: str
     is_foreign: bool
     created_at: datetime
-    external_id: Optional[str] = None
-    closed_at: Optional[str] = None
-    funding_date: Optional[date] = None
-    investment_objective: Optional[str] = None
-    liquidity_needs: Optional[str] = None
-    risk_tolerance: Optional[str] = None
-    investment_time_horizon: Optional[str] = None
-    futures_account_purpose: Optional[str] = None
-    external_fdid: Optional[str] = None
-    suitable_options_level: Optional[str] = None
-    submitting_user_id: Optional[str] = None
+    external_id: str | None = None
+    closed_at: str | None = None
+    funding_date: date | None = None
+    investment_objective: str | None = None
+    liquidity_needs: str | None = None
+    risk_tolerance: str | None = None
+    investment_time_horizon: str | None = None
+    futures_account_purpose: str | None = None
+    external_fdid: str | None = None
+    suitable_options_level: str | None = None
+    submitting_user_id: str | None = None
 
     @overload
     @classmethod
@@ -503,9 +503,9 @@ class Account(TastytradeData):
     async def a_get(
         cls,
         session: Session,
-        account_number: Optional[str] = None,
+        account_number: str | None = None,
         include_closed: bool = False,
-    ) -> Union[Self, list[Self]]:
+    ) -> Self | list[Self]:
         """
         Gets all trading accounts associated with the Tastytrade user, or a specific
         one if given an account ID.
@@ -536,9 +536,9 @@ class Account(TastytradeData):
     def get(
         cls,
         session: Session,
-        account_number: Optional[str] = None,
+        account_number: str | None = None,
         include_closed: bool = False,
-    ) -> Union[Self, list[Self]]:
+    ) -> Self | list[Self]:
         """
         Gets all trading accounts associated with the Tastytrade user, or a specific
         one if given an account ID.
@@ -605,11 +605,11 @@ class Account(TastytradeData):
         self,
         session: Session,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
+        page_offset: int | None = 0,
         currency: str = "USD",
-        end_date: Optional[date] = None,
-        start_date: Optional[date] = None,
-        snapshot_date: Optional[date] = None,
+        end_date: date | None = None,
+        start_date: date | None = None,
+        snapshot_date: date | None = None,
         time_of_day: Literal["BOD", "EOD"] = "EOD",
     ) -> list[AccountBalanceSnapshot]:
         """
@@ -650,11 +650,11 @@ class Account(TastytradeData):
         self,
         session: Session,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
+        page_offset: int | None = 0,
         currency: str = "USD",
-        end_date: Optional[date] = None,
-        start_date: Optional[date] = None,
-        snapshot_date: Optional[date] = None,
+        end_date: date | None = None,
+        start_date: date | None = None,
+        snapshot_date: date | None = None,
         time_of_day: Literal["BOD", "EOD"] = "EOD",
     ) -> list[AccountBalanceSnapshot]:
         """
@@ -694,14 +694,14 @@ class Account(TastytradeData):
     async def a_get_positions(
         self,
         session: Session,
-        underlying_symbols: Optional[list[str]] = None,
-        symbol: Optional[str] = None,
-        instrument_type: Optional[InstrumentType] = None,
-        include_closed: Optional[bool] = None,
-        underlying_product_code: Optional[str] = None,
-        partition_keys: Optional[list[str]] = None,
-        net_positions: Optional[bool] = None,
-        include_marks: Optional[bool] = None,
+        underlying_symbols: list[str] | None = None,
+        symbol: str | None = None,
+        instrument_type: InstrumentType | None = None,
+        include_closed: bool | None = None,
+        underlying_product_code: str | None = None,
+        partition_keys: list[str] | None = None,
+        net_positions: bool | None = None,
+        include_marks: bool | None = None,
     ) -> list[CurrentPosition]:
         """
         Get the current positions of the account.
@@ -739,14 +739,14 @@ class Account(TastytradeData):
     def get_positions(
         self,
         session: Session,
-        underlying_symbols: Optional[list[str]] = None,
-        symbol: Optional[str] = None,
-        instrument_type: Optional[InstrumentType] = None,
-        include_closed: Optional[bool] = None,
-        underlying_product_code: Optional[str] = None,
-        partition_keys: Optional[list[str]] = None,
-        net_positions: Optional[bool] = None,
-        include_marks: Optional[bool] = None,
+        underlying_symbols: list[str] | None = None,
+        symbol: str | None = None,
+        instrument_type: InstrumentType | None = None,
+        include_closed: bool | None = None,
+        underlying_product_code: str | None = None,
+        partition_keys: list[str] | None = None,
+        net_positions: bool | None = None,
+        include_marks: bool | None = None,
     ) -> list[CurrentPosition]:
         """
         Get the current positions of the account.
@@ -785,21 +785,21 @@ class Account(TastytradeData):
         self,
         session: Session,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
+        page_offset: int | None = 0,
         sort: Literal["Asc", "Desc"] = "Desc",
-        type: Optional[str] = None,
-        types: Optional[list[str]] = None,
-        sub_types: Optional[list[str]] = None,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
-        instrument_type: Optional[InstrumentType] = None,
-        symbol: Optional[str] = None,
-        underlying_symbol: Optional[str] = None,
-        action: Optional[str] = None,
-        partition_key: Optional[str] = None,
-        futures_symbol: Optional[str] = None,
-        start_at: Optional[datetime] = None,
-        end_at: Optional[datetime] = None,
+        type: str | None = None,
+        types: list[str] | None = None,
+        sub_types: list[str] | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None,
+        instrument_type: InstrumentType | None = None,
+        symbol: str | None = None,
+        underlying_symbol: str | None = None,
+        action: str | None = None,
+        partition_key: str | None = None,
+        futures_symbol: str | None = None,
+        start_at: datetime | None = None,
+        end_at: datetime | None = None,
     ) -> list[Transaction]:
         """
         Get transaction history of the account.
@@ -856,21 +856,21 @@ class Account(TastytradeData):
         self,
         session: Session,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
+        page_offset: int | None = 0,
         sort: Literal["Asc", "Desc"] = "Desc",
-        type: Optional[str] = None,
-        types: Optional[list[str]] = None,
-        sub_types: Optional[list[str]] = None,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
-        instrument_type: Optional[InstrumentType] = None,
-        symbol: Optional[str] = None,
-        underlying_symbol: Optional[str] = None,
-        action: Optional[str] = None,
-        partition_key: Optional[str] = None,
-        futures_symbol: Optional[str] = None,
-        start_at: Optional[datetime] = None,
-        end_at: Optional[datetime] = None,
+        type: str | None = None,
+        types: list[str] | None = None,
+        sub_types: list[str] | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None,
+        instrument_type: InstrumentType | None = None,
+        symbol: str | None = None,
+        underlying_symbol: str | None = None,
+        action: str | None = None,
+        partition_key: str | None = None,
+        futures_symbol: str | None = None,
+        start_at: datetime | None = None,
+        end_at: datetime | None = None,
     ) -> list[Transaction]:
         """
         Get transaction history of the account.
@@ -946,7 +946,7 @@ class Account(TastytradeData):
         return Transaction(**data)
 
     async def a_get_total_fees(
-        self, session: Session, day: Optional[date] = None
+        self, session: Session, day: date | None = None
     ) -> FeesInfo:
         """
         Get the total fees for a given date.
@@ -962,7 +962,7 @@ class Account(TastytradeData):
         )
         return FeesInfo(**data)
 
-    def get_total_fees(self, session: Session, day: Optional[date] = None) -> FeesInfo:
+    def get_total_fees(self, session: Session, day: date | None = None) -> FeesInfo:
         """
         Get the total fees for a given date.
 
@@ -980,8 +980,8 @@ class Account(TastytradeData):
     async def a_get_net_liquidating_value_history(
         self,
         session: Session,
-        time_back: Optional[str] = None,
-        start_time: Optional[datetime] = None,
+        time_back: str | None = None,
+        start_time: datetime | None = None,
     ) -> list[NetLiqOhlc]:
         """
         Returns a list of account net liquidating value snapshots over the
@@ -1014,8 +1014,8 @@ class Account(TastytradeData):
     def get_net_liquidating_value_history(
         self,
         session: Session,
-        time_back: Optional[str] = None,
-        start_time: Optional[datetime] = None,
+        time_back: str | None = None,
+        start_time: datetime | None = None,
     ) -> list[NetLiqOhlc]:
         """
         Returns a list of account net liquidating value snapshots over the
@@ -1249,16 +1249,16 @@ class Account(TastytradeData):
         self,
         session: Session,
         per_page: int = 50,
-        page_offset: Optional[int] = 0,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
-        underlying_symbol: Optional[str] = None,
-        statuses: Optional[list[OrderStatus]] = None,
-        futures_symbol: Optional[str] = None,
-        underlying_instrument_type: Optional[InstrumentType] = None,
-        sort: Optional[Literal["Asc", "Desc"]] = None,
-        start_at: Optional[datetime] = None,
-        end_at: Optional[datetime] = None,
+        page_offset: int | None = 0,
+        start_date: date | None = None,
+        end_date: date | None = None,
+        underlying_symbol: str | None = None,
+        statuses: list[OrderStatus] | None = None,
+        futures_symbol: str | None = None,
+        underlying_instrument_type: InstrumentType | None = None,
+        sort: Literal["Asc", "Desc"] | None = None,
+        start_at: datetime | None = None,
+        end_at: datetime | None = None,
     ) -> list[PlacedOrder]:
         """
         Get order history of the account.
@@ -1306,16 +1306,16 @@ class Account(TastytradeData):
         self,
         session: Session,
         per_page: int = 50,
-        page_offset: Optional[int] = 0,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
-        underlying_symbol: Optional[str] = None,
-        statuses: Optional[list[OrderStatus]] = None,
-        futures_symbol: Optional[str] = None,
-        underlying_instrument_type: Optional[InstrumentType] = None,
-        sort: Optional[Literal["Asc", "Desc"]] = None,
-        start_at: Optional[datetime] = None,
-        end_at: Optional[datetime] = None,
+        page_offset: int | None = 0,
+        start_date: date | None = None,
+        end_date: date | None = None,
+        underlying_symbol: str | None = None,
+        statuses: list[OrderStatus] | None = None,
+        futures_symbol: str | None = None,
+        underlying_instrument_type: InstrumentType | None = None,
+        sort: Literal["Asc", "Desc"] | None = None,
+        start_at: datetime | None = None,
+        end_at: datetime | None = None,
     ) -> list[PlacedOrder]:
         """
         Get order history of the account.
@@ -1360,7 +1360,7 @@ class Account(TastytradeData):
         )
 
     async def a_get_complex_order_history(
-        self, session: Session, per_page: int = 50, page_offset: Optional[int] = 0
+        self, session: Session, per_page: int = 50, page_offset: int | None = 0
     ) -> list[PlacedComplexOrder]:
         """
         Get order history of the account.
@@ -1379,7 +1379,7 @@ class Account(TastytradeData):
         )
 
     def get_complex_order_history(
-        self, session: Session, per_page: int = 50, page_offset: Optional[int] = 0
+        self, session: Session, per_page: int = 50, page_offset: int | None = 0
     ) -> list[PlacedComplexOrder]:
         """
         Get order history of the account.

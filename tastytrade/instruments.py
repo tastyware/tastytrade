@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Optional, Union, overload
+from typing import Any, overload
 
 from pydantic import field_validator, model_validator
 from typing_extensions import Self
@@ -56,8 +56,8 @@ class Deliverable(TastytradeData):
     description: str
     amount: Decimal
     percent: str
-    symbol: Optional[str] = None
-    instrument_type: Optional[InstrumentType] = None
+    symbol: str | None = None
+    instrument_type: InstrumentType | None = None
 
 
 class DestinationVenueSymbol(TastytradeData):
@@ -70,8 +70,8 @@ class DestinationVenueSymbol(TastytradeData):
     symbol: str
     destination_venue: str
     routable: bool
-    max_quantity_precision: Optional[int] = None
-    max_price_precision: Optional[int] = None
+    max_quantity_precision: int | None = None
+    max_price_precision: int | None = None
 
 
 class QuantityDecimalPrecision(TastytradeData):
@@ -83,7 +83,7 @@ class QuantityDecimalPrecision(TastytradeData):
     instrument_type: InstrumentType
     value: int
     minimum_increment_precision: int
-    symbol: Optional[str] = None
+    symbol: str | None = None
 
 
 class Strike(TastytradeData):
@@ -105,8 +105,8 @@ class TickSize(TastytradeData):
     """
 
     value: Decimal
-    threshold: Optional[Decimal] = None
-    symbol: Optional[str] = None
+    threshold: Decimal | None = None
+    symbol: str | None = None
 
 
 class NestedOptionChainExpiration(TastytradeData):
@@ -158,7 +158,7 @@ class NestedFutureOptionFuture(TastytradeData):
     symbol: str
     active_month: bool
     stops_trading_at: datetime
-    maturity_date: Optional[date] = None
+    maturity_date: date | None = None
 
     @field_validator("maturity_date", mode="before")
     @classmethod
@@ -204,12 +204,12 @@ class Cryptocurrency(TradeableTastytradeData):
     active: bool
     tick_size: Decimal
     destination_venue_symbols: list[DestinationVenueSymbol]
-    streamer_symbol: Optional[str] = None
+    streamer_symbol: str | None = None
 
     @overload
     @classmethod
     async def a_get(
-        cls, session: Session, symbols: Optional[list[str]] = None
+        cls, session: Session, symbols: list[str] | None = None
     ) -> list[Self]: ...
 
     @overload
@@ -220,8 +220,8 @@ class Cryptocurrency(TradeableTastytradeData):
     async def a_get(
         cls,
         session: Session,
-        symbols: Union[str, list[str], None] = None,
-    ) -> Union[Self, list[Self]]:
+        symbols: str | list[str] | None = None,
+    ) -> Self | list[Self]:
         """
         Returns a list of cryptocurrency objects from the given symbols,
         or a single cryptocurrency if a list is not provided.
@@ -239,9 +239,7 @@ class Cryptocurrency(TradeableTastytradeData):
 
     @overload
     @classmethod
-    def get(
-        cls, session: Session, symbols: Optional[list[str]] = None
-    ) -> list[Self]: ...
+    def get(cls, session: Session, symbols: list[str] | None = None) -> list[Self]: ...
 
     @overload
     @classmethod
@@ -251,8 +249,8 @@ class Cryptocurrency(TradeableTastytradeData):
     def get(
         cls,
         session: Session,
-        symbols: Union[str, list[str], None] = None,
-    ) -> Union[Self, list[Self]]:
+        symbols: str | list[str] | None = None,
+    ) -> Self | list[Self]:
         """
         Returns a list of cryptocurrency objects from the given symbols,
         or a single cryptocurrency if a list is not provided.
@@ -286,23 +284,23 @@ class Equity(TradeableTastytradeData):
     is_illiquid: bool
     is_etf: bool
     streamer_symbol: str
-    borrow_rate: Optional[Decimal] = None
-    cusip: Optional[str] = None
-    short_description: Optional[str] = None
-    halted_at: Optional[datetime] = None
-    stops_trading_at: Optional[datetime] = None
-    is_fractional_quantity_eligible: Optional[bool] = None
-    tick_sizes: Optional[list[TickSize]] = None
-    listed_market: Optional[str] = None
-    option_tick_sizes: Optional[list[TickSize]] = None
+    borrow_rate: Decimal | None = None
+    cusip: str | None = None
+    short_description: str | None = None
+    halted_at: datetime | None = None
+    stops_trading_at: datetime | None = None
+    is_fractional_quantity_eligible: bool | None = None
+    tick_sizes: list[TickSize] | None = None
+    listed_market: str | None = None
+    option_tick_sizes: list[TickSize] | None = None
 
     @classmethod
     async def a_get_active_equities(
         cls,
         session: Session,
         per_page: int = 1000,
-        page_offset: Optional[int] = 0,
-        lendability: Optional[str] = None,
+        page_offset: int | None = 0,
+        lendability: str | None = None,
     ) -> list[Self]:
         """
         Returns a list of actively traded Equity objects.
@@ -329,8 +327,8 @@ class Equity(TradeableTastytradeData):
         cls,
         session: Session,
         per_page: int = 1000,
-        page_offset: Optional[int] = 0,
-        lendability: Optional[str] = None,
+        page_offset: int | None = 0,
+        lendability: str | None = None,
     ) -> list[Self]:
         """
         Returns a list of actively traded Equity objects.
@@ -360,10 +358,10 @@ class Equity(TradeableTastytradeData):
         symbols: list[str],
         *,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
-        lendability: Optional[str] = None,
-        is_index: Optional[bool] = None,
-        is_etf: Optional[bool] = None,
+        page_offset: int | None = 0,
+        lendability: str | None = None,
+        is_index: bool | None = None,
+        is_etf: bool | None = None,
     ) -> list[Self]: ...
 
     @overload
@@ -374,13 +372,13 @@ class Equity(TradeableTastytradeData):
     async def a_get(
         cls,
         session: Session,
-        symbols: Union[str, list[str]],
+        symbols: str | list[str],
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
-        lendability: Optional[str] = None,
-        is_index: Optional[bool] = None,
-        is_etf: Optional[bool] = None,
-    ) -> Union[Self, list[Self]]:
+        page_offset: int | None = 0,
+        lendability: str | None = None,
+        is_index: bool | None = None,
+        is_etf: bool | None = None,
+    ) -> Self | list[Self]:
         """
         Returns a list of Equity objects from the given symbols, or a single
         Equity object if a list is not provided.
@@ -420,10 +418,10 @@ class Equity(TradeableTastytradeData):
         symbols: list[str],
         *,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
-        lendability: Optional[str] = None,
-        is_index: Optional[bool] = None,
-        is_etf: Optional[bool] = None,
+        page_offset: int | None = 0,
+        lendability: str | None = None,
+        is_index: bool | None = None,
+        is_etf: bool | None = None,
     ) -> list[Self]: ...
 
     @overload
@@ -434,14 +432,14 @@ class Equity(TradeableTastytradeData):
     def get(
         cls,
         session: Session,
-        symbols: Union[str, list[str]],
+        symbols: str | list[str],
         *,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
-        lendability: Optional[str] = None,
-        is_index: Optional[bool] = None,
-        is_etf: Optional[bool] = None,
-    ) -> Union[Self, list[Self]]:
+        page_offset: int | None = 0,
+        lendability: str | None = None,
+        is_index: bool | None = None,
+        is_etf: bool | None = None,
+    ) -> Self | list[Self]:
         """
         Returns a list of Equity objects from the given symbols, or a single
         Equity object if a list is not provided.
@@ -495,9 +493,9 @@ class Option(TradeableTastytradeData):
     expires_at: datetime
     is_closing_only: bool
     streamer_symbol: str = ""
-    listed_market: Optional[str] = None
-    halted_at: Optional[datetime] = None
-    old_security_number: Optional[str] = None
+    listed_market: str | None = None
+    halted_at: datetime | None = None
+    old_security_number: str | None = None
 
     @model_validator(mode="after")
     def set_streamer_symbol(self) -> Self:
@@ -512,10 +510,10 @@ class Option(TradeableTastytradeData):
         session: Session,
         symbols: list[str],
         *,
-        active: Optional[bool] = None,
+        active: bool | None = None,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
-        with_expired: Optional[bool] = None,
+        page_offset: int | None = 0,
+        with_expired: bool | None = None,
     ) -> list[Self]: ...
 
     @overload
@@ -526,13 +524,13 @@ class Option(TradeableTastytradeData):
     async def a_get(
         cls,
         session: Session,
-        symbols: Union[str, list[str]],
+        symbols: str | list[str],
         *,
-        active: Optional[bool] = None,
+        active: bool | None = None,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
-        with_expired: Optional[bool] = None,
-    ) -> Union[Self, list[Self]]:
+        page_offset: int | None = 0,
+        with_expired: bool | None = None,
+    ) -> Self | list[Self]:
         """
         Returns a list of Option objects from the given symbols, or a single
         Option object if a list is not provided.
@@ -568,9 +566,9 @@ class Option(TradeableTastytradeData):
         symbols: list[str],
         *,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
-        active: Optional[bool] = None,
-        with_expired: Optional[bool] = None,
+        page_offset: int | None = 0,
+        active: bool | None = None,
+        with_expired: bool | None = None,
     ) -> list[Self]: ...
 
     @overload
@@ -581,13 +579,13 @@ class Option(TradeableTastytradeData):
     def get(
         cls,
         session: Session,
-        symbols: Union[str, list[str]],
+        symbols: str | list[str],
         *,
-        active: Optional[bool] = None,
+        active: bool | None = None,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
-        with_expired: Optional[bool] = None,
-    ) -> Union[Self, list[Self]]:
+        page_offset: int | None = 0,
+        with_expired: bool | None = None,
+    ) -> Self | list[Self]:
         """
         Returns a list of Option objects from the given symbols, or a single
         Option object if a list is not provided.
@@ -689,7 +687,7 @@ class NestedOptionChain(TastytradeData):
     shares_per_contract: int
     tick_sizes: list[TickSize]
     expirations: list[NestedOptionChainExpiration]
-    deliverables: Optional[list[Deliverable]] = None
+    deliverables: list[Deliverable] | None = None
 
     @classmethod
     async def a_get(cls, session: Session, symbol: str) -> list[Self]:
@@ -745,16 +743,16 @@ class FutureProduct(TastytradeData):
     clearing_code: str
     clearing_exchange_code: str
     roll: Roll
-    base_tick: Optional[int] = None
-    sub_tick: Optional[int] = None
-    contract_limit: Optional[int] = None
-    product_subtype: Optional[str] = None
-    security_group: Optional[str] = None
-    true_underlying_code: Optional[str] = None
-    clearport_code: Optional[str] = None
-    legacy_code: Optional[str] = None
-    legacy_exchange_code: Optional[str] = None
-    option_products: Optional[list["FutureOptionProduct"]] = None
+    base_tick: int | None = None
+    sub_tick: int | None = None
+    contract_limit: int | None = None
+    product_subtype: str | None = None
+    security_group: str | None = None
+    true_underlying_code: str | None = None
+    clearport_code: str | None = None
+    legacy_code: str | None = None
+    legacy_exchange_code: str | None = None
+    option_products: list["FutureOptionProduct"] | None = None
 
     @overload
     @classmethod
@@ -763,7 +761,7 @@ class FutureProduct(TastytradeData):
         session: Session,
         *,
         per_page: int = 50,
-        page_offset: Optional[int] = 0,
+        page_offset: int | None = 0,
     ) -> list[Self]: ...
 
     @overload
@@ -779,11 +777,11 @@ class FutureProduct(TastytradeData):
     async def a_get(
         cls,
         session: Session,
-        code: Optional[str] = None,
+        code: str | None = None,
         exchange: str = "CME",
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
-    ) -> Union[Self, list[Self]]:
+        page_offset: int | None = 0,
+    ) -> Self | list[Self]:
         """
         Returns a list of FutureProduct objects available, or a single
         FutureProduct object if a code is provided.
@@ -814,7 +812,7 @@ class FutureProduct(TastytradeData):
         session: Session,
         *,
         per_page: int = 50,
-        page_offset: Optional[int] = 0,
+        page_offset: int | None = 0,
     ) -> list[Self]: ...
 
     @overload
@@ -830,11 +828,11 @@ class FutureProduct(TastytradeData):
     def get(
         cls,
         session: Session,
-        code: Optional[str] = None,
+        code: str | None = None,
         exchange: str = "CME",
         per_page: int = 50,
-        page_offset: Optional[int] = 0,
-    ) -> Union[Self, list[Self]]:
+        page_offset: int | None = 0,
+    ) -> Self | list[Self]:
         """
         Returns a list of FutureProduct objects available, or a single
         FutureProduct object if a code is provided.
@@ -882,29 +880,29 @@ class Future(TradeableTastytradeData):
     back_month_first_calendar_symbol: bool
     instrument_type: InstrumentType = InstrumentType.FUTURE
     streamer_symbol: str = ""
-    is_tradeable: Optional[bool] = None
-    future_product: Optional["FutureProduct"] = None
-    contract_size: Optional[Decimal] = None
-    main_fraction: Optional[Decimal] = None
-    sub_fraction: Optional[Decimal] = None
-    first_notice_date: Optional[date] = None
-    roll_target_symbol: Optional[str] = None
-    true_underlying_symbol: Optional[str] = None
-    future_etf_equivalent: Optional[FutureEtfEquivalent] = None
-    tick_sizes: Optional[list[TickSize]] = None
-    option_tick_sizes: Optional[list[TickSize]] = None
-    spread_tick_sizes: Optional[list[TickSize]] = None
+    is_tradeable: bool | None = None
+    future_product: "FutureProduct | None" = None
+    contract_size: Decimal | None = None
+    main_fraction: Decimal | None = None
+    sub_fraction: Decimal | None = None
+    first_notice_date: date | None = None
+    roll_target_symbol: str | None = None
+    true_underlying_symbol: str | None = None
+    future_etf_equivalent: FutureEtfEquivalent | None = None
+    tick_sizes: list[TickSize] | None = None
+    option_tick_sizes: list[TickSize] | None = None
+    spread_tick_sizes: list[TickSize] | None = None
 
     @overload
     @classmethod
     async def a_get(
         cls,
         session: Session,
-        symbols: Optional[list[str]] = None,
+        symbols: list[str] | None = None,
         *,
-        product_codes: Optional[list[str]] = None,
+        product_codes: list[str] | None = None,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
+        page_offset: int | None = 0,
     ) -> list[Self]: ...
 
     @overload
@@ -915,12 +913,12 @@ class Future(TradeableTastytradeData):
     async def a_get(
         cls,
         session: Session,
-        symbols: Union[str, list[str], None] = None,
+        symbols: str | list[str] | None = None,
         *,
-        product_codes: Optional[list[str]] = None,
+        product_codes: list[str] | None = None,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
-    ) -> Union[Self, list[Self]]:
+        page_offset: int | None = 0,
+    ) -> Self | list[Self]:
         """
         Returns a list of Future objects from the given symbols
         or product codes.
@@ -954,11 +952,11 @@ class Future(TradeableTastytradeData):
     def get(
         cls,
         session: Session,
-        symbols: Optional[list[str]] = None,
+        symbols: list[str] | None = None,
         *,
-        product_codes: Optional[list[str]] = None,
+        product_codes: list[str] | None = None,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
+        page_offset: int | None = 0,
     ) -> list[Self]: ...
 
     @overload
@@ -969,12 +967,12 @@ class Future(TradeableTastytradeData):
     def get(
         cls,
         session: Session,
-        symbols: Union[str, list[str], None] = None,
+        symbols: str | list[str] | None = None,
         *,
-        product_codes: Optional[list[str]] = None,
+        product_codes: list[str] | None = None,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
-    ) -> Union[Self, list[Self]]:
+        page_offset: int | None = 0,
+    ) -> Self | list[Self]:
         """
         Returns a list of Future objects from the given symbols
         or product codes.
@@ -1022,10 +1020,10 @@ class FutureOptionProduct(TastytradeData):
     clearing_exchange_code: str
     clearing_price_multiplier: Decimal
     is_rollover: bool
-    future_product: Optional["FutureProduct"] = None
-    product_subtype: Optional[str] = None
-    legacy_code: Optional[str] = None
-    clearport_code: Optional[str] = None
+    future_product: "FutureProduct | None" = None
+    product_subtype: str | None = None
+    legacy_code: str | None = None
+    clearport_code: str | None = None
 
     @overload
     @classmethod
@@ -1034,7 +1032,7 @@ class FutureOptionProduct(TastytradeData):
         session: Session,
         *,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
+        page_offset: int | None = 0,
     ) -> list[Self]: ...
 
     @overload
@@ -1050,11 +1048,11 @@ class FutureOptionProduct(TastytradeData):
     async def a_get(
         cls,
         session: Session,
-        root_symbol: Optional[str] = None,
+        root_symbol: str | None = None,
         exchange: str = "CME",
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
-    ) -> Union[Self, list[Self]]:
+        page_offset: int | None = 0,
+    ) -> Self | list[Self]:
         """
         Returns a list of FutureOptionProduct objects available, or a single
         FutureOptionProduct object if a root symbol is provided.
@@ -1084,7 +1082,7 @@ class FutureOptionProduct(TastytradeData):
         session: Session,
         *,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
+        page_offset: int | None = 0,
     ) -> list[Self]: ...
 
     @overload
@@ -1095,11 +1093,11 @@ class FutureOptionProduct(TastytradeData):
     def get(
         cls,
         session: Session,
-        root_symbol: Optional[str] = None,
+        root_symbol: str | None = None,
         exchange: str = "CME",
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
-    ) -> Union[Self, list[Self]]:
+        page_offset: int | None = 0,
+    ) -> Self | list[Self]:
         """
         Returns a list of FutureOptionProduct objects available, or a single
         FutureOptionProduct object if a root symbol is provided.
@@ -1161,7 +1159,7 @@ class FutureOption(TradeableTastytradeData):
     security_exchange: str
     sx_id: str
     instrument_type: InstrumentType = InstrumentType.FUTURE_OPTION
-    future_option_product: Optional["FutureOptionProduct"] = None
+    future_option_product: "FutureOptionProduct | None" = None
 
     @field_validator("maturity_date", mode="before")
     @classmethod
@@ -1177,12 +1175,12 @@ class FutureOption(TradeableTastytradeData):
         session: Session,
         symbols: list[str],
         *,
-        root_symbol: Optional[str] = None,
-        expiration_date: Optional[date] = None,
-        option_type: Optional[OptionType] = None,
-        strike_price: Optional[Decimal] = None,
+        root_symbol: str | None = None,
+        expiration_date: date | None = None,
+        option_type: OptionType | None = None,
+        strike_price: Decimal | None = None,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
+        page_offset: int | None = 0,
     ) -> list[Self]: ...
 
     @overload
@@ -1193,15 +1191,15 @@ class FutureOption(TradeableTastytradeData):
     async def a_get(
         cls,
         session: Session,
-        symbols: Union[str, list[str]],
+        symbols: str | list[str],
         *,
-        root_symbol: Optional[str] = None,
-        expiration_date: Optional[date] = None,
-        option_type: Optional[OptionType] = None,
-        strike_price: Optional[Decimal] = None,
+        root_symbol: str | None = None,
+        expiration_date: date | None = None,
+        option_type: OptionType | None = None,
+        strike_price: Decimal | None = None,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
-    ) -> Union[Self, list[Self]]:
+        page_offset: int | None = 0,
+    ) -> Self | list[Self]:
         """
         Returns a list of FutureOption objects from the given symbols.
 
@@ -1242,12 +1240,12 @@ class FutureOption(TradeableTastytradeData):
         session: Session,
         symbols: list[str],
         *,
-        root_symbol: Optional[str] = None,
-        expiration_date: Optional[date] = None,
-        option_type: Optional[OptionType] = None,
-        strike_price: Optional[Decimal] = None,
+        root_symbol: str | None = None,
+        expiration_date: date | None = None,
+        option_type: OptionType | None = None,
+        strike_price: Decimal | None = None,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
+        page_offset: int | None = 0,
     ) -> list[Self]: ...
 
     @overload
@@ -1258,15 +1256,15 @@ class FutureOption(TradeableTastytradeData):
     def get(
         cls,
         session: Session,
-        symbols: Union[str, list[str]],
+        symbols: str | list[str],
         *,
-        root_symbol: Optional[str] = None,
-        expiration_date: Optional[date] = None,
-        option_type: Optional[OptionType] = None,
-        strike_price: Optional[Decimal] = None,
+        root_symbol: str | None = None,
+        expiration_date: date | None = None,
+        option_type: OptionType | None = None,
+        strike_price: Decimal | None = None,
         per_page: int = 250,
-        page_offset: Optional[int] = 0,
-    ) -> Union[Self, list[Self]]:
+        page_offset: int | None = 0,
+    ) -> Self | list[Self]:
         """
         Returns a list of FutureOption objects from the given symbols.
 
@@ -1361,12 +1359,12 @@ class Warrant(TastytradeData):
     description: str
     is_closing_only: bool
     active: bool
-    cusip: Optional[str] = None
+    cusip: str | None = None
 
     @overload
     @classmethod
     async def a_get(
-        cls, session: Session, symbols: Optional[list[str]] = None
+        cls, session: Session, symbols: list[str] | None = None
     ) -> list[Self]: ...
 
     @overload
@@ -1375,8 +1373,8 @@ class Warrant(TastytradeData):
 
     @classmethod
     async def a_get(
-        cls, session: Session, symbols: Union[str, list[str], None] = None
-    ) -> Union[Self, list[Self]]:
+        cls, session: Session, symbols: str | list[str] | None = None
+    ) -> Self | list[Self]:
         """
         Returns a list of Warrant objects from the given symbols, or a single
         Warrant object if a list is not provided.
@@ -1393,9 +1391,7 @@ class Warrant(TastytradeData):
 
     @overload
     @classmethod
-    def get(
-        cls, session: Session, symbols: Optional[list[str]] = None
-    ) -> list[Self]: ...
+    def get(cls, session: Session, symbols: list[str] | None = None) -> list[Self]: ...
 
     @overload
     @classmethod
@@ -1403,8 +1399,8 @@ class Warrant(TastytradeData):
 
     @classmethod
     def get(
-        cls, session: Session, symbols: Union[str, list[str], None] = None
-    ) -> Union[Self, list[Self]]:
+        cls, session: Session, symbols: str | list[str] | None = None
+    ) -> Self | list[Self]:
         """
         Returns a list of Warrant objects from the given symbols, or a single
         Warrant object if a list is not provided.

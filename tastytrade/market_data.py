@@ -1,7 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
 
 from tastytrade.order import InstrumentType
 from tastytrade.session import Session
@@ -75,35 +74,35 @@ class MarketData(TastytradeData):
     prev_close_price_type: ClosePriceType
     halt_start_time: int
     halt_end_time: int
-    ask: Optional[Decimal] = None
-    beta: Optional[Decimal] = None
-    bid: Optional[Decimal] = None
-    close: Optional[Decimal] = None
-    day_open: Optional[Decimal] = None
-    day_high: Optional[Decimal] = None
-    day_low: Optional[Decimal] = None
-    day_close: Optional[Decimal] = None
-    day_high_price: Optional[Decimal] = None
-    day_low_price: Optional[Decimal] = None
-    dividend_amount: Optional[Decimal] = None
-    dividend_frequency: Optional[Decimal] = None
-    high_limit_price: Optional[Decimal] = None
-    instrument: Optional[Instrument] = None
-    last: Optional[Decimal] = None
-    last_mkt: Optional[Decimal] = None
-    last_ext: Optional[Decimal] = None
-    last_trade_time: Optional[int] = None
-    low_limit_price: Optional[Decimal] = None
-    mid: Optional[Decimal] = None
-    open: Optional[Decimal] = None
-    prev_close: Optional[Decimal] = None
-    prev_day_close: Optional[Decimal] = None
-    trading_halted: Optional[bool] = None
-    trading_halted_reason: Optional[str] = None
-    volume: Optional[Decimal] = None
-    year_low_price: Optional[Decimal] = None
-    year_high_price: Optional[Decimal] = None
-    open_interest: Optional[Decimal] = None
+    ask: Decimal | None = None
+    beta: Decimal | None = None
+    bid: Decimal | None = None
+    close: Decimal | None = None
+    day_open: Decimal | None = None
+    day_high: Decimal | None = None
+    day_low: Decimal | None = None
+    day_close: Decimal | None = None
+    day_high_price: Decimal | None = None
+    day_low_price: Decimal | None = None
+    dividend_amount: Decimal | None = None
+    dividend_frequency: Decimal | None = None
+    high_limit_price: Decimal | None = None
+    instrument: Instrument | None = None
+    last: Decimal | None = None
+    last_mkt: Decimal | None = None
+    last_ext: Decimal | None = None
+    last_trade_time: int | None = None
+    low_limit_price: Decimal | None = None
+    mid: Decimal | None = None
+    open: Decimal | None = None
+    prev_close: Decimal | None = None
+    prev_day_close: Decimal | None = None
+    trading_halted: bool | None = None
+    trading_halted_reason: str | None = None
+    volume: Decimal | None = None
+    year_low_price: Decimal | None = None
+    year_high_price: Decimal | None = None
+    open_interest: Decimal | None = None
 
 
 def get_market_data(
@@ -136,12 +135,12 @@ async def a_get_market_data(
 
 def get_market_data_by_type(
     session: Session,
-    cryptocurrencies: Optional[list[str]] = None,
-    equities: Optional[list[str]] = None,
-    futures: Optional[list[str]] = None,
-    future_options: Optional[list[str]] = None,
-    indices: Optional[list[str]] = None,
-    options: Optional[list[str]] = None,
+    cryptocurrencies: list[str] | None = None,
+    equities: list[str] | None = None,
+    futures: list[str] | None = None,
+    future_options: list[str] | None = None,
+    indices: list[str] | None = None,
+    options: list[str] | None = None,
 ) -> list[MarketData]:
     """
     Get market data for the given symbols grouped by instrument type.
@@ -170,12 +169,12 @@ def get_market_data_by_type(
 
 async def a_get_market_data_by_type(
     session: Session,
-    cryptocurrencies: Optional[list[str]] = None,
-    equities: Optional[list[str]] = None,
-    futures: Optional[list[str]] = None,
-    future_options: Optional[list[str]] = None,
-    indices: Optional[list[str]] = None,
-    options: Optional[list[str]] = None,
+    cryptocurrencies: list[str] | None = None,
+    equities: list[str] | None = None,
+    futures: list[str] | None = None,
+    future_options: list[str] | None = None,
+    indices: list[str] | None = None,
+    options: list[str] | None = None,
 ) -> list[MarketData]:
     """
     Get market data for the given symbols grouped by instrument type.

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import date, datetime, timedelta
-from typing import Any, Optional, Union
+from typing import Any
 
 from httpx import AsyncClient, Client
 from typing_extensions import Self
@@ -28,8 +28,8 @@ class Address(TastytradeData):
     postal_code: str
     state_region: str
     street_one: str
-    street_two: Optional[str] = None
-    street_three: Optional[str] = None
+    street_two: str | None = None
+    street_three: str | None = None
 
 
 class EntityOfficer(TastytradeData):
@@ -147,16 +147,16 @@ class CustomerPerson(TastytradeData):
     employment_status: str
     marital_status: str
     number_of_dependents: int
-    occupation: Optional[str] = None
-    middle_name: Optional[str] = None
-    prefix_name: Optional[str] = None
-    suffix_name: Optional[str] = None
-    birth_country: Optional[str] = None
-    birth_date: Optional[Union[date, str]] = None
-    visa_expiration_date: Optional[date] = None
-    visa_type: Optional[str] = None
-    employer_name: Optional[str] = None
-    job_title: Optional[str] = None
+    occupation: str | None = None
+    middle_name: str | None = None
+    prefix_name: str | None = None
+    suffix_name: str | None = None
+    birth_country: str | None = None
+    birth_date: date | str | None = None
+    visa_expiration_date: date | None = None
+    visa_type: str | None = None
+    employer_name: str | None = None
+    job_title: str | None = None
 
 
 class CustomerSuitability(TastytradeData):
@@ -175,11 +175,11 @@ class CustomerSuitability(TastytradeData):
     number_of_dependents: int
     stock_trading_experience: str
     uncovered_options_trading_experience: str
-    customer_id: Optional[str] = None
-    employer_name: Optional[str] = None
-    job_title: Optional[str] = None
-    occupation: Optional[str] = None
-    tax_bracket: Optional[str] = None
+    customer_id: str | None = None
+    employer_name: str | None = None
+    job_title: str | None = None
+    occupation: str | None = None
+    tax_bracket: str | None = None
 
 
 class Customer(TastytradeData):
@@ -220,25 +220,25 @@ class Customer(TastytradeData):
     created_at: datetime
     identifiable_type: str
     person: CustomerPerson
-    gender: Optional[str] = None
-    middle_name: Optional[str] = None
-    prefix_name: Optional[str] = None
-    second_surname: Optional[str] = None
-    suffix_name: Optional[str] = None
-    foreign_tax_number: Optional[str] = None
-    birth_country: Optional[str] = None
-    visa_expiration_date: Optional[date] = None
-    visa_type: Optional[str] = None
-    signature_of_agreement: Optional[bool] = None
-    desk_customer_id: Optional[str] = None
-    entity: Optional[CustomerEntity] = None
-    family_member_names: Optional[str] = None
-    has_institutional_assets: Optional[str] = None
-    industry_affiliation_firm: Optional[str] = None
-    is_investment_adviser: Optional[bool] = None
-    listed_affiliation_symbol: Optional[str] = None
-    political_organization: Optional[str] = None
-    user_id: Optional[str] = None
+    gender: str | None = None
+    middle_name: str | None = None
+    prefix_name: str | None = None
+    second_surname: str | None = None
+    suffix_name: str | None = None
+    foreign_tax_number: str | None = None
+    birth_country: str | None = None
+    visa_expiration_date: date | None = None
+    visa_type: str | None = None
+    signature_of_agreement: bool | None = None
+    desk_customer_id: str | None = None
+    entity: CustomerEntity | None = None
+    family_member_names: str | None = None
+    has_institutional_assets: str | None = None
+    industry_affiliation_firm: str | None = None
+    is_investment_adviser: bool | None = None
+    listed_affiliation_symbol: str | None = None
+    political_organization: str | None = None
+    user_id: str | None = None
 
 
 _fmt = "%Y-%m-%d %H:%M:%S%z"
@@ -263,7 +263,7 @@ class Session:
         provider_secret: str,
         refresh_token: str,
         is_test: bool = False,
-        proxy: Optional[str] = None,
+        proxy: str | None = None,
     ):
         #: Whether this is a cert or real session
         self.is_test = is_test

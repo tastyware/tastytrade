@@ -1,4 +1,4 @@
-from typing import Any, Optional, Union, overload
+from typing import Any, overload
 
 from typing_extensions import Self
 
@@ -41,8 +41,8 @@ class PairsWatchlist(TastytradeData):
     async def a_get(
         cls,
         session: Session,
-        name: Optional[str] = None,
-    ) -> Union[Self, list[Self]]:
+        name: str | None = None,
+    ) -> Self | list[Self]:
         """
         Fetches a list of all Tastytrade public pairs watchlists, or a specific one if
         a name is provided.
@@ -68,8 +68,8 @@ class PairsWatchlist(TastytradeData):
     def get(
         cls,
         session: Session,
-        name: Optional[str] = None,
-    ) -> Union[Self, list[Self]]:
+        name: str | None = None,
+    ) -> Self | list[Self]:
         """
         Fetches a list of all Tastytrade public pairs watchlists, or a specific one if
         a name is provided.
@@ -86,7 +86,7 @@ class PairsWatchlist(TastytradeData):
 
 class Watchlist(TastytradeData):
     name: str
-    watchlist_entries: Optional[list[dict[str, Any]]] = None
+    watchlist_entries: list[dict[str, Any]] | None = None
     group_name: str = "default"
     order_index: int = 9999
 
@@ -110,10 +110,10 @@ class PublicWatchlist(Watchlist):
     async def a_get(
         cls,
         session: Session,
-        name: Optional[str] = None,
+        name: str | None = None,
         *,
         counts_only: bool = False,
-    ) -> Union[Self, list[Self]]:
+    ) -> Self | list[Self]:
         """
         Fetches a list of all Tastytrade public watchlists, or a specific one if
         a name is provided.
@@ -142,10 +142,10 @@ class PublicWatchlist(Watchlist):
     def get(
         cls,
         session: Session,
-        name: Optional[str] = None,
+        name: str | None = None,
         *,
         counts_only: bool = False,
-    ) -> Union[Self, list[Self]]:
+    ) -> Self | list[Self]:
         """
         Fetches a list of all Tastytrade public watchlists, or a specific one if
         a name is provided.
@@ -179,8 +179,8 @@ class PrivateWatchlist(Watchlist):
     async def a_get(
         cls,
         session: Session,
-        name: Optional[str] = None,
-    ) -> Union[Self, list[Self]]:
+        name: str | None = None,
+    ) -> Self | list[Self]:
         """
         Fetches the user's private watchlists, or a specific one if a name is provided.
 
@@ -205,8 +205,8 @@ class PrivateWatchlist(Watchlist):
     def get(
         cls,
         session: Session,
-        name: Optional[str] = None,
-    ) -> Union[Self, list[Self]]:
+        name: str | None = None,
+    ) -> Self | list[Self]:
         """
         Fetches the user's private watchlists, or a specific one if a name is provided.
 

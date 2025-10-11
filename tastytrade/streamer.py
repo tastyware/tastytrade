@@ -10,7 +10,7 @@ from decimal import Decimal
 from enum import Enum
 from ssl import SSLContext, create_default_context
 from types import TracebackType
-from typing import Any, Callable, Optional, TypedDict, TypeVar, Union, cast
+from typing import Any, Callable, TypeAlias, TypedDict, TypeVar, cast
 
 from pydantic import model_validator
 from websockets.asyncio.client import ClientConnection, connect
@@ -128,18 +128,18 @@ class SubscriptionType(str, Enum):
 
 
 #: List of all possible types to stream with the alert streamer
-AlertType = Union[
-    AccountBalance,
-    ExternalTransaction,
-    PlacedComplexOrder,
-    PlacedOrder,
-    OrderChain,
-    CurrentPosition,
-    QuoteAlert,
-    TradingStatus,
-    UnderlyingYearGainSummary,
-    Watchlist,
-]
+AlertType: TypeAlias = (
+    AccountBalance
+    | ExternalTransaction
+    | PlacedComplexOrder
+    | PlacedOrder
+    | OrderChain
+    | CurrentPosition
+    | QuoteAlert
+    | TradingStatus
+    | UnderlyingYearGainSummary
+    | Watchlist
+)
 T = TypeVar("T", bound=AlertType)
 MAP_ALERTS: dict[str, type[AlertType]] = {
     "AccountBalance": AccountBalance,
@@ -155,17 +155,17 @@ MAP_ALERTS: dict[str, type[AlertType]] = {
 }
 
 #: List of all possible types to stream with the data streamer
-EventType = Union[
-    Candle,
-    Greeks,
-    Profile,
-    Quote,
-    Summary,
-    TheoPrice,
-    TimeAndSale,
-    Trade,
-    Underlying,
-]
+EventType: TypeAlias = (
+    Candle
+    | Greeks
+    | Profile
+    | Quote
+    | Summary
+    | TheoPrice
+    | TimeAndSale
+    | Trade
+    | Underlying
+)
 U = TypeVar("U", bound=EventType)
 MAP_EVENTS: dict[str, type[EventType]] = {
     "Candle": Candle,
@@ -244,10 +244,10 @@ class AlertStreamer:
         self.request_id = 0
 
         self._queues: dict[str, Queue[AlertType]] = defaultdict(Queue)
-        self._websocket: Optional[ClientConnection] = None
+        self._websocket: ClientConnection | None = None
         self._connect_task = asyncio.create_task(self._connect())
-        self._reconnect_task: Optional[asyncio.Task[None]] = None
-        self._heartbeat_task: Optional[asyncio.Task[None]] = None
+        self._reconnect_task: asyncio.Task[None] | None = None
+        self._heartbeat_task: asyncio.Task[None] | None = None
         self._closing = False
         self._tasks: set[asyncio.Task[Any]] = set()
 
@@ -391,7 +391,7 @@ class AlertStreamer:
     async def _subscribe(
         self,
         subscription: SubscriptionType,
-        value: Union[str, list[str], None] = None,
+        value: str | list[str] | None = None,
     ) -> None:
         """
         Subscribes to a :class:`SubscriptionType`. Depending on the kind of
@@ -475,8 +475,8 @@ class DXLinkStreamer:
         self._auth_token = session.streamer_token
         self._ssl_context = ssl_context
         self._disconnect_called = False
-        self._heartbeat_task: Optional[asyncio.Task[None]] = None
-        self._reconnect_task: Optional[asyncio.Task[None]] = None
+        self._heartbeat_task: asyncio.Task[None] | None = None
+        self._reconnect_task: asyncio.Task[None] | None = None
         self._closing = False
         self._websocket: ClientConnection
         self._tasks: set[asyncio.Task[Any]] = set()
@@ -639,7 +639,7 @@ class DXLinkStreamer:
         while True:
             yield await self._queues[MAP_EVENTS_REVERSE[event_class]].get()  # type: ignore
 
-    def get_event_nowait(self, event_class: type[U]) -> Optional[U]:
+    def get_event_nowait(self, event_class: type[U]) -> U | None:
         """
         Using the existing subscriptions, pulls an event of the given type and
         returns it. If the queue is empty None is returned.
@@ -840,7 +840,7 @@ class DXLinkStreamer:
     async def unsubscribe_candle(
         self,
         ticker: str,
-        interval: Optional[str] = None,
+        interval: str | None = None,
         extended_trading_hours: bool = False,
     ) -> None:
         """

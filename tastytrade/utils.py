@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from enum import Enum
 from json import JSONDecodeError
-from typing import Any, Optional, Type, TypeVar, cast
+from typing import Any, Type, TypeVar, cast
 from zoneinfo import ZoneInfo
 
 from httpx import AsyncClient, Client, Response
@@ -44,7 +44,7 @@ def today_in_new_york() -> date:
     return now_in_new_york().date()
 
 
-def is_market_open_on(day: Optional[date] = None) -> bool:
+def is_market_open_on(day: date | None = None) -> bool:
     """
     Returns whether the market was/is/will be open at ANY point
     during the given day.
@@ -58,7 +58,7 @@ def is_market_open_on(day: Optional[date] = None) -> bool:
     return not date_range.empty
 
 
-def get_third_friday(day: Optional[date] = None) -> date:
+def get_third_friday(day: date | None = None) -> date:
     """
     Gets the monthly expiration associated with the month of the given date,
     or the monthly expiration associated with today's month.
@@ -94,7 +94,7 @@ def _get_last_day_of_month(day: date) -> date:
     return last - timedelta(days=1)
 
 
-def get_future_fx_monthly(day: Optional[date] = None) -> date:
+def get_future_fx_monthly(day: date | None = None) -> date:
     """
     Gets the monthly expiration associated with the FX futures: /6E, /6A, etc.
     As far as I can tell, these expire on the first Friday prior to the second
@@ -112,7 +112,7 @@ def get_future_fx_monthly(day: Optional[date] = None) -> date:
     return day
 
 
-def get_future_treasury_monthly(day: Optional[date] = None) -> date:
+def get_future_treasury_monthly(day: date | None = None) -> date:
     """
     Gets the monthly expiration associated with the treasury futures: /ZN,
     /ZB, etc. According to CME, these expire the Friday before the 2nd last
@@ -135,7 +135,7 @@ def get_future_treasury_monthly(day: Optional[date] = None) -> date:
     return itr - timedelta(days=1)
 
 
-def get_future_metal_monthly(day: Optional[date] = None) -> date:
+def get_future_metal_monthly(day: date | None = None) -> date:
     """
     Gets the monthly expiration associated with the metals futures: /GC, /SI,
     etc. According to CME, these expire on the 4th last business day of the
@@ -157,7 +157,7 @@ def get_future_metal_monthly(day: Optional[date] = None) -> date:
     return itr
 
 
-def get_future_grain_monthly(day: Optional[date] = None) -> date:
+def get_future_grain_monthly(day: date | None = None) -> date:
     """
     Gets the monthly expiration associated with the grain futures: /ZC, /ZW,
     etc. According to CME, these expire on the Friday which precedes, by at
@@ -177,7 +177,7 @@ def get_future_grain_monthly(day: Optional[date] = None) -> date:
     return itr
 
 
-def get_future_oil_monthly(day: Optional[date] = None) -> date:
+def get_future_oil_monthly(day: date | None = None) -> date:
     """
     Gets the monthly expiration associated with the WTI oil futures: /CL and
     /MCL. According to CME, these expire 6 business days before the 25th day
@@ -194,7 +194,7 @@ def get_future_oil_monthly(day: Optional[date] = None) -> date:
     return valid_range[-7]
 
 
-def get_future_index_monthly(day: Optional[date] = None) -> date:
+def get_future_index_monthly(day: date | None = None) -> date:
     """
     Gets the monthly expiration associated with the index futures: /ES, /RTY,
     /NQ, etc. According to CME, these expire on the last business day of the
@@ -285,7 +285,7 @@ def validate_and_parse(response: Response) -> dict[str, Any]:
     return cast(dict[str, Any], data)
 
 
-def get_sign(value: Optional[Decimal]) -> Optional[PriceEffect]:
+def get_sign(value: Decimal | None) -> PriceEffect | None:
     """
     Get a PriceEffect for a signed value.
 

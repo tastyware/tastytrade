@@ -1,6 +1,5 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional
 
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeData
@@ -33,12 +32,12 @@ class EarningsReport(TastytradeData):
     estimated: bool
     late_flag: int
     visible: bool
-    actual_eps: Optional[Decimal] = None
-    consensus_estimate: Optional[Decimal] = None
-    expected_report_date: Optional[date] = None
-    quarter_end_date: Optional[date] = None
-    time_of_day: Optional[str] = None
-    updated_at: Optional[datetime] = None
+    actual_eps: Decimal | None = None
+    consensus_estimate: Decimal | None = None
+    expected_report_date: date | None = None
+    quarter_end_date: date | None = None
+    time_of_day: str | None = None
+    updated_at: datetime | None = None
 
 
 class Liquidity(TastytradeData):
@@ -49,7 +48,7 @@ class Liquidity(TastytradeData):
     sum: Decimal
     count: int
     started_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
 
 class OptionExpirationImpliedVolatility(TastytradeData):
@@ -61,7 +60,7 @@ class OptionExpirationImpliedVolatility(TastytradeData):
     expiration_date: date
     settlement_type: str
     option_chain_type: str
-    implied_volatility: Optional[Decimal] = None
+    implied_volatility: Decimal | None = None
 
 
 class MarketMetricInfo(TastytradeData):
@@ -72,45 +71,45 @@ class MarketMetricInfo(TastytradeData):
     """
 
     symbol: str
-    implied_volatility_index: Optional[Decimal] = None
-    implied_volatility_index_5_day_change: Optional[Decimal] = None
-    implied_volatility_index_rank: Optional[str] = None
-    tos_implied_volatility_index_rank: Optional[Decimal] = None
-    tw_implied_volatility_index_rank: Optional[Decimal] = None
-    tos_implied_volatility_index_rank_updated_at: Optional[datetime] = None
-    implied_volatility_index_rank_source: Optional[str] = None
-    implied_volatility_percentile: Optional[str] = None
-    implied_volatility_updated_at: Optional[datetime] = None
-    liquidity_rating: Optional[int] = None
+    implied_volatility_index: Decimal | None = None
+    implied_volatility_index_5_day_change: Decimal | None = None
+    implied_volatility_index_rank: str | None = None
+    tos_implied_volatility_index_rank: Decimal | None = None
+    tw_implied_volatility_index_rank: Decimal | None = None
+    tos_implied_volatility_index_rank_updated_at: datetime | None = None
+    implied_volatility_index_rank_source: str | None = None
+    implied_volatility_percentile: str | None = None
+    implied_volatility_updated_at: datetime | None = None
+    liquidity_rating: int | None = None
     updated_at: datetime
-    option_expiration_implied_volatilities: Optional[
-        list[OptionExpirationImpliedVolatility]
-    ] = None  # noqa: E501
-    beta: Optional[Decimal] = None
-    corr_spy_3month: Optional[Decimal] = None
+    option_expiration_implied_volatilities: (
+        list[OptionExpirationImpliedVolatility] | None
+    ) = None  # noqa: E501
+    beta: Decimal | None = None
+    corr_spy_3month: Decimal | None = None
     market_cap: Decimal
-    earnings: Optional[EarningsReport] = None
-    price_earnings_ratio: Optional[Decimal] = None
-    earnings_per_share: Optional[Decimal] = None
-    dividend_rate_per_share: Optional[Decimal] = None
-    implied_volatility_30_day: Optional[Decimal] = None
-    historical_volatility_30_day: Optional[Decimal] = None
-    historical_volatility_60_day: Optional[Decimal] = None
-    historical_volatility_90_day: Optional[Decimal] = None
-    iv_hv_30_day_difference: Optional[Decimal] = None
-    beta_updated_at: Optional[datetime] = None
-    created_at: Optional[datetime] = None
-    dividend_ex_date: Optional[date] = None
-    dividend_next_date: Optional[date] = None
-    dividend_pay_date: Optional[date] = None
-    dividend_updated_at: Optional[datetime] = None
-    liquidity_value: Optional[Decimal] = None
-    liquidity_rank: Optional[Decimal] = None
-    liquidity_running_state: Optional[Liquidity] = None
-    dividend_yield: Optional[Decimal] = None
-    listed_market: Optional[str] = None
-    lendability: Optional[str] = None
-    borrow_rate: Optional[Decimal] = None
+    earnings: EarningsReport | None = None
+    price_earnings_ratio: Decimal | None = None
+    earnings_per_share: Decimal | None = None
+    dividend_rate_per_share: Decimal | None = None
+    implied_volatility_30_day: Decimal | None = None
+    historical_volatility_30_day: Decimal | None = None
+    historical_volatility_60_day: Decimal | None = None
+    historical_volatility_90_day: Decimal | None = None
+    iv_hv_30_day_difference: Decimal | None = None
+    beta_updated_at: datetime | None = None
+    created_at: datetime | None = None
+    dividend_ex_date: date | None = None
+    dividend_next_date: date | None = None
+    dividend_pay_date: date | None = None
+    dividend_updated_at: datetime | None = None
+    liquidity_value: Decimal | None = None
+    liquidity_rank: Decimal | None = None
+    liquidity_running_state: Liquidity | None = None
+    dividend_yield: Decimal | None = None
+    listed_market: str | None = None
+    lendability: str | None = None
+    borrow_rate: Decimal | None = None
 
 
 async def a_get_market_metrics(

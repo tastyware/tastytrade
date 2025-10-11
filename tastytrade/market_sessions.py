@@ -1,6 +1,5 @@
 from datetime import date, datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import Field
 
@@ -36,7 +35,7 @@ class MarketSessionSnapshot(TastytradeData):
     """
 
     close_at: datetime
-    close_at_ext: Optional[datetime] = None
+    close_at_ext: datetime | None = None
     instrument_collection: str
     open_at: datetime
     session_date: date
@@ -48,13 +47,13 @@ class MarketSession(TastytradeData):
     Dataclass representing the current, next, and previous sessions.
     """
 
-    close_at: Optional[datetime] = None
-    close_at_ext: Optional[datetime] = None
+    close_at: datetime | None = None
+    close_at_ext: datetime | None = None
     instrument_collection: str
-    open_at: Optional[datetime] = None
-    start_at: Optional[datetime] = None
-    next_session: Optional[MarketSessionSnapshot] = None
-    previous_session: Optional[MarketSessionSnapshot] = None
+    open_at: datetime | None = None
+    start_at: datetime | None = None
+    next_session: MarketSessionSnapshot | None = None
+    previous_session: MarketSessionSnapshot | None = None
     status: MarketStatus = Field(alias="state")
 
 

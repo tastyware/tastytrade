@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any
 
 from pydantic import computed_field, field_serializer, model_validator
 
@@ -117,9 +117,9 @@ class FillInfo(TastytradeData):
     quantity: Decimal
     fill_price: Decimal
     filled_at: datetime
-    destination_venue: Optional[str] = None
-    ext_group_fill_id: Optional[str] = None
-    ext_exec_id: Optional[str] = None
+    destination_venue: str | None = None
+    ext_group_fill_id: str | None = None
+    ext_exec_id: str | None = None
 
 
 class Leg(TastytradeData):
@@ -133,9 +133,9 @@ class Leg(TastytradeData):
     instrument_type: InstrumentType
     symbol: str
     action: OrderAction
-    quantity: Optional[Decimal] = None
-    remaining_quantity: Optional[Decimal] = None
-    fills: Optional[list[FillInfo]] = None
+    quantity: Decimal | None = None
+    remaining_quantity: Decimal | None = None
+    fills: list[FillInfo] | None = None
 
 
 class TradeableTastytradeData(TastytradeData):
@@ -149,7 +149,7 @@ class TradeableTastytradeData(TastytradeData):
     instrument_type: InstrumentType
     symbol: str
 
-    def build_leg(self, quantity: Optional[Decimal], action: OrderAction) -> Leg:
+    def build_leg(self, quantity: Decimal | None, action: OrderAction) -> Leg:
         """
         Builds an order :class:`Leg` from the dataclass.
 
@@ -175,7 +175,7 @@ class Message(TastytradeData):
 
     code: str
     message: str
-    preflight_id: Optional[str] = None
+    preflight_id: str | None = None
 
     def __str__(self) -> str:
         return f"{self.code}: {self.message}"
@@ -243,30 +243,30 @@ class NewOrder(TastytradeData):
     order_type: OrderType
     source: str = version_str
     legs: list[Leg]
-    gtc_date: Optional[date] = None
+    gtc_date: date | None = None
     #: For a stop/stop limit order. If the latter, use price for the limit price
-    stop_trigger: Optional[Decimal] = None
+    stop_trigger: Decimal | None = None
     #: The price of the order; negative = debit, positive = credit
-    price: Optional[Decimal] = None
+    price: Decimal | None = None
     #: The actual notional value of the order. Only for notional market orders!
-    value: Optional[Decimal] = None
-    partition_key: Optional[str] = None
-    preflight_id: Optional[str] = None
-    rules: Optional[OrderRule] = None
-    advanced_instructions: Optional[AdvancedInstructions] = None
+    value: Decimal | None = None
+    partition_key: str | None = None
+    preflight_id: str | None = None
+    rules: OrderRule | None = None
+    advanced_instructions: AdvancedInstructions | None = None
 
     @computed_field  # type: ignore[misc]
     @property
-    def price_effect(self) -> Optional[PriceEffect]:
+    def price_effect(self) -> PriceEffect | None:
         return get_sign(self.price)
 
     @computed_field  # type: ignore[misc]
     @property
-    def value_effect(self) -> Optional[PriceEffect]:
+    def value_effect(self) -> PriceEffect | None:
         return get_sign(self.value)
 
     @field_serializer("price", "value")
-    def serialize_fields(self, field: Optional[Decimal]) -> Optional[Decimal]:
+    def serialize_fields(self, field: Decimal | None) -> Decimal | None:
         return abs(field) if field else None
 
 
@@ -278,7 +278,7 @@ class NewComplexOrder(TastytradeData):
 
     orders: list[NewOrder]
     source: str = version_str
-    trigger_order: Optional[NewOrder] = None
+    trigger_order: NewOrder | None = None
     type: ComplexOrderType = ComplexOrderType.OCO
 
     def __init__(self, **kwargs: Any):
@@ -306,30 +306,30 @@ class PlacedOrder(TastytradeData):
     legs: list[Leg]
     #: the ID of the order; test orders placed with dry_run don't have an ID
     id: int = -1
-    size: Optional[Decimal] = None
-    price: Optional[Decimal] = None
-    gtc_date: Optional[date] = None
-    value: Optional[Decimal] = None
-    stop_trigger: Optional[str] = None
-    contingent_status: Optional[str] = None
-    confirmation_status: Optional[str] = None
-    cancelled_at: Optional[datetime] = None
-    cancel_user_id: Optional[str] = None
-    cancel_username: Optional[str] = None
-    replacing_order_id: Optional[str] = None
-    replaces_order_id: Optional[str] = None
-    in_flight_at: Optional[datetime] = None
-    live_at: Optional[datetime] = None
-    received_at: Optional[datetime] = None
-    reject_reason: Optional[str] = None
-    user_id: Optional[str] = None
-    username: Optional[str] = None
-    terminal_at: Optional[datetime] = None
-    complex_order_id: Optional[Union[str, int]] = None
-    complex_order_tag: Optional[str] = None
-    preflight_id: Optional[Union[str, int]] = None
-    order_rule: Optional[OrderRule] = None
-    source: Optional[str] = None
+    size: Decimal | None = None
+    price: Decimal | None = None
+    gtc_date: date | None = None
+    value: Decimal | None = None
+    stop_trigger: str | None = None
+    contingent_status: str | None = None
+    confirmation_status: str | None = None
+    cancelled_at: datetime | None = None
+    cancel_user_id: str | None = None
+    cancel_username: str | None = None
+    replacing_order_id: str | None = None
+    replaces_order_id: str | None = None
+    in_flight_at: datetime | None = None
+    live_at: datetime | None = None
+    received_at: datetime | None = None
+    reject_reason: str | None = None
+    user_id: str | None = None
+    username: str | None = None
+    terminal_at: datetime | None = None
+    complex_order_id: str | int | None = None
+    complex_order_tag: str | None = None
+    preflight_id: str | int | None = None
+    order_rule: OrderRule | None = None
+    source: str | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -347,12 +347,12 @@ class PlacedComplexOrder(TastytradeData):
     orders: list[PlacedOrder]
     #: the ID of the order; test orders placed with dry_run don't have an ID
     id: int = -1
-    trigger_order: Optional[PlacedOrder] = None
-    terminal_at: Optional[str] = None
-    ratio_price_threshold: Optional[Decimal] = None
-    ratio_price_comparator: Optional[str] = None
-    ratio_price_is_threshold_based_on_notional: Optional[bool] = None
-    related_orders: Optional[list[dict[str, str]]] = None
+    trigger_order: PlacedOrder | None = None
+    terminal_at: str | None = None
+    ratio_price_threshold: Decimal | None = None
+    ratio_price_comparator: str | None = None
+    ratio_price_is_threshold_based_on_notional: bool | None = None
+    related_orders: list[dict[str, str]] | None = None
 
 
 class BuyingPowerEffect(TastytradeData):
@@ -418,9 +418,9 @@ class PlacedComplexOrderResponse(TastytradeData):
 
     buying_power_effect: BuyingPowerEffect
     complex_order: PlacedComplexOrder
-    fee_calculation: Optional[FeeCalculation] = None
-    warnings: Optional[list[Message]] = None
-    errors: Optional[list[Message]] = None
+    fee_calculation: FeeCalculation | None = None
+    warnings: list[Message] | None = None
+    errors: list[Message] | None = None
 
 
 class PlacedOrderResponse(TastytradeData):
@@ -430,9 +430,9 @@ class PlacedOrderResponse(TastytradeData):
 
     buying_power_effect: BuyingPowerEffect
     order: PlacedOrder
-    fee_calculation: Optional[FeeCalculation] = None
-    warnings: Optional[list[Message]] = None
-    errors: Optional[list[Message]] = None
+    fee_calculation: FeeCalculation | None = None
+    warnings: list[Message] | None = None
+    errors: list[Message] | None = None
 
 
 class OrderChainEntry(TastytradeData):
@@ -468,15 +468,15 @@ class OrderChainNode(TastytradeData):
     node_type: str
     id: str
     description: str
-    occurred_at: Optional[datetime] = None
-    total_fees: Optional[Decimal] = None
-    total_fill_cost: Optional[Decimal] = None
-    gcd_quantity: Optional[Decimal] = None
-    fill_cost_per_quantity: Optional[Decimal] = None
-    order_fill_count: Optional[int] = None
-    roll: Optional[bool] = None
-    legs: Optional[list[OrderChainLeg]] = None
-    entries: Optional[list[OrderChainEntry]] = None
+    occurred_at: datetime | None = None
+    total_fees: Decimal | None = None
+    total_fill_cost: Decimal | None = None
+    gcd_quantity: Decimal | None = None
+    fill_cost_per_quantity: Decimal | None = None
+    order_fill_count: int | None = None
+    roll: bool | None = None
+    legs: list[OrderChainLeg] | None = None
+    entries: list[OrderChainEntry] | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -516,7 +516,7 @@ class ComputedData(TastytradeData):
     gcd_open_quantity: Decimal
     fees_missing: bool
     open_entries: list[OrderChainEntry]
-    total_cost_per_unit: Optional[Decimal] = None
+    total_cost_per_unit: Decimal | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -549,6 +549,6 @@ class OrderChain(TastytradeData):
     underlying_symbol: str
     computed_data: ComputedData
     lite_nodes: list[OrderChainNode]
-    lite_nodes_sizes: Optional[int] = None
-    updated_at: Optional[datetime] = None
-    created_at: Optional[datetime] = None
+    lite_nodes_sizes: int | None = None
+    updated_at: datetime | None = None
+    created_at: datetime | None = None
