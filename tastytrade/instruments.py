@@ -869,7 +869,7 @@ class Future(TradeableTastytradeData):
     display_factor: Decimal
     last_trade_date: date
     expiration_date: date
-    closing_only_date: date
+    closing_only_date: Optional[date] = None
     active: bool
     active_month: bool
     next_active_month: bool
