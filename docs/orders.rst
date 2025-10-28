@@ -146,10 +146,10 @@ Notional orders are slightly different from normal orders. Since the market will
     )
     resp = account.place_order(session, order, dry_run=False)
 
-Cryptocurrency orders
----------------------
+Cryptocurrency market orders
+----------------------------
 
-Cryptocurrency orders should use the special ``IOC`` TIF:
+Cryptocurrency market orders should use the special ``IOC`` TIF:
 
 .. code-block:: python
 

@@ -344,9 +344,11 @@ def paginate(
         json = response.json()
         res.extend([model(**i) for i in json["data"]["items"]])
         # handle pagination
+        pagination = json.get("pagination")
         if (
-            json["pagination"]["page-offset"] >= json["pagination"]["total-pages"] - 1
+            not pagination
             or not paginate
+            or pagination["page-offset"] >= pagination["total-pages"] - 1
         ):
             break
         params["page-offset"] += 1
@@ -382,9 +384,11 @@ async def a_paginate(
         json = response.json()
         res.extend([model(**i) for i in json["data"]["items"]])
         # handle pagination
+        pagination = json.get("pagination")
         if (
-            json["pagination"]["page-offset"] >= json["pagination"]["total-pages"] - 1
+            not pagination
             or not paginate
+            or pagination["page-offset"] >= pagination["total-pages"] - 1
         ):
             break
         params["page-offset"] += 1
