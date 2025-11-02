@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeData
+from tastytrade.utils import TastytradeData, validate_and_parse
 
 
 class DividendInfo(TastytradeData):
@@ -206,7 +206,12 @@ async def a_get_risk_free_rate(session: Session) -> Decimal:
 
     :param session: active user session to use
     """
-    data = await session._a_get("/margin-requirements-public-configuration")
+    request = session.async_client.build_request(
+        "GET", "/margin-requirements-public-configuration", timeout=30
+    )
+    del request.headers["Authorization"]
+    response = await session.async_client.send(request)
+    data = validate_and_parse(response)
     return Decimal(data["risk-free-rate"])
 
 
@@ -216,5 +221,10 @@ def get_risk_free_rate(session: Session) -> Decimal:
 
     :param session: active user session to use
     """
-    data = session._get("/margin-requirements-public-configuration")
+    request = session.sync_client.build_request(
+        "GET", "/margin-requirements-public-configuration", timeout=30
+    )
+    del request.headers["Authorization"]
+    response = session.sync_client.send(request)
+    data = validate_and_parse(response)
     return Decimal(data["risk-free-rate"])
