@@ -316,7 +316,7 @@ class PlacedOrder(TastytradeData):
     cancelled_at: datetime | None = None
     cancel_user_id: str | None = None
     cancel_username: str | None = None
-    replacing_order_id: str | None = None
+    replacing_order_id: int | None = None
     replaces_order_id: int | None = None
     in_flight_at: datetime | None = None
     live_at: datetime | None = None
