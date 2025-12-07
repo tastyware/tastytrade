@@ -1,4 +1,6 @@
-from datetime import date
+from datetime import date, datetime
+from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 from tastytrade.utils import (
     get_future_fx_monthly,
@@ -9,8 +11,11 @@ from tastytrade.utils import (
     get_future_treasury_monthly,
     get_tasty_monthly,
     get_third_friday,
+    is_market_open_now,
     today_in_new_york,
 )
+
+TZ = ZoneInfo("US/Eastern")
 
 
 def test_get_third_friday():
@@ -158,3 +163,48 @@ def test_get_future_index_monthly():
     ]
     for exp in exps:
         assert get_future_index_monthly(exp) == exp
+
+
+def test_is_market_open_now():
+    # Use a known Tuesday (March 12, 2024) for weekday tests
+    tuesday = datetime(2024, 3, 12, 10, 0, 0, tzinfo=TZ)
+
+    # Test market open during trading hours (10:00 AM on a weekday)
+    with patch("tastytrade.utils.datetime") as mock_datetime:
+        mock_datetime.now.return_value = tuesday
+        assert is_market_open_now() is True
+
+    # Test market closed before opening (8:00 AM on a weekday)
+    with patch("tastytrade.utils.datetime") as mock_datetime:
+        mock_datetime.now.return_value = datetime(2024, 3, 12, 8, 0, 0, tzinfo=TZ)
+        assert is_market_open_now() is False
+
+    # Test market closed after closing (5:00 PM on a weekday)
+    with patch("tastytrade.utils.datetime") as mock_datetime:
+        mock_datetime.now.return_value = datetime(2024, 3, 12, 17, 0, 0, tzinfo=TZ)
+        assert is_market_open_now() is False
+
+    # Test market closed on weekend (Saturday, March 16, 2024)
+    with patch("tastytrade.utils.datetime") as mock_datetime:
+        mock_datetime.now.return_value = datetime(2024, 3, 16, 12, 0, 0, tzinfo=TZ)
+        assert is_market_open_now() is False
+
+    # Test edge case: exactly 9:30 AM (market opens)
+    with patch("tastytrade.utils.datetime") as mock_datetime:
+        mock_datetime.now.return_value = datetime(2024, 3, 12, 9, 30, 0, tzinfo=TZ)
+        assert is_market_open_now() is True
+
+    # Test edge case: just before 9:30 AM (9:29 AM)
+    with patch("tastytrade.utils.datetime") as mock_datetime:
+        mock_datetime.now.return_value = datetime(2024, 3, 12, 9, 29, 0, tzinfo=TZ)
+        assert is_market_open_now() is False
+
+    # Test edge case: exactly 4:00 PM (market closes, should be False)
+    with patch("tastytrade.utils.datetime") as mock_datetime:
+        mock_datetime.now.return_value = datetime(2024, 3, 12, 16, 0, 0, tzinfo=TZ)
+        assert is_market_open_now() is False
+
+    # Test edge case: just before 4:00 PM (3:59 PM)
+    with patch("tastytrade.utils.datetime") as mock_datetime:
+        mock_datetime.now.return_value = datetime(2024, 3, 12, 15, 59, 0, tzinfo=TZ)
+        assert is_market_open_now() is True
