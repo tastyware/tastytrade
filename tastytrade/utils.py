@@ -47,21 +47,17 @@ def today_in_new_york() -> date:
 def is_market_open_now() -> bool:
     """
     Check if the market is currently open.
-    
+
     Returns True if:
     - The market is open on the current date (not a holiday/weekend)
     - The current Eastern Time hour is between [ 9:30 AM, 4:00 PM )
-    
+
     Returns:
         bool: True if market is open now, False otherwise
     """
     now_est = datetime.now(TZ)
-    return (
-        is_market_open_on(now_est.date()) and
-        (
-            (now_est.hour == 9 and now_est.minute >= 30) or
-            10 <= now_est.hour < 16
-        )
+    return is_market_open_on(now_est.date()) and (
+        (now_est.hour == 9 and now_est.minute >= 30) or 10 <= now_est.hour < 16
     )
 
 
