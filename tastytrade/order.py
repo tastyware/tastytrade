@@ -254,6 +254,8 @@ class NewOrder(TastytradeData):
     preflight_id: str | None = None
     rules: OrderRule | None = None
     advanced_instructions: AdvancedInstructions | None = None
+    #: External identifier for the order, used to track orders across systems
+    external_identifier: str | None = None
 
     @computed_field  # type: ignore[misc]
     @property
@@ -330,6 +332,8 @@ class PlacedOrder(TastytradeData):
     preflight_id: str | int | None = None
     order_rule: OrderRule | None = None
     source: str | None = None
+    #: External identifier for the order, used to track orders across systems
+    external_identifier: str | None = None
 
     @model_validator(mode="before")
     @classmethod
