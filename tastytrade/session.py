@@ -9,8 +9,8 @@ from typing_extensions import Self
 
 from tastytrade import API_URL, API_VERSION, CERT_URL, logger
 from tastytrade.utils import (
-    TZ,
     TastytradeData,
+    now_in_new_york,
     validate_and_parse,
     validate_response,
 )
@@ -274,11 +274,9 @@ class Session:
         #: Refresh token for the user
         self.refresh_token = refresh_token
         # The headers to use for API requests
-        headers = {
-            "Accept": "application/json",
-            "Accept-Version": API_VERSION,
-            "Content-Type": "application/json",
-        }
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
+        if not is_test:  # not accepted in sandbox
+            headers["Accept-Version"] = API_VERSION
         #: httpx client for sync requests
         self.sync_client = Client(
             base_url=(CERT_URL if is_test else API_URL), headers=headers, proxy=proxy
@@ -288,7 +286,7 @@ class Session:
             base_url=self.sync_client.base_url, headers=headers, proxy=proxy
         )
         #: expiration for streamer token
-        self.streamer_expiration = datetime.now(TZ)
+        self.streamer_expiration = now_in_new_york()
         self.refresh()
 
     def _streamer_refresh(self) -> None:
@@ -325,14 +323,14 @@ class Session:
         self.session_token = data["access_token"]
         token_lifetime: int = data.get("expires_in", 900)
         #: expiration for session token
-        self.session_expiration = datetime.now(TZ) + timedelta(seconds=token_lifetime)
+        self.session_expiration = now_in_new_york() + timedelta(seconds=token_lifetime)
         logger.debug(f"Refreshed token, expires in {token_lifetime}ms")
         auth_headers = {"Authorization": f"Bearer {self.session_token}"}
         # update the httpx clients with the new token
         self.sync_client.headers.update(auth_headers)
         self.async_client.headers.update(auth_headers)
         # update the streamer token if necessary
-        if self.streamer_expiration < self.session_expiration:
+        if not self.is_test and self.streamer_expiration < self.session_expiration:
             self._streamer_refresh()
 
     async def a_refresh(self) -> None:
@@ -357,14 +355,14 @@ class Session:
         # update the relevant tokens
         self.session_token = data["access_token"]
         token_lifetime: int = data.get("expires_in", 900)
-        self.session_expiration = datetime.now(TZ) + timedelta(token_lifetime)
+        self.session_expiration = now_in_new_york() + timedelta(token_lifetime)
         logger.debug(f"Refreshed token, expires in {token_lifetime}ms")
         auth_headers = {"Authorization": f"Bearer {self.session_token}"}
         # update the httpx clients with the new token
         self.sync_client.headers.update(auth_headers)
         self.async_client.headers.update(auth_headers)
         # update the streamer token if necessary
-        if self.streamer_expiration < self.session_expiration:
+        if not self.is_test and self.streamer_expiration < self.session_expiration:
             # Pull streamer tokens and urls
             data = await self._a_get("/api-quote-tokens")
             # Auth token for dxfeed websocket
