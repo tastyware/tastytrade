@@ -51,14 +51,22 @@ def is_market_open_now() -> bool:
     Returns True if:
     - The market is open on the current date (not a holiday/weekend)
     - The current Eastern Time hour is between [ 9:30 AM, 4:00 PM )
+    - or on half days between [ 9:30 AM, 1:00 PM )
 
     Returns:
         bool: True if market is open now, False otherwise
     """
-    now_est = datetime.now(TZ)
-    return is_market_open_on(now_est.date()) and (
-        (now_est.hour == 9 and now_est.minute >= 30) or 10 <= now_est.hour < 16
-    )
+    today = today_in_new_york()
+    sched = NYSE.schedule(start_date=today, end_date=today)
+    if sched.empty:
+        # Closed full day (weekend or holiday)
+        return False
+
+    # Use iloc[0] since schedule has only one row for a single day
+    market_open = sched.iloc[0]["market_open"]
+    market_close = sched.iloc[0]["market_close"]
+
+    return market_open <= now_in_new_york() < market_close
 
 
 def is_market_open_on(day: date | None = None) -> bool:
