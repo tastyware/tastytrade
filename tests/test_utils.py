@@ -208,3 +208,23 @@ def test_is_market_open_now():
     with patch("tastytrade.utils.datetime") as mock_datetime:
         mock_datetime.now.return_value = datetime(2024, 3, 12, 15, 59, 0, tzinfo=TZ)
         assert is_market_open_now() is True
+
+    # Test edge case: Black Friday just before market open
+    with patch("tastytrade.utils.datetime") as mock_datetime:
+        mock_datetime.now.return_value = datetime(2024, 11, 29, 9, 29, 0, tzinfo=TZ)
+        assert is_market_open_now() is False
+
+    # Test edge case: Black Friday just after market open
+    with patch("tastytrade.utils.datetime") as mock_datetime:
+        mock_datetime.now.return_value = datetime(2024, 11, 29, 9, 30, 0, tzinfo=TZ)
+        assert is_market_open_now() is True
+
+    # Test edge case: Black Friday just before market close half day
+    with patch("tastytrade.utils.datetime") as mock_datetime:
+        mock_datetime.now.return_value = datetime(2024, 11, 29, 12, 59, 0, tzinfo=TZ)
+        assert is_market_open_now() is True
+
+    # Test edge case: Black Friday just after market close half day
+    with patch("tastytrade.utils.datetime") as mock_datetime:
+        mock_datetime.now.return_value = datetime(2024, 11, 29, 13, 0, 0, tzinfo=TZ)
+        assert is_market_open_now() is False
