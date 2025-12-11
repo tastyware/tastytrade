@@ -490,8 +490,8 @@ class Option(TradeableTastytradeData):
     stops_trading_at: datetime
     market_time_instrument_collection: str
     days_to_expiration: int
-    expires_at: datetime
     is_closing_only: bool
+    expires_at: datetime | None = None
     streamer_symbol: str = ""
     listed_market: str | None = None
     halted_at: datetime | None = None
