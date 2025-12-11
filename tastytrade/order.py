@@ -133,7 +133,7 @@ class Leg(TastytradeData):
     instrument_type: InstrumentType
     symbol: str
     action: OrderAction
-    quantity: Decimal | None = None
+    quantity: Decimal | int | None = None
     remaining_quantity: Decimal | None = None
     fills: list[FillInfo] | None = None
 
@@ -149,15 +149,13 @@ class TradeableTastytradeData(TastytradeData):
     instrument_type: InstrumentType
     symbol: str
 
-    def build_leg(self, quantity: Decimal | None, action: OrderAction) -> Leg:
+    def build_leg(self, quantity: Decimal | int | None, action: OrderAction) -> Leg:
         """
         Builds an order :class:`Leg` from the dataclass.
 
         :param quantity:
             the quantity of the symbol to trade, set this as `None` for notional orders
         :param action: :class:`OrderAction` to perform, e.g. BUY_TO_OPEN
-
-        :return: a :class:`Leg` object
         """
         return Leg(
             instrument_type=self.instrument_type,

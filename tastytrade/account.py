@@ -546,8 +546,6 @@ class Account(TastytradeData):
         :param session: the session to use for the request.
         :param account_number: the account ID to get.
         :param include_closed: whether to include closed accounts in the results
-
-        :return: an account if an ID was provided; otherwise, a single account.
         """
         if account_number:
             data = session._get(f"/customers/me/accounts/{account_number}")

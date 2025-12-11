@@ -41,8 +41,6 @@ class Event(BaseModel):
         a :class:`~tastyworks.streamer.DXFeedStreamer`.
 
         :param data: list of raw quote data from streamer
-
-        :return: list of event objects from data
         """
         objs: list[Event] = []
         size = len(cls.model_fields)

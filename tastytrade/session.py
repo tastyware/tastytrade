@@ -376,8 +376,6 @@ class Session:
     async def a_get_customer(self) -> Customer:
         """
         Gets the customer dict from the API.
-
-        :return: a Tastytrade 'Customer' object in JSON format.
         """
         data = await self._a_get("/customers/me")
         return Customer(**data)
@@ -385,8 +383,6 @@ class Session:
     def get_customer(self) -> Customer:
         """
         Gets the customer dict from the API.
-
-        :return: a Tastytrade 'Customer' object in JSON format.
         """
         data = self._get("/customers/me")
         return Customer(**data)
@@ -394,8 +390,6 @@ class Session:
     async def a_validate(self) -> bool:
         """
         Validates the current session by sending a request to the API.
-
-        :return: True if the session is valid and False otherwise.
         """
         response = await self.async_client.post("/sessions/validate")
         return response.status_code // 100 == 2
@@ -403,8 +397,6 @@ class Session:
     def validate(self) -> bool:
         """
         Validates the current session by sending a request to the API.
-
-        :return: True if the session is valid and False otherwise.
         """
         response = self.sync_client.post("/sessions/validate")
         return response.status_code // 100 == 2
@@ -420,6 +412,7 @@ class Session:
         del attrs["sync_client"]
         attrs["session_expiration"] = self.session_expiration.strftime(_fmt)
         attrs["streamer_expiration"] = self.streamer_expiration.strftime(_fmt)
+        attrs["headers"] = dict(self.sync_client.headers.copy())
         return json.dumps(attrs)
 
     @classmethod
@@ -427,17 +420,11 @@ class Session:
         """
         Create a new Session object from a serialized string.
         """
-        deserialized = json.loads(serialized)
+        deserialized: dict[str, Any] = json.loads(serialized)
+        headers = deserialized.pop("headers")
         self = cls.__new__(cls)
         self.__dict__ = deserialized
         base_url = CERT_URL if self.is_test else API_URL
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "Authorization": self.session_token
-            if "user" in deserialized
-            else f"Bearer {self.session_token}",
-        }
         self.session_expiration = datetime.strptime(
             deserialized["session_expiration"], _fmt
         )

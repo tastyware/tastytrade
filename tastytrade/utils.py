@@ -29,8 +29,6 @@ class PriceEffect(str, Enum):
 def now_in_new_york() -> datetime:
     """
     Gets the current time in the New York timezone.
-
-    :return: current time as datetime
     """
     return datetime.now(TZ)
 
@@ -38,8 +36,6 @@ def now_in_new_york() -> datetime:
 def today_in_new_york() -> date:
     """
     Gets the current date in the New York timezone.
-
-    :return: current date
     """
     return now_in_new_york().date()
 
@@ -50,8 +46,6 @@ def is_market_open_on(day: date | None = None) -> bool:
     during the given day.
 
     :param day: date to check. If not provided defaults to current NY date.
-
-    :return: whether the market opens on given day
     """
     day = day or today_in_new_york()
     date_range = NYSE.valid_days(day, day)
@@ -64,8 +58,6 @@ def get_third_friday(day: date | None = None) -> date:
     or the monthly expiration associated with today's month.
 
     :param day: date to check. If not provided defaults to current NY date.
-
-    :return: the associated monthly
     """
     day = (day or today_in_new_york()).replace(day=1) + timedelta(weeks=2)
     while day.weekday() != 4:  # Friday
@@ -76,8 +68,6 @@ def get_third_friday(day: date | None = None) -> date:
 def get_tasty_monthly() -> date:
     """
     Gets the monthly expiration closest to 45 days from the current date.
-
-    :return: the closest to 45 DTE monthly expiration
     """
     day = today_in_new_york()
     exp1 = get_third_friday(day + timedelta(weeks=4))
@@ -101,8 +91,6 @@ def get_future_fx_monthly(day: date | None = None) -> date:
     Wednesday.
 
     :param day: date to check. If not provided defaults to current NY date.
-
-    :return: the associated monthly
     """
     day = (day or today_in_new_york()).replace(day=1) + timedelta(weeks=1)
     while day.weekday() != 2:  # Wednesday
@@ -120,8 +108,6 @@ def get_future_treasury_monthly(day: date | None = None) -> date:
     business day prior.
 
     :param day: date to check. If not provided defaults to current NY date.
-
-    :return: the associated monthly
     """
     day = day or today_in_new_york()
     last_day = _get_last_day_of_month(day)
@@ -143,8 +129,6 @@ def get_future_metal_monthly(day: date | None = None) -> date:
     which case they expire on the prior business day.
 
     :param day: date to check. If not provided defaults to current NY date.
-
-    :return: the associated monthly
     """
     day = day or today_in_new_york()
     last_day = _get_last_day_of_month(day)
@@ -164,8 +148,6 @@ def get_future_grain_monthly(day: date | None = None) -> date:
     least 2 business days, the last business day of the month.
 
     :param day: date to check. If not provided defaults to current NY date.
-
-    :return: the associated monthly
     """
     day = day or today_in_new_york()
     last_day = _get_last_day_of_month(day)
@@ -185,8 +167,6 @@ def get_future_oil_monthly(day: date | None = None) -> date:
     they expire 7 business days prior to the 25th day of the month.
 
     :param day: date to check. If not provided defaults to current NY date.
-
-    :return: the associated monthly
     """
     last_day = (day or today_in_new_york()).replace(day=25)
     first_day = last_day.replace(day=1)
@@ -201,8 +181,6 @@ def get_future_index_monthly(day: date | None = None) -> date:
     month.
 
     :param day: date to check. If not provided defaults to current NY date.
-
-    :return: the associated monthly
     """
     day = day or today_in_new_york()
     last_day = _get_last_day_of_month(day)
@@ -224,8 +202,6 @@ def _dasherize(s: str) -> str:
     Converts a string from snake case to dasherized.
 
     :param s: string to convert
-
-    :return: dasherized string
     """
     return s.replace("_", "-")
 
