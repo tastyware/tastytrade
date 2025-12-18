@@ -2,17 +2,14 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Literal, cast, overload
 
-import httpx
 from pydantic import BaseModel, ConfigDict, model_validator
 from typing_extensions import Self
 
-from tastytrade import VAST_URL
 from tastytrade.order import (
     InstrumentType,
     NewComplexOrder,
     NewOrder,
     OrderAction,
-    OrderChain,
     OrderStatus,
     PlacedComplexOrder,
     PlacedComplexOrderResponse,
@@ -28,7 +25,6 @@ from tastytrade.utils import (
     paginate,
     set_sign_for,
     today_in_new_york,
-    validate_response,
 )
 
 TT_DATE_FMT = "%Y-%m-%dT%H:%M:%SZ"
@@ -296,23 +292,6 @@ class MarginReport(TastytradeData):
         )
 
 
-class MarginRequirement(TastytradeData):
-    """
-    Dataclass containing general margin requirement information for a symbol.
-    """
-
-    underlying_symbol: str
-    long_equity_initial: Decimal
-    short_equity_initial: Decimal
-    long_equity_maintenance: Decimal
-    short_equity_maintenance: Decimal
-    naked_option_standard: Decimal
-    naked_option_minimum: Decimal
-    naked_option_floor: Decimal
-    clearing_identifier: str | None = None
-    is_deleted: bool | None = None
-
-
 class NetLiqOhlc(TastytradeData):
     """
     Dataclass containing historical net liquidation data in OHLC format
@@ -332,23 +311,6 @@ class NetLiqOhlc(TastytradeData):
     total_low: Decimal
     total_close: Decimal
     time: str
-
-
-class PositionLimit(TastytradeData):
-    """
-    Dataclass containing information about general account limits.
-    """
-
-    account_number: str
-    equity_order_size: int
-    equity_option_order_size: int
-    future_order_size: int
-    future_option_order_size: int
-    underlying_opening_order_limit: int
-    equity_position_size: int
-    equity_option_position_size: int
-    future_position_size: int
-    future_option_position_size: int
 
 
 class TradingStatus(TastytradeData):
@@ -1043,58 +1005,6 @@ class Account(TastytradeData):
         )
         return [NetLiqOhlc(**i) for i in data["items"]]
 
-    async def a_get_position_limit(self, session: Session) -> PositionLimit:
-        """
-        Get the maximum order size information for the account.
-
-        :param session: the session to use for the request.
-        """
-        data = await session._a_get(f"/accounts/{self.account_number}/position-limit")
-        return PositionLimit(**data)
-
-    def get_position_limit(self, session: Session) -> PositionLimit:
-        """
-        Get the maximum order size information for the account.
-
-        :param session: the session to use for the request.
-        """
-        data = session._get(f"/accounts/{self.account_number}/position-limit")
-        return PositionLimit(**data)
-
-    async def a_get_effective_margin_requirements(
-        self, session: Session, symbol: str
-    ) -> MarginRequirement:
-        """
-        Get the effective margin requirements for a given symbol.
-
-        :param session:
-            the session to use for the request, can't be certification
-        :param symbol: the symbol to get margin requirements for.
-        """
-        if symbol:
-            symbol = symbol.replace("/", "%2F")
-        data = await session._a_get(
-            f"/accounts/{self.account_number}/margin-requirements/{symbol}/effective"
-        )
-        return MarginRequirement(**data)
-
-    def get_effective_margin_requirements(
-        self, session: Session, symbol: str
-    ) -> MarginRequirement:
-        """
-        Get the effective margin requirements for a given symbol.
-
-        :param session:
-            the session to use for the request, can't be certification
-        :param symbol: the symbol to get margin requirements for.
-        """
-        if symbol:
-            symbol = symbol.replace("/", "%2F")
-        data = session._get(
-            f"/accounts/{self.account_number}/margin-requirements/{symbol}/effective"
-        )
-        return MarginRequirement(**data)
-
     async def a_get_margin_requirements(self, session: Session) -> MarginReport:
         """
         Get the margin report for the account, with total margin requirements
@@ -1500,84 +1410,3 @@ class Account(TastytradeData):
             ),
         )
         return PlacedOrder(**data)
-
-    async def a_get_order_chains(
-        self,
-        session: Session,
-        symbol: str,
-        start_time: datetime,
-        end_time: datetime,
-    ) -> list[OrderChain]:
-        """
-        Get a list of order chains (open + rolls + close) for given symbol
-        over the given time frame, with total P/L, commissions, etc.
-
-        Not supported for OAuth sessions--write Tasty to get this added!
-
-        :param session: the session to use for the request.
-        :param symbol: the underlying symbol for the chains.
-        :param start_time: the beginning time of the query.
-        :param end_time: the ending time of the query.
-        """
-        params = {
-            "account-numbers[]": self.account_number,
-            "underlying-symbols[]": symbol,
-            "start-at": start_time.strftime(TT_DATE_FMT),
-            "end-at": end_time.strftime(TT_DATE_FMT),
-            "defer-open-winner-loser-filtering-to-frontend": False,
-            "per-page": 250,
-        }
-        headers = {
-            "Authorization": session.session_token,
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-        }
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{VAST_URL}/order-chains",
-                headers=headers,
-                params=params,  # type: ignore[arg-type]
-            )
-            validate_response(response)
-            chains = response.json()["data"]["items"]
-            return [OrderChain(**i) for i in chains]
-
-    def get_order_chains(
-        self,
-        session: Session,
-        symbol: str,
-        start_time: datetime,
-        end_time: datetime,
-    ) -> list[OrderChain]:
-        """
-        Get a list of order chains (open + rolls + close) for given symbol
-        over the given time frame, with total P/L, commissions, etc.
-
-        Not supported for OAuth sessions--write Tasty to get this added!
-
-        :param session: the session to use for the request.
-        :param symbol: the underlying symbol for the chains.
-        :param start_time: the beginning time of the query.
-        :param end_time: the ending time of the query.
-        """
-        params = {
-            "account-numbers[]": self.account_number,
-            "underlying-symbols[]": symbol,
-            "start-at": start_time.strftime(TT_DATE_FMT),
-            "end-at": end_time.strftime(TT_DATE_FMT),
-            "defer-open-winner-loser-filtering-to-frontend": False,
-            "per-page": 250,
-        }
-        headers = {
-            "Authorization": session.session_token,
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-        }
-        response = httpx.get(
-            f"{VAST_URL}/order-chains",
-            headers=headers,
-            params=params,  # type: ignore[arg-type]
-        )
-        validate_response(response)
-        chains = response.json()["data"]["items"]
-        return [OrderChain(**i) for i in chains]
