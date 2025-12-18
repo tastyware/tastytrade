@@ -289,9 +289,7 @@ class Session:
         self.streamer_expiration = now_in_new_york()
         self.refresh()
 
-    def _streamer_refresh(self) -> None:
-        # Pull streamer tokens and urls
-        data = self._get("/api-quote-tokens")
+    def _streamer_refresh(self, data: Any) -> None:
         # Auth token for dxfeed websocket
         self.streamer_token = data["token"]
         # URL for dxfeed websocket
@@ -331,7 +329,8 @@ class Session:
         self.async_client.headers.update(auth_headers)
         # update the streamer token if necessary
         if not self.is_test and self.streamer_expiration < self.session_expiration:
-            self._streamer_refresh()
+            data = self._get("/api-quote-tokens")
+            self._streamer_refresh(data)
 
     async def a_refresh(self) -> None:
         """
@@ -365,13 +364,7 @@ class Session:
         if not self.is_test and self.streamer_expiration < self.session_expiration:
             # Pull streamer tokens and urls
             data = await self._a_get("/api-quote-tokens")
-            # Auth token for dxfeed websocket
-            self.streamer_token = data["token"]
-            # URL for dxfeed websocket
-            self.dxlink_url = data["dxlink-url"]
-            self.streamer_expiration = datetime.fromisoformat(
-                data["expires-at"].replace("Z", "+00:00")
-            )
+            self._streamer_refresh(data)
 
     async def a_get_customer(self) -> Customer:
         """
