@@ -233,7 +233,7 @@ class Customer(TastytradeData):
     desk_customer_id: str | None = None
     entity: CustomerEntity | None = None
     family_member_names: str | None = None
-    has_institutional_assets: str | None = None
+    has_institutional_assets: str | bool | None = None
     industry_affiliation_firm: str | None = None
     is_investment_adviser: bool | None = None
     listed_affiliation_symbol: str | None = None

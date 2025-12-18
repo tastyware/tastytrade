@@ -3,7 +3,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any
 
-from pydantic import computed_field, field_serializer, model_validator
+from pydantic import ConfigDict, computed_field, field_serializer, model_validator
 
 from tastytrade import version_str
 from tastytrade.utils import (
@@ -237,6 +237,8 @@ class NewOrder(TastytradeData):
     modifying existing orders.
     """
 
+    model_config = ConfigDict(extra="allow")
+
     time_in_force: OrderTimeInForce
     order_type: OrderType
     source: str = version_str
@@ -435,122 +437,3 @@ class PlacedOrderResponse(TastytradeData):
     fee_calculation: FeeCalculation | None = None
     warnings: list[Message] | None = None
     errors: list[Message] | None = None
-
-
-class OrderChainEntry(TastytradeData):
-    """
-    Dataclass containing information about a single order in an order chain.
-    """
-
-    symbol: str
-    instrument_type: InstrumentType
-    quantity: str
-    quantity_type: str
-    quantity_numeric: Decimal
-
-
-class OrderChainLeg(TastytradeData):
-    """
-    Dataclass containing information about a single leg in an order
-    from an order chain.
-    """
-
-    symbol: str
-    instrument_type: InstrumentType
-    action: OrderAction
-    fill_quantity: Decimal
-    order_quantity: Decimal
-
-
-class OrderChainNode(TastytradeData):
-    """
-    Dataclass containing information about a single node in an order chain.
-    """
-
-    node_type: str
-    id: str
-    description: str
-    occurred_at: datetime | None = None
-    total_fees: Decimal | None = None
-    total_fill_cost: Decimal | None = None
-    gcd_quantity: Decimal | None = None
-    fill_cost_per_quantity: Decimal | None = None
-    order_fill_count: int | None = None
-    roll: bool | None = None
-    legs: list[OrderChainLeg] | None = None
-    entries: list[OrderChainEntry] | None = None
-
-    @model_validator(mode="before")
-    @classmethod
-    def validate_price_effects(cls, data: Any) -> Any:
-        return set_sign_for(
-            data,
-            [
-                "total_fees",
-                "total_fill_cost",
-                "fill_cost_per_quantity",
-            ],
-        )
-
-
-class ComputedData(TastytradeData):
-    """
-    Dataclass containing computed data about an order chain.
-    """
-
-    open: bool
-    updated_at: datetime
-    total_fees: Decimal
-    total_commissions: Decimal
-    realized_gain: Decimal
-    realized_gain_with_fees: Decimal
-    winner_realized_and_closed: bool
-    winner_realized: bool
-    winner_realized_with_fees: bool
-    roll_count: int
-    opened_at: datetime
-    last_occurred_at: datetime
-    started_at_days_to_expiration: int
-    duration: int
-    total_opening_cost: Decimal
-    total_closing_cost: Decimal
-    total_cost: Decimal
-    gcd_open_quantity: Decimal
-    fees_missing: bool
-    open_entries: list[OrderChainEntry]
-    total_cost_per_unit: Decimal | None = None
-
-    @model_validator(mode="before")
-    @classmethod
-    def validate_price_effects(cls, data: Any) -> Any:
-        return set_sign_for(
-            data,
-            [
-                "total_fees",
-                "total_commissions",
-                "realized_gain",
-                "realized_gain_with_fees",
-                "total_opening_cost",
-                "total_closing_cost",
-                "total_cost",
-                "total_cost_per_unit",
-            ],
-        )
-
-
-class OrderChain(TastytradeData):
-    """
-    Dataclass containing information about an order chain: a group of orders
-    for a specific underlying, such as total P/L, rolls, current P/L in a
-    symbol, etc.
-    """
-
-    id: int
-    account_number: str
-    description: str
-    underlying_symbol: str
-    computed_data: ComputedData
-    lite_nodes: list[OrderChainNode]
-    lite_nodes_sizes: int | None = None
-    updated_at: datetime | None = None
-    created_at: datetime | None = None

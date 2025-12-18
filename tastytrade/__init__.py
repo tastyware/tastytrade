@@ -3,8 +3,7 @@ import logging
 API_URL = "https://api.tastyworks.com"
 API_VERSION = "20251101"
 CERT_URL = "https://api.cert.tastyworks.com"
-VAST_URL = "https://vast.tastyworks.com"
-VERSION = "11.0.6"
+VERSION = "11.1.0"
 
 __version__ = VERSION
 version_str: str = f"tastyware/tastytrade:v{VERSION}"

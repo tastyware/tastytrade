@@ -118,6 +118,25 @@ def get_market_holidays(session: Session) -> MarketCalendar:
     return MarketCalendar(**data)
 
 
+async def a_get_futures_holidays(
+    session: Session, exchange: ExchangeType
+) -> MarketCalendar:
+    """
+    Retrieves market calendar for half days and holidays for a futures exchange.
+
+    :param session: active user session to use
+    :param exchange: exchange to fetch calendar for
+    """
+    data = await session._a_get(f"/market-time/futures/holidays/{exchange.value}")
+    return MarketCalendar(**data)
+
+
 def get_futures_holidays(session: Session, exchange: ExchangeType) -> MarketCalendar:
+    """
+    Retrieves market calendar for half days and holidays for a futures exchange.
+
+    :param session: active user session to use
+    :param exchange: exchange to fetch calendar for
+    """
     data = session._get(f"/market-time/futures/holidays/{exchange.value}")
     return MarketCalendar(**data)

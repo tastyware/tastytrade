@@ -29,12 +29,7 @@ from tastytrade.dxfeed import (
     Trade,
     Underlying,
 )
-from tastytrade.order import (
-    InstrumentType,
-    OrderChain,
-    PlacedComplexOrder,
-    PlacedOrder,
-)
+from tastytrade.order import InstrumentType, PlacedComplexOrder, PlacedOrder
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeData, TastytradeError, set_sign_for
 from tastytrade.watchlists import Watchlist
@@ -133,7 +128,6 @@ AlertType: TypeAlias = (
     | ExternalTransaction
     | PlacedComplexOrder
     | PlacedOrder
-    | OrderChain
     | CurrentPosition
     | QuoteAlert
     | TradingStatus
@@ -146,7 +140,6 @@ MAP_ALERTS: dict[str, type[AlertType]] = {
     "ComplexOrder": PlacedComplexOrder,
     "ExternalTransaction": ExternalTransaction,
     "Order": PlacedOrder,
-    "OrderChain": OrderChain,
     "CurrentPosition": CurrentPosition,
     "QuoteAlert": QuoteAlert,
     "TradingStatus": TradingStatus,
@@ -761,7 +754,7 @@ class DXLinkStreamer:
         }
 
         def dict_from_schema(event_class: Any) -> dict[str, list[Any]]:
-            schema = event_class.schema()
+            schema = event_class.model_json_schema()
             return {schema["title"]: list(schema["properties"].keys())}
 
         cls = MAP_EVENTS[event_type]

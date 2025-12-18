@@ -29,21 +29,14 @@ def test_parse_infinities_and_nan():
     assert summary.day_high_price is None
 
 
-def test_malformatted_data():
+quote_data = ["SPY", 0, 0, 0, 0, "Q", 0, "Q", 576.88, 576.9, 230.0, 300.0]
+
+
+def test_wrong_number_data_fields():
     with pytest.raises(TastytradeError):
-        quote_data = [
-            "SPY",
-            0,
-            0,
-            0,
-            0,
-            "Q",
-            0,
-            "Q",
-            576.88,
-            576.9,
-            230.0,
-            300.0,
-            "extra",
-        ]
-        _ = Quote.from_stream(quote_data)
+        _ = Quote.from_stream(quote_data + ["extra"])
+
+
+def test_bad_extra_data():
+    extra_data = ["SPY", 0, "bad", 0, 0, "Q", 0, "Q", 576.88, 576.9, 230.0, 300.0]
+    _ = Quote.from_stream(quote_data + extra_data)
