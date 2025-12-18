@@ -6,6 +6,7 @@ from typing import Any, Type, TypeVar, cast
 from zoneinfo import ZoneInfo
 
 from httpx import AsyncClient, Client, Response
+from pandas import Timestamp
 from pandas_market_calendars import get_calendar  # type: ignore[import-untyped]
 from pydantic import BaseModel, ConfigDict
 
@@ -51,8 +52,8 @@ def is_market_open_now() -> bool:
         return False
 
     # Use iloc[0] since schedule has only one row for a single day
-    market_open = sched.iloc[0]["market_open"]
-    market_close = sched.iloc[0]["market_close"]
+    market_open: Timestamp = sched.iloc[0]["market_open"]
+    market_close: Timestamp = sched.iloc[0]["market_close"]
     return market_open <= now_in_new_york() < market_close
 
 

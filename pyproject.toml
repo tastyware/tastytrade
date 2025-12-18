@@ -66,6 +66,7 @@ dev = [
     "proxy-py>=2.4.9",
     "sphinx-immaterial>=0.12.5",
     "mypy>=1.18.2",
+    "pandas-stubs>=2.2.2.240807",
 ]
 
 [tool.setuptools.package-data]
