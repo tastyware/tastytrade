@@ -2022,6 +2022,7 @@ dependencies = [
     { name = "httpx" },
     { name = "pandas-market-calendars" },
     { name = "pydantic" },
+    { name = "python-dotenv" },
     { name = "websockets" },
 ]
 
@@ -2050,6 +2051,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "pandas-market-calendars", specifier = ">=5.1.1" },
     { name = "pydantic", specifier = ">=2.11.9" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "websockets", specifier = ">=15.0.1" },
 ]
 

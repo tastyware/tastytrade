@@ -42,6 +42,7 @@ dependencies = [
     "httpx>=0.28.1",
     "pandas-market-calendars>=5.1.1",
     "pydantic>=2.11.9",
+    "python-dotenv>=1.0.0",
     "websockets>=15.0.1",
 ]
 dynamic = ["version"]
