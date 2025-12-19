@@ -884,3 +884,55 @@ class DXLinkStreamer:
             results = cls.from_stream(data)
             for r in results:
                 await self._queues[msg_type].put(r)  # type: ignore
+
+
+class EventStreamer:
+    """
+    Utility class to streamline the process of subscribing to events and
+    calling a callback when an event is received.
+
+    NOTE: Instantiate an instance of EventStreamer for each event class
+          you want to stream
+
+    NOTE: stop the streamer by cancelling the task
+    """
+
+    def __init__(
+        self,
+        session: Session,
+        symbols: list[str],
+        event_class: type[U],
+        callback: Callable[[U], Coroutine[Any, Any, None]],
+    ):
+        """
+        Initializes the event streamer
+
+        :param session: The session to use for the streamer
+        :param symbols: The symbols to subscribe to
+        :param event_class: The event class to subscribe to
+        :param callback: The callback to call when an event is received
+        """
+
+        self._session = session
+        self._symbols = symbols
+        self._event_class = event_class
+        # callback can be set to different function by consumer after initialization
+        self.callback = callback
+
+    async def start(self) -> None:
+        """
+        starts the streamer and subscribes to the given symbols and calls
+        the callback when an event is received
+        """
+
+        if self.callback is None:
+            raise TastytradeError("No callback provided")
+
+        self._stop = False
+
+        async with DXLinkStreamer(self._session) as streamer:
+            await streamer.subscribe(self._event_class, self._symbols)  # type: ignore
+            async for event in streamer.listen(self._event_class):
+                await self.callback(event)  # type: ignore
+
+        self._stop = False

@@ -1,8 +1,8 @@
 from datetime import date, datetime
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 from tastytrade.utils import (
-    TZ,
     get_future_fx_monthly,
     get_future_grain_monthly,
     get_future_index_monthly,
@@ -14,6 +14,8 @@ from tastytrade.utils import (
     is_market_open_now,
     today_in_new_york,
 )
+
+TZ = ZoneInfo("US/Eastern")
 
 
 def test_get_third_friday():
