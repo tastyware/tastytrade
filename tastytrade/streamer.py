@@ -894,11 +894,7 @@ class EventStreamer:
     NOTE: Instantiate an instance of EventStreamer for each event class
           you want to stream
 
-    NOTE: if you need to be able to stop the streamer,
-          you can create a separate coroutine with access
-          to the EventSteamer object and call the stop() method on it
-
-    NOTE: stop() will only stop after listen has returned with an event
+    NOTE: stop the streamer by cancelling the task
     """
 
     def __init__(
@@ -922,20 +918,11 @@ class EventStreamer:
         self._event_class = event_class
         # callback can be set to different function by consumer after initialization
         self.callback = callback
-        self._stop: bool = False
-
-    def stop(self) -> None:
-        """
-        Stops the event streamer
-        """
-
-        self._stop = True
 
     async def start(self) -> None:
         """
         starts the streamer and subscribes to the given symbols and calls
         the callback when an event is received
-        NOTE: This function is blocking until the stop() method is called
         """
 
         if self.callback is None:
@@ -946,8 +933,6 @@ class EventStreamer:
         async with DXLinkStreamer(self._session) as streamer:
             await streamer.subscribe(self._event_class, self._symbols)  # type: ignore
             async for event in streamer.listen(self._event_class):
-                if self._stop:
-                    break
                 await self.callback(event)  # type: ignore
 
         self._stop = False

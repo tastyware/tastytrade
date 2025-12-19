@@ -49,7 +49,8 @@ E = TypeVar(
 
 
 class OHLCVBar:
-    def __init__(self, open_price: Decimal, volume: int | None, timestamp: datetime):
+    def __init__(self, symbol: str, open_price: Decimal, volume: int | None, timestamp: datetime):
+        self.symbol: str = symbol
         self.open: Decimal = open_price
         self.high: Decimal = open_price
         self.low: Decimal = open_price
@@ -67,7 +68,7 @@ class OHLCVBar:
 
     def __str__(self) -> str:
         return (
-            f"OHLCVBar(open={self.open}, high={self.high}, low={self.low},"
+            f"OHLCVBar(symbol={self.symbol}, open={self.open}, high={self.high}, low={self.low},"
             f" close={self.close}, volume={self.volume}, "
             f"tick_count={self.tick_count}, timestamp={self.timestamp})"
         )
@@ -77,10 +78,11 @@ class OHLCVBar:
 
 
 class OHLCVBars:
-    def __init__(self, timeframe: str):
+    def __init__(self, timeframe: str, symbol: str):
         self.ohlcv_bars: list[OHLCVBar] = []
         self.current_bar: OHLCVBar | None = None
         self.timeframe: str = timeframe
+        self.symbol: str = symbol
 
     def update(self, event: Trade) -> None:
         ts_ms = event.time
@@ -90,7 +92,7 @@ class OHLCVBars:
             n = int(self.timeframe[:-1])  # "200t" -> 200 (also works for "1t")
 
             if self.current_bar is None:
-                self.current_bar = OHLCVBar(event.price, event.size, timestamp=datetime.fromtimestamp(ts_ms / 1000))
+                self.current_bar = OHLCVBar(self.symbol, event.price, event.size, timestamp=datetime.fromtimestamp(ts_ms / 1000))
             else:
                 self.current_bar.update(event.price, event.size)
 
@@ -104,12 +106,10 @@ class OHLCVBars:
 
         # --- TIME BARS (bucketed) ---
         bucket_ts = self.bucket_timestamp(ts_ms, self.timeframe)
-        if self.current_bar is not None:
-            print(ts_ms, bucket_ts, self.current_bar.timestamp)
 
         if self.current_bar is None:
             self.current_bar = OHLCVBar(
-                event.price, event.size, timestamp=bucket_ts
+                self.symbol, event.price, event.size, timestamp=bucket_ts
             )
             return
 
@@ -117,7 +117,7 @@ class OHLCVBars:
         if bucket_ts != self.current_bar.timestamp:
             self.ohlcv_bars.append(self.current_bar)
             self.current_bar = OHLCVBar(
-                event.price, event.size, timestamp=bucket_ts
+                self.symbol, event.price, event.size, timestamp=bucket_ts
             )
             print(self.ohlcv_bars[-1])
         else:
@@ -157,7 +157,7 @@ ohlcv_bars_dict: dict[str, OHLCVBars] = {}
 def ohlcv_bars(symbols: list[str]) -> None:
     global ohlcv_bars_list
     for symbol in symbols:
-        ohlcv_bars_dict[symbol] = OHLCVBars("1m")
+        ohlcv_bars_dict[symbol] = OHLCVBars("5s", symbol)
 
 
 async def update_ohlcv_bars(trade: Trade) -> None:
@@ -166,33 +166,34 @@ async def update_ohlcv_bars(trade: Trade) -> None:
 
 
 async def handle_quote(quote: Quote) -> None:
-    print(quote)
+    print(f"QUOTE: {quote}")
 
 
-async def monitor_streamer(event_streamer: EventStreamer, stop_time: int) -> None:
+async def monitor_tasks(tasks: list[asyncio.Task[None]], stop_time: int) -> None:
     """
-    Monitor the streamer and stop it after the given time
-
-    NOTE: stop() will only stop after listen has returned with an event
+    Monitor the tasks and stop them after the given time
     """
-
     await asyncio.sleep(stop_time)
-    event_streamer.stop()
+    for t in tasks:
+        t.cancel()
 
 
 async def main() -> None:
-    # ohlcv_bars = OHLCVBars(symbols=["SPY", "AAPL"], timeframe="1t")
     quote_streamer = EventStreamer(session, ["SPY"], Quote, handle_quote)
     symbols = ["SPY", "AAPL"]
     ohlcv_bars(symbols=symbols)  # initialize the ohlcv bars in a global dictionary
 
     ohlcv_bars_streamers = [EventStreamer(session, [symbol], Trade, update_ohlcv_bars) for symbol in symbols]
-    await asyncio.gather(
-        quote_streamer.start(),
-        monitor_streamer(quote_streamer, 10),
-        *(streamer.start() for streamer in ohlcv_bars_streamers),
-        *(monitor_streamer(streamer, 120) for streamer in ohlcv_bars_streamers)
-    )
+
+    tasks: list[asyncio.Task[None]] = []
+    tasks.append(asyncio.create_task(quote_streamer.start()))
+    for t in ohlcv_bars_streamers:
+        tasks.append(asyncio.create_task(t.start()))
+
+    try:
+        await asyncio.gather(*tasks, monitor_tasks(tasks, 20))
+    except asyncio.CancelledError:
+        pass
 
 
 if __name__ == "__main__":
