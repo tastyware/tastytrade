@@ -1,22 +1,21 @@
 import os
 from typing import Any
 
-from pytest import fixture
+import pytest
 
 from tastytrade import Session
 
 
-# Run all tests with asyncio only
-@fixture(scope="session")
-def aiolib() -> str:
-    return "asyncio"
+@pytest.fixture(scope="module", params=["asyncio", "trio"])
+def anyio_backend(request: Any) -> str:
+    return request.param
 
 
-@fixture(scope="session")
-async def session(aiolib: str) -> Session:
+@pytest.fixture(scope="function")
+def session() -> Session:
     return Session(os.environ["TT_SECRET"], os.environ["TT_REFRESH"])
 
 
-@fixture(scope="class")
+@pytest.fixture(scope="class")
 def inject_credentials(request: Any) -> None:
     request.cls.credentials = os.environ["TT_SECRET"], os.environ["TT_REFRESH"]

@@ -105,7 +105,7 @@ class MarketData(TastytradeData):
     open_interest: Decimal | None = None
 
 
-def get_market_data(
+async def get_market_data(
     session: Session, symbol: str, instrument_type: InstrumentType
 ) -> MarketData:
     """
@@ -115,25 +115,11 @@ def get_market_data(
     :param symbol: symbol to get data for
     :param instrument_type: type of instrument for the symbol
     """
-    data = session._get(f"/market-data/{instrument_type.value}/{symbol}")
+    data = await session._get(f"/market-data/{instrument_type.value}/{symbol}")
     return MarketData(**data)
 
 
-async def a_get_market_data(
-    session: Session, symbol: str, instrument_type: InstrumentType
-) -> MarketData:
-    """
-    Get market data for the given symbol.
-
-    :param session: active session to use
-    :param symbol: symbol to get data for
-    :param instrument_type: type of instrument for the symbol
-    """
-    data = await session._a_get(f"/market-data/{instrument_type.value}/{symbol}")
-    return MarketData(**data)
-
-
-def get_market_data_by_type(
+async def get_market_data_by_type(
     session: Session,
     cryptocurrencies: list[str] | None = None,
     equities: list[str] | None = None,
@@ -163,39 +149,5 @@ def get_market_data_by_type(
         "cryptocurrency": cryptocurrencies,
     }
     params = {k: v for k, v in params.items() if v}
-    data = session._get("/market-data/by-type", params=params)
-    return [MarketData(**i) for i in data["items"]]
-
-
-async def a_get_market_data_by_type(
-    session: Session,
-    cryptocurrencies: list[str] | None = None,
-    equities: list[str] | None = None,
-    futures: list[str] | None = None,
-    future_options: list[str] | None = None,
-    indices: list[str] | None = None,
-    options: list[str] | None = None,
-) -> list[MarketData]:
-    """
-    Get market data for the given symbols grouped by instrument type.
-    Combined limit across all types is 100.
-
-    :param session: active session to use
-    :param cryptocurrencies: list of cryptocurrencies to fetch
-    :param equities: list of equities to fetch
-    :param futures: list of futures to fetch
-    :param future_options: list of future options to fetch
-    :param indices: list of indices to fetch
-    :param options: list of options to fetch
-    """
-    params = {
-        "index": indices,
-        "equity": equities,
-        "equity-option": options,
-        "future": futures,
-        "future-option": future_options,
-        "cryptocurrency": cryptocurrencies,
-    }
-    params = {k: v for k, v in params.items() if v}
-    data = await session._a_get("/market-data/by-type", params=params)
+    data = await session._get("/market-data/by-type", params=params)
     return [MarketData(**i) for i in data["items"]]

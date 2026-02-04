@@ -1,5 +1,3 @@
-from typing import cast
-
 import pytest
 
 from tastytrade.dxfeed import Quote, Summary
@@ -23,7 +21,6 @@ def test_parse_infinities_and_nan():
         "Infinity",
     ]
     summary = Summary.from_stream(summary_data)[0]
-    summary = cast(Summary, summary)
     assert summary.day_open_price is None
     assert summary.day_close_price is None
     assert summary.day_high_price is None

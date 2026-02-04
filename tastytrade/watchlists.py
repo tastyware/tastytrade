@@ -1,6 +1,4 @@
-from typing import Any, overload
-
-from typing_extensions import Self
+from typing import Any, Self, overload
 
 from tastytrade.order import InstrumentType
 from tastytrade.session import Session
@@ -31,14 +29,14 @@ class PairsWatchlist(TastytradeData):
 
     @overload
     @classmethod
-    async def a_get(cls, session: Session) -> list[Self]: ...
+    async def get(cls, session: Session) -> list[Self]: ...
 
     @overload
     @classmethod
-    async def a_get(cls, session: Session, name: str) -> Self: ...
+    async def get(cls, session: Session, name: str) -> Self: ...
 
     @classmethod
-    async def a_get(
+    async def get(
         cls,
         session: Session,
         name: str | None = None,
@@ -51,36 +49,9 @@ class PairsWatchlist(TastytradeData):
         :param name: the name of the pairs watchlist to fetch.
         """
         if name:
-            data = await session._a_get(f"/pairs-watchlists/{name}")
+            data = await session._get(f"/pairs-watchlists/{name}")
             return cls(**data)
-        data = await session._a_get("/pairs-watchlists")
-        return [cls(**i) for i in data["items"]]
-
-    @overload
-    @classmethod
-    def get(cls, session: Session) -> list[Self]: ...
-
-    @overload
-    @classmethod
-    def get(cls, session: Session, name: str) -> Self: ...
-
-    @classmethod
-    def get(
-        cls,
-        session: Session,
-        name: str | None = None,
-    ) -> Self | list[Self]:
-        """
-        Fetches a list of all Tastytrade public pairs watchlists, or a specific one if
-        a name is provided.
-
-        :param session: the session to use for the request.
-        :param name: the name of the pairs watchlist to fetch.
-        """
-        if name:
-            data = session._get(f"/pairs-watchlists/{name}")
-            return cls(**data)
-        data = session._get("/pairs-watchlists")
+        data = await session._get("/pairs-watchlists")
         return [cls(**i) for i in data["items"]]
 
 
@@ -98,16 +69,16 @@ class PublicWatchlist(Watchlist):
 
     @overload
     @classmethod
-    async def a_get(
+    async def get(
         cls, session: Session, *, counts_only: bool = False
     ) -> list[Self]: ...
 
     @overload
     @classmethod
-    async def a_get(cls, session: Session, name: str) -> Self: ...
+    async def get(cls, session: Session, name: str) -> Self: ...
 
     @classmethod
-    async def a_get(
+    async def get(
         cls,
         session: Session,
         name: str | None = None,
@@ -123,41 +94,11 @@ class PublicWatchlist(Watchlist):
         :param counts_only: whether to only fetch the counts of the watchlists.
         """
         if name:
-            data = await session._a_get(f"/public-watchlists/{name}")
+            data = await session._get(f"/public-watchlists/{name}")
             return cls(**data)
-        data = await session._a_get(
+        data = await session._get(
             "/public-watchlists", params={"counts-only": counts_only}
         )
-        return [cls(**i) for i in data["items"]]
-
-    @overload
-    @classmethod
-    def get(cls, session: Session, *, counts_only: bool = False) -> list[Self]: ...
-
-    @overload
-    @classmethod
-    def get(cls, session: Session, name: str) -> Self: ...
-
-    @classmethod
-    def get(
-        cls,
-        session: Session,
-        name: str | None = None,
-        *,
-        counts_only: bool = False,
-    ) -> Self | list[Self]:
-        """
-        Fetches a list of all Tastytrade public watchlists, or a specific one if
-        a name is provided.
-
-        :param session: the session to use for the request.
-        :param name: the name of the watchlist to fetch.
-        :param counts_only: whether to only fetch the counts of the watchlists.
-        """
-        if name:
-            data = session._get(f"/public-watchlists/{name}")
-            return cls(**data)
-        data = session._get("/public-watchlists", params={"counts-only": counts_only})
         return [cls(**i) for i in data["items"]]
 
 
@@ -169,14 +110,14 @@ class PrivateWatchlist(Watchlist):
 
     @overload
     @classmethod
-    async def a_get(cls, session: Session) -> list[Self]: ...
+    async def get(cls, session: Session) -> list[Self]: ...
 
     @overload
     @classmethod
-    async def a_get(cls, session: Session, name: str) -> Self: ...
+    async def get(cls, session: Session, name: str) -> Self: ...
 
     @classmethod
-    async def a_get(
+    async def get(
         cls,
         session: Session,
         name: str | None = None,
@@ -188,90 +129,38 @@ class PrivateWatchlist(Watchlist):
         :param name: the name of the watchlist to fetch.
         """
         if name:
-            data = await session._a_get(f"/watchlists/{name}")
+            data = await session._get(f"/watchlists/{name}")
             return cls(**data)
-        data = await session._a_get("/watchlists")
-        return [cls(**i) for i in data["items"]]
-
-    @overload
-    @classmethod
-    def get(cls, session: Session) -> list[Self]: ...
-
-    @overload
-    @classmethod
-    def get(cls, session: Session, name: str) -> Self: ...
-
-    @classmethod
-    def get(
-        cls,
-        session: Session,
-        name: str | None = None,
-    ) -> Self | list[Self]:
-        """
-        Fetches the user's private watchlists, or a specific one if a name is provided.
-
-        :param session: the session to use for the request.
-        :param name: the name of the watchlist to fetch.
-        """
-        if name:
-            data = session._get(f"/watchlists/{name}")
-            return cls(**data)
-        data = session._get("/watchlists")
+        data = await session._get("/watchlists")
         return [cls(**i) for i in data["items"]]
 
     @classmethod
-    async def a_remove(cls, session: Session, name: str) -> None:
+    async def remove(cls, session: Session, name: str) -> None:
         """
         Deletes the named private watchlist.
 
         :param session: the session to use for the request.
         :param name: the name of the watchlist to delete.
         """
-        await session._a_delete(f"/watchlists/{name}")
+        await session._delete(f"/watchlists/{name}")
 
-    @classmethod
-    def remove(cls, session: Session, name: str) -> None:
-        """
-        Deletes the named private watchlist.
-
-        :param session: the session to use for the request.
-        :param name: the name of the watchlist to delete.
-        """
-        session._delete(f"/watchlists/{name}")
-
-    async def a_upload(self, session: Session) -> None:
+    async def upload(self, session: Session) -> None:
         """
         Creates a private remote watchlist identical to this local one.
 
         :param session: the session to use for the request.
         """
-        await session._a_post("/watchlists", json=self.model_dump(by_alias=True))
+        await session._post("/watchlists", json=self.model_dump(by_alias=True))
 
-    def upload(self, session: Session) -> None:
-        """
-        Creates a private remote watchlist identical to this local one.
-
-        :param session: the session to use for the request.
-        """
-        session._post("/watchlists", json=self.model_dump(by_alias=True))
-
-    async def a_update(self, session: Session) -> None:
+    async def update(self, session: Session) -> None:
         """
         Updates the existing private remote watchlist.
 
         :param session: the session to use for the request.
         """
-        await session._a_put(
+        await session._put(
             f"/watchlists/{self.name}", json=self.model_dump(by_alias=True)
         )
-
-    def update(self, session: Session) -> None:
-        """
-        Updates the existing private remote watchlist.
-
-        :param session: the session to use for the request.
-        """
-        session._put(f"/watchlists/{self.name}", json=self.model_dump(by_alias=True))
 
     def add_symbol(self, symbol: str, instrument_type: InstrumentType) -> None:
         """

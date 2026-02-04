@@ -49,6 +49,10 @@ class OrderAction(str, Enum):
     #: for futures only
     SELL = "Sell"
 
+    @property
+    def multiplier(self) -> int:
+        return -1 if "Sell" in self.value else 1
+
 
 class OrderStatus(str, Enum):
     """

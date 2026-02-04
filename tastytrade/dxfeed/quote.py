@@ -1,7 +1,9 @@
 from decimal import Decimal
-from typing import Optional
 
+from .. import logger
 from .event import Event
+
+_ZERO = Decimal(0)
 
 
 class Quote(Event):
@@ -28,7 +30,28 @@ class Quote(Event):
     ask_price: Decimal
     #: bid size as integer number (rounded toward zero)
     #: or decimal for cryptocurrencies
-    bid_size: Optional[Decimal] = None
+    bid_size: Decimal = _ZERO
     #: ask size as integer number (rounded toward zero)
     #: or decimal for cryptocurrencies
-    ask_size: Optional[Decimal] = None
+    ask_size: Decimal = _ZERO
+
+    @property
+    def mid_price(self) -> Decimal:
+        """
+        Halfway point between bid and ask prices
+        """
+        return (self.bid_price + self.ask_price) / 2
+
+    @property
+    def micro_price(self) -> Decimal:
+        """
+        Average of bid and ask price weighted by their volumes
+        """
+        total_size = self.bid_size + self.ask_size
+        if not total_size:  # check for zero, fallback to mid
+            logger.warning("Can't compute micro price without sizing!")
+            return self.mid_price
+        return (
+            self.bid_size / total_size * self.ask_price
+            + self.ask_size / total_size * self.bid_price
+        )

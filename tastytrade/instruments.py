@@ -3,14 +3,13 @@ from collections import defaultdict
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, overload
+from typing import Any, Self, overload
 
 from pydantic import field_validator, model_validator
-from typing_extensions import Self
 
 from tastytrade.order import InstrumentType, TradeableTastytradeData
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeData, a_paginate, paginate
+from tastytrade.utils import TastytradeData
 
 
 class OptionType(str, Enum):
@@ -208,16 +207,16 @@ class Cryptocurrency(TradeableTastytradeData):
 
     @overload
     @classmethod
-    async def a_get(
+    async def get(
         cls, session: Session, symbols: list[str] | None = None
     ) -> list[Self]: ...
 
     @overload
     @classmethod
-    async def a_get(cls, session: Session, symbols: str) -> Self: ...
+    async def get(cls, session: Session, symbols: str) -> Self: ...
 
     @classmethod
-    async def a_get(
+    async def get(
         cls,
         session: Session,
         symbols: str | list[str] | None = None,
@@ -231,39 +230,10 @@ class Cryptocurrency(TradeableTastytradeData):
         """
         if isinstance(symbols, str):
             symbol = symbols.replace("/", "%2F")
-            data = await session._a_get(f"/instruments/cryptocurrencies/{symbol}")
+            data = await session._get(f"/instruments/cryptocurrencies/{symbol}")
             return cls(**data)
         params = {"symbol[]": symbols} if symbols else None
-        data = await session._a_get("/instruments/cryptocurrencies", params=params)
-        return [cls(**i) for i in data["items"]]
-
-    @overload
-    @classmethod
-    def get(cls, session: Session, symbols: list[str] | None = None) -> list[Self]: ...
-
-    @overload
-    @classmethod
-    def get(cls, session: Session, symbols: str) -> Self: ...
-
-    @classmethod
-    def get(
-        cls,
-        session: Session,
-        symbols: str | list[str] | None = None,
-    ) -> Self | list[Self]:
-        """
-        Returns a list of cryptocurrency objects from the given symbols,
-        or a single cryptocurrency if a list is not provided.
-
-        :param session: the session to use for the request.
-        :param symbols: the symbol(s) to get the cryptocurrencies for.
-        """
-        if isinstance(symbols, str):
-            symbol = symbols.replace("/", "%2F")
-            data = session._get(f"/instruments/cryptocurrencies/{symbol}")
-            return cls(**data)
-        params = {"symbol[]": symbols} if symbols else None
-        data = session._get("/instruments/cryptocurrencies", params=params)
+        data = await session._get("/instruments/cryptocurrencies", params=params)
         return [cls(**i) for i in data["items"]]
 
 
@@ -295,7 +265,7 @@ class Equity(TradeableTastytradeData):
     option_tick_sizes: list[TickSize] | None = None
 
     @classmethod
-    async def a_get_active_equities(
+    async def get_active_equities(
         cls,
         session: Session,
         per_page: int = 1000,
@@ -318,41 +288,11 @@ class Equity(TradeableTastytradeData):
             "page-offset": page_offset,
             "lendability": lendability,
         }
-        return await a_paginate(
-            session.async_client, cls, "/instruments/equities/active", params
-        )
-
-    @classmethod
-    def get_active_equities(
-        cls,
-        session: Session,
-        per_page: int = 1000,
-        page_offset: int | None = 0,
-        lendability: str | None = None,
-    ) -> list[Self]:
-        """
-        Returns a list of actively traded Equity objects.
-
-        :param session: the session to use for the request.
-        :param per_page: the number of equities to get per page.
-        :param page_offset:
-            provide a specific page to get; if None, get all pages
-        :param lendability:
-            the lendability of the equities; e.g. 'Easy To Borrow',
-            'Locate Required', 'Preborrow'
-        """
-        params = {
-            "per-page": per_page,
-            "page-offset": page_offset,
-            "lendability": lendability,
-        }
-        return paginate(
-            session.sync_client, cls, "/instruments/equities/active", params
-        )
+        return await session._paginate(cls, "/instruments/equities/active", params)
 
     @overload
     @classmethod
-    async def a_get(
+    async def get(
         cls,
         session: Session,
         symbols: list[str],
@@ -366,10 +306,10 @@ class Equity(TradeableTastytradeData):
 
     @overload
     @classmethod
-    async def a_get(cls, session: Session, symbols: str) -> Self: ...
+    async def get(cls, session: Session, symbols: str) -> Self: ...
 
     @classmethod
-    async def a_get(
+    async def get(
         cls,
         session: Session,
         symbols: str | list[str],
@@ -396,7 +336,7 @@ class Equity(TradeableTastytradeData):
         """
         if isinstance(symbols, str):
             symbol = symbols.replace("/", "%2F")
-            data = await session._a_get(f"/instruments/equities/{symbol}")
+            data = await session._get(f"/instruments/equities/{symbol}")
             return cls(**data)
         params = {
             "symbol[]": symbols,
@@ -406,68 +346,7 @@ class Equity(TradeableTastytradeData):
             "per-page": per_page,
             "page-offset": page_offset,
         }
-        return await a_paginate(
-            session.async_client, cls, "/instruments/equities", params
-        )
-
-    @overload
-    @classmethod
-    def get(
-        cls,
-        session: Session,
-        symbols: list[str],
-        *,
-        per_page: int = 250,
-        page_offset: int | None = 0,
-        lendability: str | None = None,
-        is_index: bool | None = None,
-        is_etf: bool | None = None,
-    ) -> list[Self]: ...
-
-    @overload
-    @classmethod
-    def get(cls, session: Session, symbols: str) -> Self: ...
-
-    @classmethod
-    def get(
-        cls,
-        session: Session,
-        symbols: str | list[str],
-        *,
-        per_page: int = 250,
-        page_offset: int | None = 0,
-        lendability: str | None = None,
-        is_index: bool | None = None,
-        is_etf: bool | None = None,
-    ) -> Self | list[Self]:
-        """
-        Returns a list of Equity objects from the given symbols, or a single
-        Equity object if a list is not provided.
-
-        :param session: the session to use for the request.
-        :param symbols: the symbol(s) to get the equities for.
-        :param per_page: the number of options to get per page.
-        :param page_offset:
-            provide a specific page to get; if None, get all pages
-        :param lendability:
-            the lendability of the equities; e.g. 'Easy To Borrow',
-            'Locate Required', 'Preborrow'
-        :param is_index: whether the equities are indexes.
-        :param is_etf: whether the equities are ETFs.
-        """
-        if isinstance(symbols, str):
-            symbol = symbols.replace("/", "%2F")
-            data = session._get(f"/instruments/equities/{symbol}")
-            return cls(**data)
-        params = {
-            "symbol[]": symbols,
-            "lendability": lendability,
-            "is-index": is_index,
-            "is-etf": is_etf,
-            "per-page": per_page,
-            "page-offset": page_offset,
-        }
-        return paginate(session.sync_client, cls, "/instruments/equities", params)
+        return await session._paginate(cls, "/instruments/equities", params)
 
 
 class Option(TradeableTastytradeData):
@@ -505,7 +384,7 @@ class Option(TradeableTastytradeData):
 
     @overload
     @classmethod
-    async def a_get(
+    async def get(
         cls,
         session: Session,
         symbols: list[str],
@@ -518,10 +397,10 @@ class Option(TradeableTastytradeData):
 
     @overload
     @classmethod
-    async def a_get(cls, session: Session, symbols: str) -> Self: ...
+    async def get(cls, session: Session, symbols: str) -> Self: ...
 
     @classmethod
-    async def a_get(
+    async def get(
         cls,
         session: Session,
         symbols: str | list[str],
@@ -545,7 +424,7 @@ class Option(TradeableTastytradeData):
         """
         if isinstance(symbols, str):
             symbol = symbols.replace("/", "%2F")
-            data = await session._a_get(f"/instruments/equity-options/{symbol}")
+            data = await session._get(f"/instruments/equity-options/{symbol}")
             return cls(**data)
         params = {
             "symbol[]": symbols,
@@ -554,62 +433,7 @@ class Option(TradeableTastytradeData):
             "per-page": per_page,
             "page-offset": page_offset,
         }
-        return await a_paginate(
-            session.async_client, cls, "/instruments/equity-options", params
-        )
-
-    @overload
-    @classmethod
-    def get(
-        cls,
-        session: Session,
-        symbols: list[str],
-        *,
-        per_page: int = 250,
-        page_offset: int | None = 0,
-        active: bool | None = None,
-        with_expired: bool | None = None,
-    ) -> list[Self]: ...
-
-    @overload
-    @classmethod
-    def get(cls, session: Session, symbols: str) -> Self: ...
-
-    @classmethod
-    def get(
-        cls,
-        session: Session,
-        symbols: str | list[str],
-        *,
-        active: bool | None = None,
-        per_page: int = 250,
-        page_offset: int | None = 0,
-        with_expired: bool | None = None,
-    ) -> Self | list[Self]:
-        """
-        Returns a list of Option objects from the given symbols, or a single
-        Option object if a list is not provided.
-
-        :param session: the session to use for the request.
-        :param symbols: the OCC symbol(s) to get the options for.
-        :param active: whether the options are active.
-        :param per_page: the number of options to get per page.
-        :param page_offset:
-            provide a specific page to get; if None, get all pages
-        :param with_expired: whether to include expired options.
-        """
-        if isinstance(symbols, str):
-            symbol = symbols.replace("/", "%2F")
-            data = session._get(f"/instruments/equity-options/{symbol}")
-            return cls(**data)
-        params = {
-            "symbol[]": symbols,
-            "active": active,
-            "with-expired": with_expired,
-            "per-page": per_page,
-            "page-offset": page_offset,
-        }
-        return paginate(session.sync_client, cls, "/instruments/equity-options", params)
+        return await session._paginate(cls, "/instruments/equity-options", params)
 
     def _set_streamer_symbol(self) -> None:
         if self.strike_price % 1 == 0:
@@ -690,7 +514,7 @@ class NestedOptionChain(TastytradeData):
     deliverables: list[Deliverable] | None = None
 
     @classmethod
-    async def a_get(cls, session: Session, symbol: str) -> list[Self]:
+    async def get(cls, session: Session, symbol: str) -> list[Self]:
         """
         Gets the option chain for the given symbol in nested format.
 
@@ -698,19 +522,7 @@ class NestedOptionChain(TastytradeData):
         :param symbol: the symbol to get the option chain for.
         """
         symbol = symbol.replace("/", "%2F")
-        data = await session._a_get(f"/option-chains/{symbol}/nested")
-        return [cls(**item) for item in data["items"]]
-
-    @classmethod
-    def get(cls, session: Session, symbol: str) -> list[Self]:
-        """
-        Gets the option chain for the given symbol in nested format.
-
-        :param session: the session to use for the request.
-        :param symbol: the symbol to get the option chain for.
-        """
-        symbol = symbol.replace("/", "%2F")
-        data = session._get(f"/option-chains/{symbol}/nested")
+        data = await session._get(f"/option-chains/{symbol}/nested")
         return [cls(**item) for item in data["items"]]
 
 
@@ -756,16 +568,14 @@ class FutureProduct(TastytradeData):
 
     @overload
     @classmethod
-    async def a_get(cls, session: Session) -> list[Self]: ...
+    async def get(cls, session: Session) -> list[Self]: ...
 
     @overload
     @classmethod
-    async def a_get(
-        cls, session: Session, code: str, exchange: str = "CME"
-    ) -> Self: ...
+    async def get(cls, session: Session, code: str, exchange: str = "CME") -> Self: ...
 
     @classmethod
-    async def a_get(
+    async def get(
         cls,
         session: Session,
         code: str | None = None,
@@ -782,42 +592,9 @@ class FutureProduct(TastytradeData):
         """
         if code:
             code = code.replace("/", "")
-            data = await session._a_get(
-                f"/instruments/future-products/{exchange}/{code}"
-            )
+            data = await session._get(f"/instruments/future-products/{exchange}/{code}")
             return cls(**data)
-        data = await session._a_get("/instruments/future-products")
-        return [cls(**i) for i in data["items"]]
-
-    @overload
-    @classmethod
-    def get(cls, session: Session) -> list[Self]: ...
-
-    @overload
-    @classmethod
-    def get(cls, session: Session, code: str, exchange: str = "CME") -> Self: ...
-
-    @classmethod
-    def get(
-        cls,
-        session: Session,
-        code: str | None = None,
-        exchange: str = "CME",
-    ) -> Self | list[Self]:
-        """
-        Returns a list of FutureProduct objects available, or a single
-        FutureProduct object if a code is provided.
-
-        :param session: the session to use for the request.
-        :param code: the product code, e.g. 'ES'
-        :param exchange:
-            the exchange to fetch from: 'CME', 'SMALLS', 'CFE', 'CBOED'
-        """
-        if code:
-            code = code.replace("/", "")
-            data = session._get(f"/instruments/future-products/{exchange}/{code}")
-            return cls(**data)
-        data = session._get("/instruments/future-products")
+        data = await session._get("/instruments/future-products")
         return [cls(**i) for i in data["items"]]
 
 
@@ -861,7 +638,7 @@ class Future(TradeableTastytradeData):
 
     @overload
     @classmethod
-    async def a_get(
+    async def get(
         cls,
         session: Session,
         symbols: list[str] | None = None,
@@ -873,10 +650,10 @@ class Future(TradeableTastytradeData):
 
     @overload
     @classmethod
-    async def a_get(cls, session: Session, symbols: str) -> Self: ...
+    async def get(cls, session: Session, symbols: str) -> Self: ...
 
     @classmethod
-    async def a_get(
+    async def get(
         cls,
         session: Session,
         symbols: str | list[str] | None = None,
@@ -901,7 +678,7 @@ class Future(TradeableTastytradeData):
         """
         if isinstance(symbols, str):
             symbol = symbols.replace("/", "")
-            data = await session._a_get(f"/instruments/futures/{symbol}")
+            data = await session._get(f"/instruments/futures/{symbol}")
             return cls(**data)
         params = {
             "symbol[]": symbols,
@@ -909,61 +686,7 @@ class Future(TradeableTastytradeData):
             "per-page": per_page,
             "page-offset": page_offset,
         }
-        return await a_paginate(
-            session.async_client, cls, "/instruments/futures", params
-        )
-
-    @overload
-    @classmethod
-    def get(
-        cls,
-        session: Session,
-        symbols: list[str] | None = None,
-        *,
-        product_codes: list[str] | None = None,
-        per_page: int = 250,
-        page_offset: int | None = 0,
-    ) -> list[Self]: ...
-
-    @overload
-    @classmethod
-    def get(cls, session: Session, symbols: str) -> Self: ...
-
-    @classmethod
-    def get(
-        cls,
-        session: Session,
-        symbols: str | list[str] | None = None,
-        *,
-        product_codes: list[str] | None = None,
-        per_page: int = 250,
-        page_offset: int | None = 0,
-    ) -> Self | list[Self]:
-        """
-        Returns a list of Future objects from the given symbols
-        or product codes.
-
-        :param session: the session to use for the request.
-        :param symbols:
-            symbol(s) of the futures, e.g. 'ESZ9', '/ESZ9'.
-        :param product_codes:
-            the product codes of the futures, e.g. 'ES', '6A'. Ignored if
-            symbols are provided.
-        :param per_page: the number of options to get per page.
-        :param page_offset:
-            provide a specific page to get; if None, get all pages
-        """
-        if isinstance(symbols, str):
-            symbol = symbols.replace("/", "")
-            data = session._get(f"/instruments/futures/{symbol}")
-            return cls(**data)
-        params = {
-            "symbol[]": symbols,
-            "product-code[]": product_codes,
-            "per-page": per_page,
-            "page-offset": page_offset,
-        }
-        return paginate(session.sync_client, cls, "/instruments/futures", params)
+        return await session._paginate(cls, "/instruments/futures", params)
 
 
 class FutureOptionProduct(TastytradeData):
@@ -993,16 +716,16 @@ class FutureOptionProduct(TastytradeData):
 
     @overload
     @classmethod
-    async def a_get(cls, session: Session) -> list[Self]: ...
+    async def get(cls, session: Session) -> list[Self]: ...
 
     @overload
     @classmethod
-    async def a_get(
+    async def get(
         cls, session: Session, root_symbol: str, exchange: str = "CME"
     ) -> Self: ...
 
     @classmethod
-    async def a_get(
+    async def get(
         cls,
         session: Session,
         root_symbol: str | None = None,
@@ -1018,40 +741,11 @@ class FutureOptionProduct(TastytradeData):
         """
         if root_symbol:
             root_symbol = root_symbol.replace("/", "")
-            data = await session._a_get(
+            data = await session._get(
                 f"/instruments/future-option-products/{exchange}/{root_symbol}"
             )
             return cls(**data)
-        data = await session._a_get("/instruments/future-option-products")
-        return [cls(**i) for i in data["items"]]
-
-    @overload
-    @classmethod
-    def get(cls, session: Session) -> list[Self]: ...
-
-    @overload
-    @classmethod
-    def get(cls, session: Session, root_symbol: str, exchange: str = "CME") -> Self: ...
-
-    @classmethod
-    def get(
-        cls, session: Session, root_symbol: str | None = None, exchange: str = "CME"
-    ) -> Self | list[Self]:
-        """
-        Returns a list of FutureOptionProduct objects available, or a single
-        FutureOptionProduct object if a root symbol is provided.
-
-        :param session: the session to use for the request.
-        :param root_symbol: the root symbol of the future option
-        :param exchange: the exchange to get the product from
-        """
-        if root_symbol:
-            root_symbol = root_symbol.replace("/", "")
-            data = session._get(
-                f"/instruments/future-option-products/{exchange}/{root_symbol}"
-            )
-            return cls(**data)
-        data = session._get("/instruments/future-option-products")
+        data = await session._get("/instruments/future-option-products")
         return [cls(**i) for i in data["items"]]
 
 
@@ -1104,7 +798,7 @@ class FutureOption(TradeableTastytradeData):
 
     @overload
     @classmethod
-    async def a_get(
+    async def get(
         cls,
         session: Session,
         symbols: list[str],
@@ -1119,10 +813,10 @@ class FutureOption(TradeableTastytradeData):
 
     @overload
     @classmethod
-    async def a_get(cls, session: Session, symbols: str) -> Self: ...
+    async def get(cls, session: Session, symbols: str) -> Self: ...
 
     @classmethod
-    async def a_get(
+    async def get(
         cls,
         session: Session,
         symbols: str | list[str],
@@ -1152,7 +846,7 @@ class FutureOption(TradeableTastytradeData):
         """
         if isinstance(symbols, str):
             symbol = symbols.replace("/", "%2F").replace(" ", "%20")
-            data = await session._a_get(f"/instruments/future-options/{symbol}")
+            data = await session._get(f"/instruments/future-options/{symbol}")
             return cls(**data)
         params = {
             "symbol[]": symbols,
@@ -1163,72 +857,7 @@ class FutureOption(TradeableTastytradeData):
             "per-page": per_page,
             "page-offset": page_offset,
         }
-        return await a_paginate(
-            session.async_client, cls, "/instruments/future-options", params
-        )
-
-    @overload
-    @classmethod
-    def get(
-        cls,
-        session: Session,
-        symbols: list[str],
-        *,
-        root_symbol: str | None = None,
-        expiration_date: date | None = None,
-        option_type: OptionType | None = None,
-        strike_price: Decimal | None = None,
-        per_page: int = 250,
-        page_offset: int | None = 0,
-    ) -> list[Self]: ...
-
-    @overload
-    @classmethod
-    def get(cls, session: Session, symbols: str) -> Self: ...
-
-    @classmethod
-    def get(
-        cls,
-        session: Session,
-        symbols: str | list[str],
-        *,
-        root_symbol: str | None = None,
-        expiration_date: date | None = None,
-        option_type: OptionType | None = None,
-        strike_price: Decimal | None = None,
-        per_page: int = 250,
-        page_offset: int | None = 0,
-    ) -> Self | list[Self]:
-        """
-        Returns a list of FutureOption objects from the given symbols.
-
-        NOTE: many of the parameters are bugged, maybe Tasty will fix?
-
-        :param session: the session to use for the request.
-        :param symbols: the Tastytrade symbol(s) to filter by.
-        :param root_symbol:
-            the root symbol to get the future options for, e.g. 'EW3', 'SO'
-        :param expiration_date: the expiration date for the future options.
-        :param option_type: the option type to filter by.
-        :param strike_price: the strike price to filter by.
-        :param per_page: the number of options to get per page.
-        :param page_offset:
-            provide a specific page to get; if None, get all pages
-        """
-        if isinstance(symbols, str):
-            symbol = symbols.replace("/", "%2F").replace(" ", "%20")
-            data = session._get(f"/instruments/future-options/{symbol}")
-            return cls(**data)
-        params = {
-            "symbol[]": symbols,
-            "option-root-symbol": root_symbol,
-            "expiration-date": expiration_date,
-            "option-type": option_type.value if option_type else None,
-            "strike-price": strike_price,
-            "per-page": per_page,
-            "page-offset": page_offset,
-        }
-        return paginate(session.sync_client, cls, "/instruments/future-options", params)
+        return await session._paginate(cls, "/instruments/future-options", params)
 
 
 class NestedFutureOptionSubchain(TastytradeData):
@@ -1257,7 +886,7 @@ class NestedFutureOptionChain(TastytradeData):
     option_chains: list[NestedFutureOptionSubchain]
 
     @classmethod
-    async def a_get(cls, session: Session, symbol: str) -> Self:
+    async def get(cls, session: Session, symbol: str) -> Self:
         """
         Gets the futures option chain for the given symbol in nested format.
 
@@ -1265,19 +894,7 @@ class NestedFutureOptionChain(TastytradeData):
         :param symbol: the symbol to get the option chain for.
         """
         symbol = symbol.replace("/", "")
-        data = await session._a_get(f"/futures-option-chains/{symbol}/nested")
-        return cls(**data)
-
-    @classmethod
-    def get(cls, session: Session, symbol: str) -> Self:
-        """
-        Gets the futures option chain for the given symbol in nested format.
-
-        :param session: the session to use for the request.
-        :param symbol: the symbol to get the option chain for.
-        """
-        symbol = symbol.replace("/", "")
-        data = session._get(f"/futures-option-chains/{symbol}/nested")
+        data = await session._get(f"/futures-option-chains/{symbol}/nested")
         return cls(**data)
 
 
@@ -1297,16 +914,16 @@ class Warrant(TastytradeData):
 
     @overload
     @classmethod
-    async def a_get(
+    async def get(
         cls, session: Session, symbols: list[str] | None = None
     ) -> list[Self]: ...
 
     @overload
     @classmethod
-    async def a_get(cls, session: Session, symbols: str) -> Self: ...
+    async def get(cls, session: Session, symbols: str) -> Self: ...
 
     @classmethod
-    async def a_get(
+    async def get(
         cls, session: Session, symbols: str | list[str] | None = None
     ) -> Self | list[Self]:
         """
@@ -1317,36 +934,10 @@ class Warrant(TastytradeData):
         :param symbols: symbol(s) of the warrants, e.g. 'NKLAW'
         """
         if isinstance(symbols, str):
-            data = await session._a_get(f"/instruments/warrants/{symbols}")
+            data = await session._get(f"/instruments/warrants/{symbols}")
             return cls(**data)
         params = {"symbol[]": symbols} if symbols else None
-        data = await session._a_get("/instruments/warrants", params=params)
-        return [cls(**i) for i in data["items"]]
-
-    @overload
-    @classmethod
-    def get(cls, session: Session, symbols: list[str] | None = None) -> list[Self]: ...
-
-    @overload
-    @classmethod
-    def get(cls, session: Session, symbols: str) -> Self: ...
-
-    @classmethod
-    def get(
-        cls, session: Session, symbols: str | list[str] | None = None
-    ) -> Self | list[Self]:
-        """
-        Returns a list of Warrant objects from the given symbols, or a single
-        Warrant object if a list is not provided.
-
-        :param session: the session to use for the request.
-        :param symbols: symbol(s) of the warrants, e.g. 'NKLAW'
-        """
-        if isinstance(symbols, str):
-            data = session._get(f"/instruments/warrants/{symbols}")
-            return cls(**data)
-        params = {"symbol[]": symbols} if symbols else None
-        data = session._get("/instruments/warrants", params=params)
+        data = await session._get("/instruments/warrants", params=params)
         return [cls(**i) for i in data["items"]]
 
 
@@ -1354,7 +945,7 @@ class Warrant(TastytradeData):
 FutureProduct.model_rebuild()
 
 
-async def a_get_quantity_decimal_precisions(
+async def get_quantity_decimal_precisions(
     session: Session,
 ) -> list[QuantityDecimalPrecision]:
     """
@@ -1363,22 +954,11 @@ async def a_get_quantity_decimal_precisions(
 
     :param session: the session to use for the request.
     """
-    data = await session._a_get("/instruments/quantity-decimal-precisions")
+    data = await session._get("/instruments/quantity-decimal-precisions")
     return [QuantityDecimalPrecision(**i) for i in data["items"]]
 
 
-def get_quantity_decimal_precisions(session: Session) -> list[QuantityDecimalPrecision]:
-    """
-    Returns a list of QuantityDecimalPrecision objects for different
-    types of instruments.
-
-    :param session: the session to use for the request.
-    """
-    data = session._get("/instruments/quantity-decimal-precisions")
-    return [QuantityDecimalPrecision(**i) for i in data["items"]]
-
-
-async def a_get_option_chain(session: Session, symbol: str) -> dict[date, list[Option]]:
+async def get_option_chain(session: Session, symbol: str) -> dict[date, list[Option]]:
     """
     Returns a mapping of expiration date to a list of option objects
     representing the options chain for the given symbol.
@@ -1392,7 +972,7 @@ async def a_get_option_chain(session: Session, symbol: str) -> dict[date, list[O
     :param symbol: the symbol to get the option chain for.
     """
     symbol = symbol.replace("/", "%2F")
-    data = await session._a_get(f"/option-chains/{symbol}")
+    data = await session._get(f"/option-chains/{symbol}")
     chain: dict[date, list[Option]] = defaultdict(list)
     for i in data["items"]:
         option = Option(**i)
@@ -1401,30 +981,7 @@ async def a_get_option_chain(session: Session, symbol: str) -> dict[date, list[O
     return chain
 
 
-def get_option_chain(session: Session, symbol: str) -> dict[date, list[Option]]:
-    """
-    Returns a mapping of expiration date to a list of option objects
-    representing the options chain for the given symbol.
-
-    In the case that there are two expiries on the same day (e.g. SPXW
-    and SPX AM options), both will be returned in the same list. If you
-    just want one expiry, you'll need to filter the list yourself, or use
-    :class:`NestedOptionChain` instead.
-
-    :param session: the session to use for the request.
-    :param symbol: the symbol to get the option chain for.
-    """
-    symbol = symbol.replace("/", "%2F")
-    data = session._get(f"/option-chains/{symbol}")
-    chain: dict[date, list[Option]] = defaultdict(list)
-    for i in data["items"]:
-        option = Option(**i)
-        chain[option.expiration_date].append(option)
-
-    return chain
-
-
-async def a_get_future_option_chain(
+async def get_future_option_chain(
     session: Session, symbol: str
 ) -> dict[date, list[FutureOption]]:
     """
@@ -1440,32 +997,7 @@ async def a_get_future_option_chain(
     :param symbol: the symbol to get the option chain for.
     """
     symbol = symbol.replace("/", "")
-    data = await session._a_get(f"/futures-option-chains/{symbol}")
-    chain: dict[date, list[FutureOption]] = defaultdict(list)
-    for i in data["items"]:
-        option = FutureOption(**i)
-        chain[option.expiration_date].append(option)
-
-    return chain
-
-
-def get_future_option_chain(
-    session: Session, symbol: str
-) -> dict[date, list[FutureOption]]:
-    """
-    Returns a mapping of expiration date to a list of futures options
-    objects representing the options chain for the given symbol.
-
-    In the case that there are two expiries on the same day (e.g. EW
-    and ES options), both will be returned in the same list. If you
-    just want one expiry, you'll need to filter the list yourself, or
-    use :class:`NestedFutureOptionChain` instead.
-
-    :param session: the session to use for the request.
-    :param symbol: the symbol to get the option chain for.
-    """
-    symbol = symbol.replace("/", "")
-    data = session._get(f"/futures-option-chains/{symbol}")
+    data = await session._get(f"/futures-option-chains/{symbol}")
     chain: dict[date, list[FutureOption]] = defaultdict(list)
     for i in data["items"]:
         option = FutureOption(**i)

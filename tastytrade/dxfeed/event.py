@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 from pydantic.alias_generators import to_camel
@@ -35,14 +35,14 @@ class Event(BaseModel):
         return v
 
     @classmethod
-    def from_stream(cls, data: list[Any]) -> list[Event]:
+    def from_stream(cls, data: list[Any]) -> list[Self]:
         """
         Makes a list of event objects from a list of raw trade data fetched by
         a :class:`~tastyworks.streamer.DXFeedStreamer`.
 
         :param data: list of raw quote data from streamer
         """
-        objs: list[Event] = []
+        objs: list[Self] = []
         size = len(cls.model_fields)
         multiples = len(data) / size
         if not multiples.is_integer():
