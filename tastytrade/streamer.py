@@ -203,12 +203,9 @@ class AlertStreamer(AsyncContextManagerMixin):
     _websocket: AsyncWebSocketSession
 
     def __init__(self, session: Session):
-        #: The active session used to initiate the streamer or make requests
-        self.token: str = "Bearer " + session.session_token
+        self.session = session
         #: The base url for the streamer websocket
         self.base_url: str = CERT_STREAMER_URL if session.is_test else STREAMER_URL
-        #: The proxy URL, if any, associated with the session
-        self.proxy = session.proxy
         #: Counter used to track the request ID for the streamer
         self.request_id = 0
         self._queues: dict[str, StapledObjectStream[AlertType]] = defaultdict(
@@ -220,8 +217,10 @@ class AlertStreamer(AsyncContextManagerMixin):
     @asynccontextmanager
     async def __asynccontextmanager__(self) -> AsyncGenerator[Self]:
         async with AsyncExitStack() as stack:
-            if self.proxy:
-                client = await stack.enter_async_context(AsyncClient(proxy=self.proxy))
+            if self.session.proxy:
+                client = await stack.enter_async_context(
+                    AsyncClient(proxy=self.session.proxy)
+                )
             else:
                 client = None
             self._websocket = await stack.enter_async_context(
@@ -288,9 +287,10 @@ class AlertStreamer(AsyncContextManagerMixin):
         Subscribes to a :class:`SubscriptionType`. Depending on the kind of
         subscription, the value parameter may be required.
         """
+        await self.session._refresh()
         self.request_id += 1
         message: dict[str, Any] = {
-            "auth-token": self.token,
+            "auth-token": f"Bearer {self.session.session_token}",
             "action": subscription.value,
             "request-id": self.request_id,
             "source": version_str,

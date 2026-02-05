@@ -13,7 +13,7 @@ Let's fetch an existing watchlist:
 .. code-block:: python
 
    from tastytrade import PrivateWatchlist
-   watchlist = PrivateWatchlist.get(session, 'MyWatchlist')
+   watchlist = await PrivateWatchlist.get(session, 'MyWatchlist')
    print(watchlist.watchlist_entries)
 
 >>> [{'symbol': 'AAPL', 'instrument-type': 'Equity'}, {'symbol': 'MSFT', 'instrument-type': 'Equity'}]
@@ -29,7 +29,7 @@ In this case, the symbol is present locally, but not remotely, so we need to upd
 
 .. code-block:: python
 
-   watchlist.update(session)
+   await watchlist.update(session)
 
 We can also create a new watchlist from scratch, then publish it to the Tastytrade server:
 
@@ -37,12 +37,12 @@ We can also create a new watchlist from scratch, then publish it to the Tastytra
 
    new_watchlist = PrivateWatchlist(name='NewWatchlist')
    new_watchlist.add_symbol('USO', InstrumentType.EQUITY)
-   new_watchlist.upload(session)
+   await new_watchlist.upload(session)
 
 You can also fetch public watchlists:
 
 .. code-block:: python
 
    from tastytrade import PublicWatchlist
-   public_watchlist = PublicWatchlist.get(session, "Tom's Watchlist")
+   public_watchlist = await PublicWatchlist.get(session, "Tom's Watchlist")
    print(public_watchlist.watchlist_entries)

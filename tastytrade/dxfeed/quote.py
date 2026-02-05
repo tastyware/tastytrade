@@ -45,7 +45,7 @@ class Quote(Event):
     @property
     def micro_price(self) -> Decimal:
         """
-        Average of bid and ask price weighted by their volumes
+        Average of bid and ask price weighted by their sizes
         """
         total_size = self.bid_size + self.ask_size
         if not total_size:  # check for zero, fallback to mid
