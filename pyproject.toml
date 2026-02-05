@@ -44,7 +44,7 @@ dependencies = [
     "httpx>=0.28.1",
     "httpx-ws>=0.7.2",
     "pandas-market-calendars>=5.1.1",
-    "pydantic>=2.11.9",
+    "pydantic>=2.12.0",
 ]
 dynamic = ["version"]
 
