@@ -1,19 +1,22 @@
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timedelta
-from typing import Any
+import time
+from contextlib import asynccontextmanager
+from datetime import date, datetime
+from typing import Any, AsyncGenerator, Self, TypeVar
 
-from httpx import AsyncClient, Client
-from typing_extensions import Self
+from anyio import AsyncContextManagerMixin, Lock
+from httpx import AsyncClient
 
 from tastytrade import API_URL, API_VERSION, CERT_URL, logger
 from tastytrade.utils import (
     TastytradeData,
-    now_in_new_york,
     validate_and_parse,
     validate_response,
 )
+
+T = TypeVar("T", bound=TastytradeData)
 
 
 class Address(TastytradeData):
@@ -241,13 +244,12 @@ class Customer(TastytradeData):
     user_id: str | None = None
 
 
-_fmt = "%Y-%m-%d %H:%M:%S%z"
-
-
-class Session:
+class Session(AsyncContextManagerMixin):
     """
     Contains a managed user login which can then be used to interact with the
     remote API.
+
+    Prefer using with its async context manager to ensure proper cleanup.
 
     :param provider_secret: OAuth secret for your provider
     :param refresh_token: refresh token for the user
@@ -277,135 +279,43 @@ class Session:
         headers = {"Accept": "application/json", "Content-Type": "application/json"}
         if not is_test:  # not accepted in sandbox
             headers["Accept-Version"] = API_VERSION
-        #: httpx client for sync requests
-        self.sync_client = Client(
+        #: timestamp that the session will expire
+        self.session_expiration = 0.0
+        #: token used for authentication
+        self.session_token = "kyrieeleison"
+        # httpx client for all requests
+        self._client = AsyncClient(
             base_url=(CERT_URL if is_test else API_URL), headers=headers, proxy=proxy
         )
-        #: httpx client for async requests
-        self.async_client = AsyncClient(
-            base_url=self.sync_client.base_url, headers=headers, proxy=proxy
-        )
-        #: expiration for streamer token
-        self.streamer_expiration = now_in_new_york()
-        self.refresh()
+        self._lock = Lock()
 
-    def _streamer_refresh(self, data: Any) -> None:
-        # Auth token for dxfeed websocket
-        self.streamer_token = data["token"]
-        # URL for dxfeed websocket
-        self.dxlink_url = data["dxlink-url"]
-        self.streamer_expiration = datetime.fromisoformat(
-            data["expires-at"].replace("Z", "+00:00")
-        )
+    @asynccontextmanager
+    async def __asynccontextmanager__(self) -> AsyncGenerator[Self]:
+        async with self._client:
+            yield self
 
-    def refresh(self) -> None:
-        """
-        Refreshes the acccess token using the stored refresh token.
-        Also refreshes the streamer token if necessary.
-        """
-        request = self.sync_client.build_request(
-            "POST",
-            "/oauth/token",
-            json={
-                "grant_type": "refresh_token",
-                "client_secret": self.provider_secret,
-                "refresh_token": self.refresh_token,
-            },
-        )
-        # Don't send the Authorization header for this request
-        request.headers.pop("Authorization", None)
-        response = self.sync_client.send(request)
-        validate_response(response)
-        data = response.json()
-        #: The session token used to authenticate requests
-        self.session_token = data["access_token"]
-        token_lifetime: int = data.get("expires_in", 900)
-        #: expiration for session token
-        self.session_expiration = now_in_new_york() + timedelta(seconds=token_lifetime)
-        logger.debug(f"Refreshed token, expires in {token_lifetime}ms")
-        auth_headers = {"Authorization": f"Bearer {self.session_token}"}
-        # update the httpx clients with the new token
-        self.sync_client.headers.update(auth_headers)
-        self.async_client.headers.update(auth_headers)
-        # update the streamer token if necessary
-        if not self.is_test and self.streamer_expiration < self.session_expiration:
-            data = self._get("/api-quote-tokens")
-            self._streamer_refresh(data)
-
-    async def a_refresh(self) -> None:
-        """
-        Refreshes the acccess token using the stored refresh token.
-        Also refreshes the streamer token if necessary.
-        """
-        request = self.async_client.build_request(
-            "POST",
-            "/oauth/token",
-            json={
-                "grant_type": "refresh_token",
-                "client_secret": self.provider_secret,
-                "refresh_token": self.refresh_token,
-            },
-        )
-        # Don't send the Authorization header for this request
-        request.headers.pop("Authorization", None)
-        response = await self.async_client.send(request)
-        validate_response(response)
-        data = response.json()
-        # update the relevant tokens
-        self.session_token = data["access_token"]
-        token_lifetime: int = data.get("expires_in", 900)
-        self.session_expiration = now_in_new_york() + timedelta(token_lifetime)
-        logger.debug(f"Refreshed token, expires in {token_lifetime}ms")
-        auth_headers = {"Authorization": f"Bearer {self.session_token}"}
-        # update the httpx clients with the new token
-        self.sync_client.headers.update(auth_headers)
-        self.async_client.headers.update(auth_headers)
-        # update the streamer token if necessary
-        if not self.is_test and self.streamer_expiration < self.session_expiration:
-            # Pull streamer tokens and urls
-            data = await self._a_get("/api-quote-tokens")
-            self._streamer_refresh(data)
-
-    async def a_get_customer(self) -> Customer:
+    async def get_customer(self) -> Customer:
         """
         Gets the customer dict from the API.
         """
-        data = await self._a_get("/customers/me")
+        data = await self._get("/customers/me")
         return Customer(**data)
 
-    def get_customer(self) -> Customer:
+    async def validate(self) -> bool:
         """
-        Gets the customer dict from the API.
+        Check if the current session is valid by sending a request to the API.
         """
-        data = self._get("/customers/me")
-        return Customer(**data)
-
-    async def a_validate(self) -> bool:
-        """
-        Validates the current session by sending a request to the API.
-        """
-        response = await self.async_client.post("/sessions/validate")
-        return response.status_code // 100 == 2
-
-    def validate(self) -> bool:
-        """
-        Validates the current session by sending a request to the API.
-        """
-        response = self.sync_client.post("/sessions/validate")
+        response = await self._client.post("/sessions/validate")
         return response.status_code // 100 == 2
 
     def serialize(self) -> str:
         """
-        Serializes the session to a string, useful for storing
-        a session for later use.
+        Serializes the session to a string, useful for storing a session for later use.
         Could be used with pickle, Redis, etc.
         """
         attrs = self.__dict__.copy()
-        del attrs["async_client"]
-        del attrs["sync_client"]
-        attrs["session_expiration"] = self.session_expiration.strftime(_fmt)
-        attrs["streamer_expiration"] = self.streamer_expiration.strftime(_fmt)
-        attrs["headers"] = dict(self.sync_client.headers.copy())
+        del attrs["_client"]
+        del attrs["_lock"]
         return json.dumps(attrs)
 
     @classmethod
@@ -414,50 +324,96 @@ class Session:
         Create a new Session object from a serialized string.
         """
         deserialized: dict[str, Any] = json.loads(serialized)
-        headers = deserialized.pop("headers")
-        self = cls.__new__(cls)
-        self.__dict__ = deserialized
-        base_url = CERT_URL if self.is_test else API_URL
-        self.session_expiration = datetime.strptime(
-            deserialized["session_expiration"], _fmt
+        self = cls(
+            provider_secret=deserialized["provider_secret"],
+            refresh_token=deserialized["refresh_token"],
+            is_test=deserialized["is_test"],
+            proxy=deserialized["proxy"],
         )
-        self.streamer_expiration = datetime.strptime(
-            deserialized["streamer_expiration"], _fmt
-        )
-        self.sync_client = Client(base_url=base_url, headers=headers, proxy=self.proxy)
-        self.async_client = AsyncClient(
-            base_url=base_url, headers=headers, proxy=self.proxy
-        )
+        self.session_expiration = deserialized["session_expiration"]
+        self.session_token = deserialized["session_token"]
+        auth_headers = {"Authorization": f"Bearer {self.session_token}"}
+        self._client.headers.update(auth_headers)
         return self
 
-    async def _a_get(self, url: str, **kwargs: Any) -> dict[str, Any]:
-        response = await self.async_client.get(url, timeout=30, **kwargs)
+    async def _refresh(self) -> None:
+        # only refresh if needed; use 60 second buffer
+        if time.time() < self.session_expiration - 60:
+            return
+        async with self._lock:
+            if time.time() < self.session_expiration - 60:
+                return
+            request = self._client.build_request(
+                "POST",
+                "/oauth/token",
+                json={
+                    "grant_type": "refresh_token",
+                    "client_secret": self.provider_secret,
+                    "refresh_token": self.refresh_token,
+                },
+            )
+            # Don't send the Authorization header for this request
+            request.headers.pop("Authorization", None)
+            response = await self._client.send(request)
+            validate_response(response)
+            data = response.json()
+            # update the relevant tokens
+            self.session_token = data["access_token"]
+            token_lifetime: int = data.get("expires_in", 900)
+            self.session_expiration = time.time() + token_lifetime
+            logger.debug(f"Refreshed token, expires in {token_lifetime}s")
+            auth_headers = {"Authorization": f"Bearer {self.session_token}"}
+            # update the httpx client with the new token
+            self._client.headers.update(auth_headers)
+
+    async def _get(self, url: str, **kwargs: Any) -> dict[str, Any]:
+        await self._refresh()
+        response = await self._client.get(url, **kwargs)
         return validate_and_parse(response)
 
-    def _get(self, url: str, **kwargs: Any) -> dict[str, Any]:
-        response = self.sync_client.get(url, timeout=30, **kwargs)
-        return validate_and_parse(response)
-
-    async def _a_delete(self, url: str, **kwargs: Any) -> None:
-        response = await self.async_client.delete(url, **kwargs)
+    async def _delete(self, url: str, **kwargs: Any) -> None:
+        await self._refresh()
+        response = await self._client.delete(url, **kwargs)
         validate_response(response)
 
-    def _delete(self, url: str, **kwargs: Any) -> None:
-        response = self.sync_client.delete(url, **kwargs)
-        validate_response(response)
-
-    async def _a_post(self, url: str, **kwargs: Any) -> dict[str, Any]:
-        response = await self.async_client.post(url, **kwargs)
+    async def _post(self, url: str, **kwargs: Any) -> dict[str, Any]:
+        await self._refresh()
+        response = await self._client.post(url, **kwargs)
         return validate_and_parse(response)
 
-    def _post(self, url: str, **kwargs: Any) -> dict[str, Any]:
-        response = self.sync_client.post(url, **kwargs)
+    async def _put(self, url: str, **kwargs: Any) -> dict[str, Any]:
+        await self._refresh()
+        response = await self._client.put(url, **kwargs)
         return validate_and_parse(response)
 
-    async def _a_put(self, url: str, **kwargs: Any) -> dict[str, Any]:
-        response = await self.async_client.put(url, **kwargs)
-        return validate_and_parse(response)
-
-    def _put(self, url: str, **kwargs: Any) -> dict[str, Any]:
-        response = self.sync_client.put(url, **kwargs)
-        return validate_and_parse(response)
+    async def _paginate(
+        self, model: type[T], url: str, params: dict[str, Any]
+    ) -> list[T]:
+        # Helper for paginated endpoints. Excepts params to have at least `page-offset`
+        # and `per-page` parameters. If `params["page-offset"]` is None, iterates over
+        # all results; otherwise, gets a specific page.
+        res: list[T] = []
+        # if a specific page is provided, we just get that page;
+        # otherwise, we loop through all pages
+        paginate = False
+        if params["page-offset"] is None:
+            params["page-offset"] = 0
+            paginate = True
+        params = {k: v for k, v in params.items() if v is not None}
+        await self._refresh()
+        # loop through pages and get all transactions
+        while True:
+            response = await self._client.get(url, params=params)
+            validate_response(response)
+            json = response.json()
+            res.extend([model(**i) for i in json["data"]["items"]])
+            # handle pagination
+            pagination = json.get("pagination")
+            if (
+                not pagination
+                or not paginate
+                or pagination["page-offset"] >= pagination["total-pages"] - 1
+            ):
+                break
+            params["page-offset"] += 1
+        return res

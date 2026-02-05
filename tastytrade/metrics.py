@@ -112,7 +112,7 @@ class MarketMetricInfo(TastytradeData):
     borrow_rate: Decimal | None = None
 
 
-async def a_get_market_metrics(
+async def get_market_metrics(
     session: Session, symbols: list[str]
 ) -> list[MarketMetricInfo]:
     """
@@ -121,24 +121,11 @@ async def a_get_market_metrics(
     :param session: active user session to use
     :param symbols: list of symbols to retrieve metrics for
     """
-    data = await session._a_get(
-        "/market-metrics", params={"symbols": ",".join(symbols)}
-    )
+    data = await session._get("/market-metrics", params={"symbols": ",".join(symbols)})
     return [MarketMetricInfo(**i) for i in data["items"]]
 
 
-def get_market_metrics(session: Session, symbols: list[str]) -> list[MarketMetricInfo]:
-    """
-    Retrieves market metrics for the given symbols.
-
-    :param session: active user session to use
-    :param symbols: list of symbols to retrieve metrics for
-    """
-    data = session._get("/market-metrics", params={"symbols": ",".join(symbols)})
-    return [MarketMetricInfo(**i) for i in data["items"]]
-
-
-async def a_get_dividends(session: Session, symbol: str) -> list[DividendInfo]:
+async def get_dividends(session: Session, symbol: str) -> list[DividendInfo]:
     """
     Retrieves dividend information for the given symbol.
 
@@ -146,25 +133,13 @@ async def a_get_dividends(session: Session, symbol: str) -> list[DividendInfo]:
     :param symbol: symbol to retrieve dividend information for
     """
     symbol = symbol.replace("/", "%2F")
-    data = await session._a_get(
+    data = await session._get(
         f"/market-metrics/historic-corporate-events/dividends/{symbol}"
     )
     return [DividendInfo(**i) for i in data["items"]]
 
 
-def get_dividends(session: Session, symbol: str) -> list[DividendInfo]:
-    """
-    Retrieves dividend information for the given symbol.
-
-    :param session: active user session to use
-    :param symbol: symbol to retrieve dividend information for
-    """
-    symbol = symbol.replace("/", "%2F")
-    data = session._get(f"/market-metrics/historic-corporate-events/dividends/{symbol}")
-    return [DividendInfo(**i) for i in data["items"]]
-
-
-async def a_get_earnings(
+async def get_earnings(
     session: Session, symbol: str, start_date: date
 ) -> list[EarningsInfo]:
     """
@@ -176,55 +151,23 @@ async def a_get_earnings(
     """
     symbol = symbol.replace("/", "%2F")
     params = {"start-date": start_date}
-    data = await session._a_get(
+    data = await session._get(
         (f"/market-metrics/historic-corporate-events/earnings-reports/{symbol}"),
         params=params,
     )
     return [EarningsInfo(**i) for i in data["items"]]
 
 
-def get_earnings(session: Session, symbol: str, start_date: date) -> list[EarningsInfo]:
-    """
-    Retrieves earnings information for the given symbol.
-
-    :param session: active user session to use
-    :param symbol: symbol to retrieve earnings information for
-    :param start_date: limits earnings to those on or after the given date
-    """
-    symbol = symbol.replace("/", "%2F")
-    params = {"start-date": start_date}
-    data = session._get(
-        (f"/market-metrics/historic-corporate-events/earnings-reports/{symbol}"),
-        params=params,
-    )
-    return [EarningsInfo(**i) for i in data["items"]]
-
-
-async def a_get_risk_free_rate(session: Session) -> Decimal:
+async def get_risk_free_rate(session: Session) -> Decimal:
     """
     Retrieves the current risk-free rate.
 
     :param session: active user session to use
     """
-    request = session.async_client.build_request(
+    request = session._client.build_request(
         "GET", "/margin-requirements-public-configuration", timeout=30
     )
-    del request.headers["Authorization"]
-    response = await session.async_client.send(request)
-    data = validate_and_parse(response)
-    return Decimal(data["risk-free-rate"])
-
-
-def get_risk_free_rate(session: Session) -> Decimal:
-    """
-    Retrieves the current risk-free rate.
-
-    :param session: active user session to use
-    """
-    request = session.sync_client.build_request(
-        "GET", "/margin-requirements-public-configuration", timeout=30
-    )
-    del request.headers["Authorization"]
-    response = session.sync_client.send(request)
+    request.headers.pop("Authorization", None)
+    response = await session._client.send(request)
     data = validate_and_parse(response)
     return Decimal(data["risk-free-rate"])

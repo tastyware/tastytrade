@@ -10,8 +10,7 @@ A simple, reverse-engineered SDK for Tastytrade built on their (now mostly publi
 ## Features
 
 - Up to 10x less code than using the API directly
-- Sync/async functions for all endpoints
-- Powerful websocket implementation for account alerts and data streaming, with support for auto-reconnection and reconnection callbacks
+- Powerful websocket implementation for account alerts and data streaming
 - 100% typed, with Pydantic models for all JSON responses from the API
 - 95%+ unit test coverage
 - Comprehensive documentation
@@ -65,25 +64,13 @@ Note that this is asynchronous code, so you can't run it as is unless you're usi
 ```python
 from tastytrade import Account
 
-account = Account.get(session)[0]
-positions = account.get_positions(session)
+account = (await Account.get(session))[0]
+positions = await account.get_positions(session)
 print(positions[0])
 ```
 
 ```python
 >>> CurrentPosition(account_number='5WX01234', symbol='IAU', instrument_type=<InstrumentType.EQUITY: 'Equity'>, underlying_symbol='IAU', quantity=Decimal('20'), quantity_direction='Long', close_price=Decimal('37.09'), average_open_price=Decimal('37.51'), average_yearly_market_close_price=Decimal('37.51'), average_daily_market_close_price=Decimal('37.51'), multiplier=1, cost_effect=<PriceEffect.CREDIT: 'Credit'>, is_suppressed=False, is_frozen=False, realized_day_gain=Decimal('7.888'), realized_day_gain_date=datetime.date(2023, 5, 19), realized_today=Decimal('-0.512'), realized_today_date=datetime.date(2023, 5, 19), created_at=datetime.datetime(2023, 3, 31, 14, 38, 32, 58000, tzinfo=datetime.timezone.utc), updated_at=datetime.datetime(2023, 5, 19, 16, 56, 51, 920000, tzinfo=datetime.timezone.utc), mark=None, mark_price=None, restricted_quantity=Decimal('0'), expires_at=None, fixing_price=None, deliverable_type=None)
-```
-
-## Sync/async wrappers
-
-The code from above can be rewritten asynchronously:
-
-```python
-from tastytrade import Account
-
-account = (await Account.a_get(session))[0]
-positions = await account.a_get_positions(session)
-print(positions[0])
 ```
 
 ## Placing an order
@@ -94,8 +81,8 @@ from tastytrade import Account
 from tastytrade.instruments import Equity
 from tastytrade.order import NewOrder, OrderAction, OrderTimeInForce, OrderType
 
-account = Account.get(session, '5WX01234')
-symbol = Equity.get(session, 'USO')
+account = await Account.get(session, '5WX01234')
+symbol = await Equity.get(session, 'USO')
 leg = symbol.build_leg(Decimal('5'), OrderAction.BUY_TO_OPEN)  # buy to open 5 shares
 
 order = NewOrder(
@@ -104,7 +91,7 @@ order = NewOrder(
     legs=[leg],  # you can have multiple legs in an order
     price=Decimal('-10')  # limit price, $10/share debit for a total value of $50
 )
-response = account.place_order(session, order, dry_run=True)  # a test order
+response = await account.place_order(session, order, dry_run=True)  # a test order
 print(response)
 ```
 
@@ -120,7 +107,7 @@ from tastytrade.dxfeed import Greeks
 from tastytrade.instruments import get_option_chain
 from tastytrade.utils import get_tasty_monthly
 
-chain = get_option_chain(session, 'SPLG')
+chain = await get_option_chain(session, 'SPLG')
 exp = get_tasty_monthly()  # 45 DTE expiration!
 subs_list = [chain[exp][0].streamer_symbol]
 

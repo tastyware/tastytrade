@@ -7,12 +7,14 @@ path = "tastytrade/__init__.py"
 
 [project]
 name = "tastytrade"
-description = "An unofficial, sync/async SDK for Tastytrade!"
+description = "An unofficial, typed, asynchronous Python SDK for Tastytrade!"
 readme = "README.md"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Framework :: AsyncIO",
+    "Framework :: AnyIO",
+    "Framework :: Trio",
     "Intended Audience :: Developers",
     "Intended Audience :: Financial and Insurance Industry",
     "Intended Audience :: Information Technology",
@@ -24,7 +26,6 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -33,16 +34,17 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP",
     "Typing :: Typed",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 license = {file = "LICENSE"}
 authors = [
   {name = "Graeme Holliday", email = "graeme@tastyware.dev"},
 ]
 dependencies = [
+    "anyio>=4.12.1",
     "httpx>=0.28.1",
+    "httpx-ws>=0.7.2",
     "pandas-market-calendars>=5.1.1",
-    "pydantic>=2.11.9",
-    "websockets>=15.0.1",
+    "pydantic>=2.12.0",
 ]
 dynamic = ["version"]
 
@@ -56,7 +58,6 @@ Changelog = "https://github.com/tastyware/tastytrade/releases"
 [dependency-groups]
 dev = [
     "pytest>=8.3.3",
-    "pytest-aio>=1.5.0",
     "pytest-cov>=5.0.0",
     "ruff>=0.13.2",
     "pyright>=1.1.401",
@@ -67,6 +68,7 @@ dev = [
     "sphinx-immaterial>=0.12.5",
     "mypy>=1.18.2",
     "pandas-stubs>=2.2.2.240807",
+    "trio>=0.32.0",
 ]
 
 [tool.setuptools.package-data]
@@ -78,11 +80,8 @@ where = ["tastytrade"]
 [tool.ruff.lint]
 select = ["E", "F", "I"]
 
-[tool.coverage.run]
-omit = ["tastytrade/oauth.py"]
-
 [tool.pyright]
-pythonVersion = "3.10"
+pythonVersion = "3.11"
 include = ["tastytrade", "tests"]
 exclude = ["**/__pycache__"]
 typeCheckingMode = "strict"

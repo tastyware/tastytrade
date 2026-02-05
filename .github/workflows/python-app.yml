@@ -13,7 +13,6 @@ jobs:
       max-parallel: 1
       matrix:
         python-version:
-          - "3.10"
           - "3.11"
           - "3.12"
           - "3.13"
@@ -39,7 +38,7 @@ jobs:
         uv run mypy tastytrade/
     - name: Test with pytest
       run: |
-        uv run pytest --cov=tastytrade --cov-report=term-missing tests/ --cov-fail-under=95
+        uv run pytest --cov=tastytrade --cov-report=term-missing tests/ --cov-fail-under=95 -v
       env:
         TT_REFRESH_SANDBOX: ${{ secrets.TT_REFRESH_SANDBOX }}
         TT_SECRET_SANDBOX: ${{ secrets.TT_SECRET_SANDBOX }}

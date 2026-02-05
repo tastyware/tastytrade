@@ -10,7 +10,7 @@ The ``get_market_sessions`` function can be used to obtain information about the
 .. code-block:: python
 
    from tastytrade.market_sessions import ExchangeType, get_market_sessions
-   get_market_sessions(session, exchanges=[ExchangeType.NYSE])
+   await get_market_sessions(session, exchanges=[ExchangeType.NYSE])
 
 >>> [MarketSession(close_at=None, close_at_ext=None, instrument_collection='Equity', open_at=None, start_at=None, next_session=MarketSessionSnapshot(close_at=datetime.datetime(2025, 2, 18, 21, 0, tzinfo=TzInfo(UTC)), close_at_ext=datetime.datetime(2025, 2, 19, 1, 0, tzinfo=TzInfo(UTC)), instrument_collection='Equity', open_at=datetime.datetime(2025, 2, 18, 14, 30, tzinfo=TzInfo(UTC)), session_date=datetime.date(2025, 2, 18), start_at=datetime.datetime(2025, 2, 18, 13, 15, tzinfo=TzInfo(UTC))), previous_session=MarketSessionSnapshot(close_at=datetime.datetime(2025, 2, 14, 21, 0, tzinfo=TzInfo(UTC)), close_at_ext=datetime.datetime(2025, 2, 15, 1, 0, tzinfo=TzInfo(UTC)), instrument_collection='Equity', open_at=datetime.datetime(2025, 2, 14, 14, 30, tzinfo=TzInfo(UTC)), session_date=datetime.date(2025, 2, 14), start_at=datetime.datetime(2025, 2, 14, 13, 15, tzinfo=TzInfo(UTC))), status=<MarketStatus.CLOSED: 'Closed'>)]
 
@@ -19,7 +19,7 @@ The ``get_market_holidays`` function can be used to obtain information about mar
 .. code-block:: python
 
    from tastytrade.market_sessions import get_market_holidays
-   calendar = Market.get_market_holidays(session)
+   calendar = await Market.get_market_holidays(session)
    print(calendar.half_days)
    print(calendar.holidays)
 
@@ -32,7 +32,7 @@ I case you only want to extract the market status, this is one way to do it:
 
    from tastytrade.market_sessions import ExchangeType, MarketStatus, get_market_sessions
 
-   market_sessions = get_market_sessions(session, exchanges=[ExchangeType.NYSE, ExchangeType.CME])
+   market_sessions = await get_market_sessions(session, exchanges=[ExchangeType.NYSE, ExchangeType.CME])
    print([ms.status != MarketStatus.CLOSED for ms in market_sessions])
 
 >>> [False, False]

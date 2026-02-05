@@ -1,4 +1,3 @@
-import asyncio
 from datetime import datetime, timedelta
 from unittest import IsolatedAsyncioTestCase
 
@@ -8,12 +7,14 @@ from proxy import TestCase
 from tastytrade import Account, AlertStreamer, DXLinkStreamer, Session
 from tastytrade.dxfeed import Candle, Quote, Trade
 
+pytestmark = pytest.mark.anyio
+
 
 async def test_account_streamer(session: Session):
     async with AlertStreamer(session) as streamer:
         await streamer.subscribe_public_watchlists()
         await streamer.subscribe_quote_alerts()
-        accounts = Account.get(session)
+        accounts = await Account.get(session)
         await streamer.subscribe_accounts(accounts)
 
 
@@ -33,39 +34,6 @@ async def test_dxlink_streamer(session: Session):
         await streamer.unsubscribe_candle(subs[0], "1d")
         await streamer.unsubscribe(Quote, [subs[0]])
         await streamer.unsubscribe_all(Quote)
-
-
-async def reconnect_alerts(streamer: AlertStreamer, arg: bool = False):
-    await streamer.subscribe_quote_alerts()
-    if not arg:
-        raise Exception("Oh no!")
-
-
-async def test_account_streamer_reconnect(session: Session):
-    streamer = await AlertStreamer(
-        session, reconnect_args=(True,), reconnect_fn=reconnect_alerts
-    )
-    await streamer.subscribe_public_watchlists()
-    await streamer._websocket.close()  # type: ignore
-    await asyncio.sleep(3)
-    accounts = await Account.a_get(session)
-    await streamer.subscribe_accounts(accounts)
-    await streamer.close()
-
-
-async def reconnect_trades(streamer: DXLinkStreamer):
-    await streamer.subscribe(Trade, ["SPX"])
-
-
-async def test_dxlink_streamer_reconnect(session: Session):
-    streamer = await DXLinkStreamer(session, reconnect_fn=reconnect_trades)
-    await streamer.subscribe(Quote, ["SPY"])
-    _ = await streamer.get_event(Quote)
-    await streamer._websocket.close()
-    await asyncio.sleep(3)
-    trade = await streamer.get_event(Trade)
-    assert trade.event_symbol == "SPX"
-    await streamer.close()
 
 
 @pytest.mark.usefixtures("inject_credentials")

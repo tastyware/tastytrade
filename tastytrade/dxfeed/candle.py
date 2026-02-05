@@ -10,16 +10,14 @@ from pydantic import (
 
 from .event import IndexedEvent
 
-ZERO = Decimal(0)
-
 
 def zero_from_none(
-    v: Any, handler: ValidatorFunctionWrapHandler, info: ValidationInfo
+    v: Any, handler: ValidatorFunctionWrapHandler, _: ValidationInfo
 ) -> Decimal:
     try:
         return cast(Decimal, handler(v))
     except ValidationError:
-        return ZERO
+        return Decimal(0)
 
 
 ZeroFromNone = Annotated[Decimal, WrapValidator(zero_from_none)]

@@ -10,7 +10,7 @@ Fortunately, Tastytrade has endpoints that make fetching data for one-time use a
    from tastytrade.market_data import get_market_data
    from tastytrade.order import InstrumentType
 
-   data = get_market_data(session, "SPY", InstrumentType.EQUITY)
+   data = await get_market_data(session, "SPY", InstrumentType.EQUITY)
    print(data)
 
 >>> symbol='SPY' instrument_type=<InstrumentType.EQUITY: 'Equity'> updated_at=datetime.datetime(2025, 4, 28, 21, 46, 48, 84000, tzinfo=TzInfo(UTC)) bid_size=Decimal('2.0') ask_size=Decimal('4.0') mark=Decimal('549.96') close_price_type=<ClosePriceType.FINAL: 'Final'> prev_close=Decimal('550.64') prev_close_price_type=<ClosePriceType.FINAL: 'Final'> summary_date=datetime.date(2025, 4, 28) prev_close_date=datetime.date(2025, 4, 25) halt_start_time=-1 halt_end_time=-1 ask=Decimal('550.0') beta=Decimal('1.009463163') bid=Decimal('549.9') close=Decimal('550.85') day_high_price=Decimal('553.55') day_low_price=Decimal('545.02') dividend_amount=Decimal('1.695528') dividend_frequency=Decimal('4.0') high_limit_price=Decimal('606.41') last=Decimal('549.96') last_mkt=Decimal('550.85') low_limit_price=Decimal('496.16') mid=Decimal('549.95') open=Decimal('551.39') volume=Decimal('47417792.0') year_low_price=Decimal('481.8') year_high_price=Decimal('613.23')
@@ -21,7 +21,7 @@ You can also fetch data for multiple symbols at once:
 
    from tastytrade.market_data import get_market_data_by_type
 
-   data = get_market_data_by_type(
+   data = await get_market_data_by_type(
         session,
         indices=["SPX", "VIX"],
         cryptocurrencies=["ETH/USD", "BTC/USD"],
