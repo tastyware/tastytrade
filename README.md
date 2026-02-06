@@ -2,6 +2,7 @@
 [![PyPI](https://img.shields.io/pypi/v/tastytrade)](https://pypi.org/project/tastytrade)
 [![Downloads](https://static.pepy.tech/badge/tastytrade)](https://pepy.tech/project/tastytrade)
 [![Release)](https://img.shields.io/github/v/release/tastyware/tastytrade?label=release%20notes)](https://github.com/tastyware/tastytrade/releases)
+[![Gitter](https://img.shields.io/gitter/room/:user/tastyware)](https://matrix.to/#/#tastyware:gitter.im)
 
 # Tastytrade Python SDK
 
@@ -48,16 +49,17 @@ from tastytrade.dxfeed import Quote
 async with DXLinkStreamer(session) as streamer:
     subs_list = ['SPY']  # list of symbols to subscribe to
     await streamer.subscribe(Quote, subs_list)
-    # this example fetches quotes once, then exits
+    # fetch a single quote
     quote = await streamer.get_event(Quote)
     print(quote)
+    # or multiple quotes...
+    async for quote in streamer.listen(Quote):
+        print(quote)
 ```
 
 ```python
 >>> Quote(event_symbol='SPY', event_time=0, sequence=0, time_nano_part=0, bid_time=0, bid_exchange_code='Q', bid_price=411.58, bid_size=400.0, ask_time=0, ask_exchange_code='Q', ask_price=411.6, ask_size=1313.0)
 ```
-
-Note that this is asynchronous code, so you can't run it as is unless you're using a Jupyter notebook or something similar.
 
 ## Getting current positions
 
@@ -118,7 +120,7 @@ async with DXLinkStreamer(session) as streamer:
 ```
 
 ```python
->>> [Greeks(event_symbol='.SPLG230616C23', event_time=0, event_flags=0, index=7235129486797176832, time=1684559855338, sequence=0, price=26.3380972233688, volatility=0.396983376650804, delta=0.999999999996191, gamma=4.81989763184255e-12, theta=-2.5212017514875e-12, rho=0.01834504287973133, vega=3.7003015672215e-12)]
+>>> Greeks(event_symbol='.SPLG230616C23', event_time=0, event_flags=0, index=7235129486797176832, time=1684559855338, sequence=0, price=26.3380972233688, volatility=0.396983376650804, delta=0.999999999996191, gamma=4.81989763184255e-12, theta=-2.5212017514875e-12, rho=0.01834504287973133, vega=3.7003015672215e-12)
 ```
 
 For more examples, check out the [documentation](https://tastyworks-api.readthedocs.io/en/latest/).
@@ -126,5 +128,3 @@ For more examples, check out the [documentation](https://tastyworks-api.readthed
 ## Disclaimer
 
 This is an unofficial SDK for Tastytrade. There is no implied warranty for any actions and results which arise from using it.
-
-![Alt](https://repobeats.axiom.co/api/embed/292b0cb5dd25a26e9abc6e5f8d8e180461d9faf8.svg "Repobeats analytics image")
