@@ -17,6 +17,7 @@ from anyio import (
     create_memory_object_stream,
     create_task_group,
     fail_after,
+    sleep,
 )
 from anyio import (
     Event as AnyioEvent,
@@ -378,10 +379,14 @@ class DXLinkStreamer(AsyncContextManagerMixin):
             proxy=self.session.proxy, verify=self._ssl_context
         ) as client:
             try:
-                async with aconnect_ws(self._wss_url, client=client) as self._websocket:
+                # default keepalive doesn't work since TT expects a specific format
+                async with aconnect_ws(
+                    self._wss_url, client=client, keepalive_ping_interval_seconds=None
+                ) as self._websocket:
                     logger.debug("Websocket connection established.")
                     async with create_task_group() as tg:
                         await tg.start(self._reader)
+                        tg.start_soon(self._heartbeat)
                         yield self
                         tg.cancel_scope.cancel()
             except* WebSocketDisconnect as eg:
@@ -391,6 +396,15 @@ class DXLinkStreamer(AsyncContextManagerMixin):
                         "symbols."
                     ) from eg
                 raise
+
+    async def _heartbeat(self) -> None:
+        # Sends a keepalive message every 30 seconds
+        message = {"type": "KEEPALIVE", "channel": 0}
+        while True:
+            logger.debug("sending keepalive message: %s", message)
+            await self._websocket.send_json(message)
+            # send the heartbeat every 30 seconds
+            await sleep(30)
 
     async def _reader(
         self, *, task_status: TaskStatus[None] = TASK_STATUS_IGNORED
