@@ -192,27 +192,27 @@ class Customer(TastytradeData):
 
     id: str
     first_name: str
-    first_surname: str
+    first_surname: str | None = None
     last_name: str
     address: Address
-    customer_suitability: CustomerSuitability
+    customer_suitability: CustomerSuitability | None = None
     mailing_address: Address
     is_foreign: bool
-    regulatory_domain: str
+    regulatory_domain: str | None = None
     usa_citizenship_type: str
-    home_phone_number: str
+    home_phone_number: str | None = None
     mobile_phone_number: str
-    work_phone_number: str
+    work_phone_number: str | None = None
     birth_date: date
     email: str
-    external_id: str
-    tax_number: str
+    external_id: str | None = None
+    tax_number: str | None = None
     tax_number_type: str
-    citizenship_country: str
-    agreed_to_margining: bool
+    citizenship_country: str | None = None
+    agreed_to_margining: bool | None = None
     subject_to_tax_withholding: bool
-    agreed_to_terms: bool
-    ext_crm_id: str
+    agreed_to_terms: bool | None = None
+    ext_crm_id: str | None = None
     has_industry_affiliation: bool
     has_listed_affiliation: bool
     has_political_affiliation: bool
@@ -221,8 +221,8 @@ class Customer(TastytradeData):
     is_professional: bool
     permitted_account_types: list[CustomerAccountType]
     created_at: datetime
-    identifiable_type: str
-    person: CustomerPerson
+    identifiable_type: str | None = None
+    person: CustomerPerson | None = None
     gender: str | None = None
     middle_name: str | None = None
     prefix_name: str | None = None
