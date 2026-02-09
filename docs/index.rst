@@ -44,6 +44,7 @@ A typed, async SDK for Tastytrade built on their public API. This will allow you
    market-data
    market-sessions
    watchlists
+   sync
 
 .. toctree::
    :maxdepth: 2

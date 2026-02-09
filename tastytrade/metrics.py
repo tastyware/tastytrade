@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Iterable
 
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeData, validate_and_parse
@@ -113,7 +114,7 @@ class MarketMetricInfo(TastytradeData):
 
 
 async def get_market_metrics(
-    session: Session, symbols: list[str]
+    session: Session, symbols: Iterable[str]
 ) -> list[MarketMetricInfo]:
     """
     Retrieves market metrics for the given symbols.

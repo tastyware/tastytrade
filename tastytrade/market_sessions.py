@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from enum import Enum
+from typing import Iterable
 
 from pydantic import Field
 
@@ -67,7 +68,7 @@ class MarketCalendar(TastytradeData):
 
 
 async def get_market_sessions(
-    session: Session, exchanges: list[ExchangeType]
+    session: Session, exchanges: Iterable[ExchangeType]
 ) -> list[MarketSession]:
     """
     Retrieves a list of session timings for the given exchanges.

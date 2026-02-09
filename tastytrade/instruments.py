@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Self, overload
+from typing import Any, Iterable, Self, overload
 
 from pydantic import field_validator, model_validator
 
@@ -207,19 +207,19 @@ class Cryptocurrency(TradeableTastytradeData):
 
     @overload
     @classmethod
-    async def get(
-        cls, session: Session, symbols: list[str] | None = None
-    ) -> list[Self]: ...
+    async def get(cls, session: Session, symbols: str) -> Self: ...  # type: ignore[overload-overlap]
 
     @overload
     @classmethod
-    async def get(cls, session: Session, symbols: str) -> Self: ...
+    async def get(
+        cls, session: Session, symbols: Iterable[str] | None = None
+    ) -> list[Self]: ...
 
     @classmethod
     async def get(
         cls,
         session: Session,
-        symbols: str | list[str] | None = None,
+        symbols: str | Iterable[str] | None = None,
     ) -> Self | list[Self]:
         """
         Returns a list of cryptocurrency objects from the given symbols,
@@ -292,10 +292,14 @@ class Equity(TradeableTastytradeData):
 
     @overload
     @classmethod
+    async def get(cls, session: Session, symbols: str) -> Self: ...  # type: ignore[overload-overlap]
+
+    @overload
+    @classmethod
     async def get(
         cls,
         session: Session,
-        symbols: list[str],
+        symbols: Iterable[str],
         *,
         per_page: int = 250,
         page_offset: int | None = 0,
@@ -304,15 +308,11 @@ class Equity(TradeableTastytradeData):
         is_etf: bool | None = None,
     ) -> list[Self]: ...
 
-    @overload
-    @classmethod
-    async def get(cls, session: Session, symbols: str) -> Self: ...
-
     @classmethod
     async def get(
         cls,
         session: Session,
-        symbols: str | list[str],
+        symbols: str | Iterable[str],
         per_page: int = 250,
         page_offset: int | None = 0,
         lendability: str | None = None,
@@ -384,10 +384,14 @@ class Option(TradeableTastytradeData):
 
     @overload
     @classmethod
+    async def get(cls, session: Session, symbols: str) -> Self: ...  # type: ignore[overload-overlap]
+
+    @overload
+    @classmethod
     async def get(
         cls,
         session: Session,
-        symbols: list[str],
+        symbols: Iterable[str],
         *,
         active: bool | None = None,
         per_page: int = 250,
@@ -395,15 +399,11 @@ class Option(TradeableTastytradeData):
         with_expired: bool | None = None,
     ) -> list[Self]: ...
 
-    @overload
-    @classmethod
-    async def get(cls, session: Session, symbols: str) -> Self: ...
-
     @classmethod
     async def get(
         cls,
         session: Session,
-        symbols: str | list[str],
+        symbols: str | Iterable[str],
         *,
         active: bool | None = None,
         per_page: int = 250,
@@ -638,25 +638,25 @@ class Future(TradeableTastytradeData):
 
     @overload
     @classmethod
+    async def get(cls, session: Session, symbols: str) -> Self: ...  # type: ignore[overload-overlap]
+
+    @overload
+    @classmethod
     async def get(
         cls,
         session: Session,
-        symbols: list[str] | None = None,
+        symbols: Iterable[str] | None = None,
         *,
         product_codes: list[str] | None = None,
         per_page: int = 250,
         page_offset: int | None = 0,
     ) -> list[Self]: ...
 
-    @overload
-    @classmethod
-    async def get(cls, session: Session, symbols: str) -> Self: ...
-
     @classmethod
     async def get(
         cls,
         session: Session,
-        symbols: str | list[str] | None = None,
+        symbols: str | Iterable[str] | None = None,
         *,
         product_codes: list[str] | None = None,
         per_page: int = 250,
@@ -798,10 +798,14 @@ class FutureOption(TradeableTastytradeData):
 
     @overload
     @classmethod
+    async def get(cls, session: Session, symbols: str) -> Self: ...  # type: ignore[overload-overlap]
+
+    @overload
+    @classmethod
     async def get(
         cls,
         session: Session,
-        symbols: list[str],
+        symbols: Iterable[str],
         *,
         root_symbol: str | None = None,
         expiration_date: date | None = None,
@@ -811,15 +815,11 @@ class FutureOption(TradeableTastytradeData):
         page_offset: int | None = 0,
     ) -> list[Self]: ...
 
-    @overload
-    @classmethod
-    async def get(cls, session: Session, symbols: str) -> Self: ...
-
     @classmethod
     async def get(
         cls,
         session: Session,
-        symbols: str | list[str],
+        symbols: str | Iterable[str],
         *,
         root_symbol: str | None = None,
         expiration_date: date | None = None,
@@ -914,17 +914,17 @@ class Warrant(TastytradeData):
 
     @overload
     @classmethod
-    async def get(
-        cls, session: Session, symbols: list[str] | None = None
-    ) -> list[Self]: ...
+    async def get(cls, session: Session, symbols: str) -> Self: ...  # type: ignore[overload-overlap]
 
     @overload
     @classmethod
-    async def get(cls, session: Session, symbols: str) -> Self: ...
+    async def get(
+        cls, session: Session, symbols: Iterable[str] | None = None
+    ) -> list[Self]: ...
 
     @classmethod
     async def get(
-        cls, session: Session, symbols: str | list[str] | None = None
+        cls, session: Session, symbols: str | Iterable[str] | None = None
     ) -> Self | list[Self]:
         """
         Returns a list of Warrant objects from the given symbols, or a single

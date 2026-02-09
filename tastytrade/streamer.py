@@ -8,11 +8,21 @@ from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from ssl import SSLContext, create_default_context
-from typing import Any, AsyncGenerator, Self, TypeAlias, TypedDict, TypeVar, cast
+from typing import (
+    Any,
+    AsyncGenerator,
+    Iterable,
+    Self,
+    TypeAlias,
+    TypedDict,
+    TypeVar,
+    cast,
+)
 
 from anyio import (
     TASK_STATUS_IGNORED,
     AsyncContextManagerMixin,
+    CancelScope,
     WouldBlock,
     create_memory_object_stream,
     create_task_group,
@@ -257,7 +267,7 @@ class AlertStreamer(AsyncContextManagerMixin):
             item = await self._queues[cls_str].receive()
             yield cast(T, item)
 
-    async def subscribe_accounts(self, accounts: list[Account]) -> None:
+    async def subscribe_accounts(self, accounts: Iterable[Account]) -> None:
         """
         Subscribes to account-level updates (balances, orders, positions).
 
@@ -389,6 +399,9 @@ class DXLinkStreamer(AsyncContextManagerMixin):
                         tg.start_soon(self._heartbeat)
                         yield self
                         tg.cancel_scope.cancel()
+                        # fix until httpx-ws issue #107 is resolved
+                        with CancelScope(shield=True):
+                            await self._websocket.close()
             except* WebSocketDisconnect as eg:
                 if eg.subgroup(lambda e: getattr(e, "code", None) == 1009):
                     raise TastytradeError(
@@ -488,7 +501,7 @@ class DXLinkStreamer(AsyncContextManagerMixin):
     async def _channel_request(
         self, event_type: str, refresh_interval: float = 0.1
     ) -> None:
-        message = {
+        message: dict[str, Any] = {
             "type": "CHANNEL_REQUEST",
             "channel": self._channels[event_type],
             "service": "FEED",
@@ -501,12 +514,7 @@ class DXLinkStreamer(AsyncContextManagerMixin):
         with fail_after(10):
             await self._subscription_state[event_type].wait()
         # setup the feed
-        await self._channel_setup(event_type, refresh_interval)
-
-    async def _channel_setup(
-        self, event_type: str, refresh_interval: float = 0.1
-    ) -> None:
-        message: dict[str, Any] = {
+        message = {
             "type": "FEED_SETUP",
             "channel": self._channels[event_type],
             "acceptAggregationPeriod": refresh_interval,
@@ -571,7 +579,7 @@ class DXLinkStreamer(AsyncContextManagerMixin):
     async def subscribe(
         self,
         event_class: type[Event],
-        symbols: list[str],
+        symbols: Iterable[str],
         refresh_interval: float = 0.1,
     ) -> None:
         """
@@ -614,7 +622,9 @@ class DXLinkStreamer(AsyncContextManagerMixin):
         logger.debug("sending channel cancel: %s", message)
         await self._websocket.send_json(message)
 
-    async def unsubscribe(self, event_class: type[Event], symbols: list[str]) -> None:
+    async def unsubscribe(
+        self, event_class: type[Event], symbols: Iterable[str]
+    ) -> None:
         """
         Removes existing subscription for given list of symbols.
         For candles, use :meth:`unsubscribe_candle` instead.
@@ -633,7 +643,7 @@ class DXLinkStreamer(AsyncContextManagerMixin):
 
     async def subscribe_candle(
         self,
-        symbols: list[str],
+        symbols: Iterable[str],
         interval: str,
         start_time: datetime,
         extended_trading_hours: bool = False,

@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Literal, Self, cast, overload
+from typing import Any, Iterable, Literal, Self, cast, overload
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -553,12 +553,12 @@ class Account(TastytradeData):
     async def get_positions(
         self,
         session: Session,
-        underlying_symbols: list[str] | None = None,
+        underlying_symbols: Iterable[str] | None = None,
         symbol: str | None = None,
         instrument_type: InstrumentType | None = None,
         include_closed: bool | None = None,
         underlying_product_code: str | None = None,
-        partition_keys: list[str] | None = None,
+        partition_keys: Iterable[str] | None = None,
         net_positions: bool | None = None,
         include_marks: bool | None = None,
     ) -> list[CurrentPosition]:
@@ -602,8 +602,8 @@ class Account(TastytradeData):
         page_offset: int | None = 0,
         sort: Literal["Asc", "Desc"] = "Desc",
         type: str | None = None,
-        types: list[str] | None = None,
-        sub_types: list[str] | None = None,
+        types: Iterable[str] | None = None,
+        sub_types: Iterable[str] | None = None,
         start_date: date | None = None,
         end_date: date | None = None,
         instrument_type: InstrumentType | None = None,
@@ -810,7 +810,7 @@ class Account(TastytradeData):
         start_date: date | None = None,
         end_date: date | None = None,
         underlying_symbol: str | None = None,
-        statuses: list[OrderStatus] | None = None,
+        statuses: Iterable[OrderStatus] | None = None,
         futures_symbol: str | None = None,
         underlying_instrument_type: InstrumentType | None = None,
         sort: Literal["Asc", "Desc"] | None = None,

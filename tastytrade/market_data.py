@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Iterable
 
 from tastytrade.order import InstrumentType
 from tastytrade.session import Session
@@ -121,12 +122,12 @@ async def get_market_data(
 
 async def get_market_data_by_type(
     session: Session,
-    cryptocurrencies: list[str] | None = None,
-    equities: list[str] | None = None,
-    futures: list[str] | None = None,
-    future_options: list[str] | None = None,
-    indices: list[str] | None = None,
-    options: list[str] | None = None,
+    cryptocurrencies: Iterable[str] | None = None,
+    equities: Iterable[str] | None = None,
+    futures: Iterable[str] | None = None,
+    future_options: Iterable[str] | None = None,
+    indices: Iterable[str] | None = None,
+    options: Iterable[str] | None = None,
 ) -> list[MarketData]:
     """
     Get market data for the given symbols grouped by instrument type.
