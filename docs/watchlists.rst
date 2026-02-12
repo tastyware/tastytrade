@@ -12,7 +12,7 @@ Let's fetch an existing watchlist:
 
 .. code-block:: python
 
-   from tastytrade import PrivateWatchlist
+   from tastytrade.watchlist import PrivateWatchlist
    watchlist = await PrivateWatchlist.get(session, 'MyWatchlist')
    print(watchlist.watchlist_entries)
 
@@ -43,6 +43,6 @@ You can also fetch public watchlists:
 
 .. code-block:: python
 
-   from tastytrade import PublicWatchlist
+   from tastytrade.watchlist import PublicWatchlist
    public_watchlist = await PublicWatchlist.get(session, "Tom's Watchlist")
    print(public_watchlist.watchlist_entries)
