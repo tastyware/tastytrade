@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import warnings
 from collections import defaultdict
 from collections.abc import AsyncIterator
 from contextlib import AsyncExitStack, asynccontextmanager
@@ -233,12 +234,9 @@ class AlertStreamer(AsyncContextManagerMixin):
     @asynccontextmanager
     async def __asynccontextmanager__(self) -> AsyncGenerator[Self]:
         async with AsyncExitStack() as stack:
-            if self.session.proxy:
-                client = await stack.enter_async_context(
-                    AsyncClient(proxy=self.session.proxy)
-                )
-            else:
-                client = None
+            client = await stack.enter_async_context(
+                AsyncClient(**self.session.client_kwargs)
+            )
             self._websocket = await stack.enter_async_context(
                 aconnect_ws(self.base_url, client=client)
             )
@@ -361,9 +359,7 @@ class DXLinkStreamer(AsyncContextManagerMixin):
     )
     _websocket: AsyncWebSocketSession
 
-    def __init__(
-        self, session: Session, ssl_context: SSLContext = create_default_context()
-    ):
+    def __init__(self, session: Session, ssl_context: SSLContext | None = None):
         # initialize streams
         self._send: dict[str, MemoryObjectSendStream[Event]] = {}
         self._recv: dict[type[Event], MemoryObjectReceiveStream[Event]] = {}
@@ -381,8 +377,16 @@ class DXLinkStreamer(AsyncContextManagerMixin):
         }
         # mapping of channel -> subscribed event
         self._subscription_state: dict[str, AnyioEvent] = {}
-        # internal objects
-        self._ssl_context = ssl_context
+        # TODO: remove this in next breaking release
+        if ssl_context:
+            warnings.warn(
+                "The 'ssl_context' parameter is deprecated and will be removed in a "
+                "future version. Pass the `verify` parameter to `Session` instead:"
+                "https://tastyworks-api.rtfd.io/en/latest/api/session.html#tastytrade.session.Session.__init__.client_kwargs",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        self._ssl_context = ssl_context or create_default_context()
 
     @asynccontextmanager
     async def __asynccontextmanager__(self) -> AsyncGenerator[Self]:
@@ -391,7 +395,7 @@ class DXLinkStreamer(AsyncContextManagerMixin):
         self._wss_url = data["dxlink-url"]
         self._auth_token = data["token"]
         async with AsyncClient(
-            proxy=self.session.proxy, verify=self._ssl_context
+            verify=self._ssl_context, **self.session.client_kwargs
         ) as client:
             try:
                 # default keepalive doesn't work since TT expects a specific format

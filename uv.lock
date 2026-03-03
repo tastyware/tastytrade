@@ -942,15 +942,6 @@ wheels = [
 ]
 
 [[package]]
-name = "proxy-py"
-version = "2.4.10"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/60/c3/157c302e82abf8e1edf9dae55665b9480c0a6bd63b42cbbeb925a37f1e1f/proxy_py-2.4.10.tar.gz", hash = "sha256:41b9e9d3aae6f80e2304d3726e8e9c583a510d8de224eada53d115f48a63a9ce", size = 326541, upload-time = "2025-02-18T16:36:38.02Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c1/38/e2546d82f769550a54cca9b1ae81f229871c9bb8b9eca55d766c74a83b03/proxy.py-2.4.10-py3-none-any.whl", hash = "sha256:ef3a31f6ef3be6ff78559c0e68198523bfe2fb1e820bb16686750c1bb5baf9e8", size = 227130, upload-time = "2025-02-18T16:36:35.394Z" },
-]
-
-[[package]]
 name = "pycparser"
 version = "3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1559,7 +1550,6 @@ dev = [
     { name = "enum-tools", extra = ["sphinx"] },
     { name = "mypy" },
     { name = "pandas-stubs" },
-    { name = "proxy-py" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -1584,7 +1574,6 @@ dev = [
     { name = "enum-tools", extras = ["sphinx"], specifier = ">=0.12.0" },
     { name = "mypy", specifier = ">=1.18.2" },
     { name = "pandas-stubs", specifier = ">=2.2.2.240807" },
-    { name = "proxy-py", specifier = ">=2.4.9" },
     { name = "pyright", specifier = ">=1.1.401" },
     { name = "pytest", specifier = ">=8.3.3" },
     { name = "pytest-cov", specifier = ">=5.0.0" },

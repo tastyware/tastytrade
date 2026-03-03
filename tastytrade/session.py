@@ -258,9 +258,6 @@ class Session(AsyncContextManagerMixin):
         refresh token for the user; defaults to the $TT_REFRESH environment variable
     :param is_test:
         whether to use the test API endpoints, default False
-    :param proxy:
-        if provided, all requests will be made through this proxy, as well as
-        web socket connections for streamers.
     :param client_kwargs:
         additional keyword arguments, besides proxy, to pass to the httpx
         AsyncClient, such as `timeout`
@@ -271,13 +268,10 @@ class Session(AsyncContextManagerMixin):
         provider_secret: str | None = None,
         refresh_token: str | None = None,
         is_test: bool = False,
-        proxy: str | None = None,
         **client_kwargs: Any,
     ):
         #: Whether this is a cert or real session
         self.is_test = is_test
-        #: Proxy URL to use for requests and web sockets
-        self.proxy = proxy
         #: OAuth secret for your provider
         self.provider_secret = provider_secret or os.environ["TT_SECRET"]
         #: Refresh token for the user
@@ -294,7 +288,6 @@ class Session(AsyncContextManagerMixin):
         self._client = AsyncClient(
             base_url=(CERT_URL if is_test else API_URL),
             headers=headers,
-            proxy=proxy,
             **client_kwargs,
         )
         self.client_kwargs = client_kwargs
