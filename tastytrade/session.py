@@ -258,6 +258,9 @@ class Session(AsyncContextManagerMixin):
     :param proxy:
         if provided, all requests will be made through this proxy, as well as
         web socket connections for streamers.
+    :param client_kwargs:
+        additional keyword arguments, besides proxy, to pass to the httpx
+        AsyncClient, such as `timeout`
     """
 
     def __init__(
@@ -266,6 +269,7 @@ class Session(AsyncContextManagerMixin):
         refresh_token: str,
         is_test: bool = False,
         proxy: str | None = None,
+        **client_kwargs: Any,
     ):
         #: Whether this is a cert or real session
         self.is_test = is_test
@@ -285,8 +289,12 @@ class Session(AsyncContextManagerMixin):
         self.session_token = "kyrieeleison"
         # httpx client for all requests
         self._client = AsyncClient(
-            base_url=(CERT_URL if is_test else API_URL), headers=headers, proxy=proxy
+            base_url=(CERT_URL if is_test else API_URL),
+            headers=headers,
+            proxy=proxy,
+            **client_kwargs,
         )
+        self.client_kwargs = client_kwargs
         self._lock = Lock()
 
     @asynccontextmanager
@@ -312,6 +320,7 @@ class Session(AsyncContextManagerMixin):
         """
         Serializes the session to a string, useful for storing a session for later use.
         Could be used with pickle, Redis, etc.
+        Only sessions with JSON serializable client_kwargs can be serialized.
         """
         attrs = self.__dict__.copy()
         del attrs["_client"]
@@ -329,6 +338,7 @@ class Session(AsyncContextManagerMixin):
             refresh_token=deserialized["refresh_token"],
             is_test=deserialized["is_test"],
             proxy=deserialized["proxy"],
+            **deserialized.get("client_kwargs", {}),
         )
         self.session_expiration = deserialized["session_expiration"]
         self.session_token = deserialized["session_token"]
