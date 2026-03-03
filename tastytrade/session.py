@@ -259,8 +259,7 @@ class Session(AsyncContextManagerMixin):
     :param is_test:
         whether to use the test API endpoints, default False
     :param client_kwargs:
-        additional keyword arguments, besides proxy, to pass to the httpx
-        AsyncClient, such as `timeout`
+        additional keyword arguments to pass to the httpx AsyncClient, such as `timeout`
     """
 
     def __init__(
@@ -333,7 +332,6 @@ class Session(AsyncContextManagerMixin):
             provider_secret=deserialized["provider_secret"],
             refresh_token=deserialized["refresh_token"],
             is_test=deserialized["is_test"],
-            proxy=deserialized["proxy"],
             **deserialized.get("client_kwargs", {}),
         )
         self.session_expiration = deserialized["session_expiration"]
