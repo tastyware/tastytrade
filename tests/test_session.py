@@ -1,5 +1,4 @@
 import json
-import os
 
 import pytest
 from proxy import TestCase
@@ -9,16 +8,11 @@ from tastytrade import Session
 pytestmark = pytest.mark.anyio
 
 
-@pytest.fixture(scope="module")
-def session_with_kwargs(anyio_backend: str) -> Session:
-    return Session(os.environ["TT_SECRET"], os.environ["TT_REFRESH"], timeout=10.0)
-
-
 async def test_get_customer(session: Session):
     await session.get_customer()
 
 
-def test_serialize_deserialize(session: Session, session_with_kwargs: Session):
+def test_serialize_deserialize(session: Session):
     # No client_kwargs
     data = session.serialize()
     obj = Session.deserialize(data)
@@ -30,6 +24,7 @@ def test_serialize_deserialize(session: Session, session_with_kwargs: Session):
     legacy_obj = Session.deserialize(json.dumps(legacy_payload))
     assert legacy_obj.client_kwargs == {}
     # With timeout client_kwargs
+    session_with_kwargs = Session(timeout=10.0)
     data_with_kwargs = session_with_kwargs.serialize()
     obj_with_kwargs = Session.deserialize(data_with_kwargs)
     assert set(obj_with_kwargs.__dict__.keys()) == set(

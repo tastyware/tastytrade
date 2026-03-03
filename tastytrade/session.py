@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 from contextlib import asynccontextmanager
 from datetime import date, datetime
@@ -251,8 +252,10 @@ class Session(AsyncContextManagerMixin):
 
     Prefer using with its async context manager to ensure proper cleanup.
 
-    :param provider_secret: OAuth secret for your provider
-    :param refresh_token: refresh token for the user
+    :param provider_secret:
+        OAuth secret for your provider; defaults to the $TT_SECRET environment variable
+    :param refresh_token:
+        refresh token for the user; defaults to the $TT_REFRESH environment variable
     :param is_test:
         whether to use the test API endpoints, default False
     :param proxy:
@@ -265,8 +268,8 @@ class Session(AsyncContextManagerMixin):
 
     def __init__(
         self,
-        provider_secret: str,
-        refresh_token: str,
+        provider_secret: str | None = None,
+        refresh_token: str | None = None,
         is_test: bool = False,
         proxy: str | None = None,
         **client_kwargs: Any,
@@ -276,9 +279,9 @@ class Session(AsyncContextManagerMixin):
         #: Proxy URL to use for requests and web sockets
         self.proxy = proxy
         #: OAuth secret for your provider
-        self.provider_secret = provider_secret
+        self.provider_secret = provider_secret or os.environ["TT_SECRET"]
         #: Refresh token for the user
-        self.refresh_token = refresh_token
+        self.refresh_token = refresh_token or os.environ["TT_REFRESH"]
         # The headers to use for API requests
         headers = {"Accept": "application/json", "Content-Type": "application/json"}
         if not is_test:  # not accepted in sandbox
