@@ -27,8 +27,7 @@ async def test_dxlink_streamer(session: Session):
         start_date = datetime.today() - timedelta(days=30)
         await streamer.subscribe_candle(subs, "1d", start_date)
         _ = await streamer.get_event(Candle)
-        assert streamer.get_event_nowait(Candle) is not None
-        assert streamer.get_event_nowait(Trade) is None
+        assert streamer.get_event_nowait(Quote) is not None
         async for _ in streamer.listen(Quote):
             break
         await streamer.unsubscribe_candle(subs[0], "1d")

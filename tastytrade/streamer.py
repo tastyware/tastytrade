@@ -441,7 +441,7 @@ class DXLinkStreamer(AsyncContextManagerMixin):
             message: DXLinkMessage = await self._websocket.receive_json()
             logger.debug("received: %s", message)
             if message["type"] == "FEED_DATA":
-                await self._map_message(message["data"])
+                self._map_message(message["data"])
             elif message["type"] == "SETUP":
                 await self._authenticate_connection()
             elif message["type"] == "AUTH_STATE":
@@ -483,7 +483,7 @@ class DXLinkStreamer(AsyncContextManagerMixin):
         }
         await self._websocket.send_json(message)
 
-    async def _map_message(self, message: list[Any]) -> None:
+    def _map_message(self, message: list[Any]) -> None:
         # takes the JSON data, parses the events and places them into their queues
         logger.debug("received message: %s", message)
         if isinstance(message[0], str):
