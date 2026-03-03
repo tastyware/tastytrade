@@ -336,12 +336,20 @@ class Session(AsyncContextManagerMixin):
         self._client.headers.update(auth_headers)
         return self
 
-    async def _refresh(self) -> None:
+    async def refresh(self, force: bool = False) -> None:
+        """
+        Manually trigger a refresh of the session token.
+
+        Usually unnecessary, unless you want to make sure sessions are "pre-warmed"
+        prior to making a request for improved latency.
+
+        :param force: whether to refresh the session even if it's still valid
+        """
         # only refresh if needed; use 60 second buffer
-        if time.time() < self.session_expiration - 60:
+        if not force and time.time() < self.session_expiration - 60:
             return
         async with self._lock:
-            if time.time() < self.session_expiration - 60:
+            if not force and time.time() < self.session_expiration - 60:
                 return
             request = self._client.build_request(
                 "POST",
@@ -367,22 +375,22 @@ class Session(AsyncContextManagerMixin):
             self._client.headers.update(auth_headers)
 
     async def _get(self, url: str, **kwargs: Any) -> dict[str, Any]:
-        await self._refresh()
+        await self.refresh()
         response = await self._client.get(url, **kwargs)
         return validate_and_parse(response)
 
     async def _delete(self, url: str, **kwargs: Any) -> None:
-        await self._refresh()
+        await self.refresh()
         response = await self._client.delete(url, **kwargs)
         validate_response(response)
 
     async def _post(self, url: str, **kwargs: Any) -> dict[str, Any]:
-        await self._refresh()
+        await self.refresh()
         response = await self._client.post(url, **kwargs)
         return validate_and_parse(response)
 
     async def _put(self, url: str, **kwargs: Any) -> dict[str, Any]:
-        await self._refresh()
+        await self.refresh()
         response = await self._client.put(url, **kwargs)
         return validate_and_parse(response)
 
@@ -400,7 +408,7 @@ class Session(AsyncContextManagerMixin):
             params["page-offset"] = 0
             paginate = True
         params = {k: v for k, v in params.items() if v is not None}
-        await self._refresh()
+        await self.refresh()
         # loop through pages and get all transactions
         while True:
             response = await self._client.get(url, params=params)

@@ -55,7 +55,12 @@ from tastytrade.dxfeed import (
 )
 from tastytrade.order import InstrumentType, PlacedComplexOrder, PlacedOrder
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeData, TastytradeError, set_sign_for
+from tastytrade.utils import (
+    TastytradeData,
+    TastytradeError,
+    intuitive_iterable,
+    set_sign_for,
+)
 from tastytrade.watchlists import Watchlist
 
 CERT_STREAMER_URL = "wss://streamer.cert.tastyworks.com"
@@ -298,7 +303,7 @@ class AlertStreamer(AsyncContextManagerMixin):
         Subscribes to a :class:`SubscriptionType`. Depending on the kind of
         subscription, the value parameter may be required.
         """
-        await self.session._refresh()
+        await self.session.refresh()
         self.request_id += 1
         message: dict[str, Any] = {
             "auth-token": f"Bearer {self.session.session_token}",
@@ -604,7 +609,10 @@ class DXLinkStreamer(AsyncContextManagerMixin):
         message = {
             "type": "FEED_SUBSCRIPTION",
             "channel": self._channels[cls_str],
-            "add": [{"symbol": symbol, "type": cls_str} for symbol in symbols],
+            "add": [
+                {"symbol": symbol, "type": cls_str}
+                for symbol in intuitive_iterable(symbols)
+            ],
         }
         logger.debug("sending subscription: %s", message)
         await self._websocket.send_json(message)
@@ -636,7 +644,10 @@ class DXLinkStreamer(AsyncContextManagerMixin):
         message = {
             "type": "FEED_SUBSCRIPTION",
             "channel": self._channels[cls_str],
-            "remove": [{"symbol": symbol, "type": cls_str} for symbol in symbols],
+            "remove": [
+                {"symbol": symbol, "type": cls_str}
+                for symbol in intuitive_iterable(symbols)
+            ],
         }
         logger.debug("sending subscription: %s", message)
         await self._websocket.send_json(message)
@@ -645,7 +656,7 @@ class DXLinkStreamer(AsyncContextManagerMixin):
         self,
         symbols: Iterable[str],
         interval: str,
-        start_time: datetime,
+        start_time: datetime | None = None,
         extended_trading_hours: bool = False,
         refresh_interval: float = 0.1,
     ) -> None:
@@ -656,7 +667,7 @@ class DXLinkStreamer(AsyncContextManagerMixin):
         :param interval:
             the width of each candle in time, e.g. '15s', '5m', '1h', '3d',
             '1w', '1mo'
-        :param start_time: starting time for the data range
+        :param start_time: starting time for the data range, defaults to 9/9/2001.
         :param extended_trading_hours: whether to include extended trading
         :param refresh_interval:
             Time in seconds between fetching new events from dxfeed for this event type.
@@ -670,7 +681,7 @@ class DXLinkStreamer(AsyncContextManagerMixin):
             await self._channel_request(cls_str, refresh_interval)
         # always wait here to prevent race condition with multiple subscribes
         await self._subscription_state[cls_str].wait()
-        ts = int(start_time.timestamp() * 1000)
+        ts = round(start_time.timestamp() * 1000 if start_time else 1e9)
         message = {
             "type": "FEED_SUBSCRIPTION",
             "channel": self._channels[cls_str],
@@ -684,7 +695,7 @@ class DXLinkStreamer(AsyncContextManagerMixin):
                     "type": cls_str,
                     "fromTime": ts,
                 }
-                for ticker in symbols
+                for ticker in intuitive_iterable(symbols)
             ],
         }
         await self._websocket.send_json(message)

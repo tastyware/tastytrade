@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from enum import Enum
 from json import JSONDecodeError
-from typing import Any, cast
+from typing import Any, Iterable, cast
 from zoneinfo import ZoneInfo
 
 from httpx import Response
@@ -25,6 +25,18 @@ class PriceEffect(str, Enum):
     CREDIT = "Credit"
     DEBIT = "Debit"
     NONE = "None"
+
+
+def intuitive_iterable(var: Iterable[str]) -> Iterable[str]:
+    """
+    Make passing a raw string safe, since type checkers can't easily warn here.
+
+    Foe example, if someone passes "SPY" we can safely assume they didn't mean to pass
+    "S", "P", and "Y".
+    """
+    if isinstance(var, str):
+        return [var]
+    return var
 
 
 def now_in_new_york() -> datetime:

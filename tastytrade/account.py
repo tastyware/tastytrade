@@ -20,6 +20,7 @@ from tastytrade.utils import (
     PriceEffect,
     TastytradeData,
     TastytradeError,
+    intuitive_iterable,
     set_sign_for,
     today_in_new_york,
 )
@@ -580,12 +581,16 @@ class Account(TastytradeData):
             include current quote mark (note: can decrease performance).
         """
         params = {
-            "underlying-symbol[]": underlying_symbols,
+            "underlying-symbol[]": intuitive_iterable(underlying_symbols)
+            if underlying_symbols
+            else None,
             "symbol": symbol,
             "instrument-type": instrument_type.value if instrument_type else None,
             "include-closed-positions": include_closed,
             "underlying-product-code": underlying_product_code,
-            "partition-keys[]": partition_keys,
+            "partition-keys[]": intuitive_iterable(partition_keys)
+            if partition_keys
+            else None,
             "net-positions": net_positions,
             "include-marks": include_marks,
         }
@@ -646,8 +651,8 @@ class Account(TastytradeData):
             "page-offset": page_offset,
             "sort": sort,
             "type": type,
-            "types[]": types,
-            "sub-type[]": sub_types,
+            "types[]": intuitive_iterable(types) if types else None,
+            "sub-type[]": intuitive_iterable(sub_types) if sub_types else None,
             "start-date": start_date,
             "end-date": end_date,
             "instrument-type": instrument_type.value if instrument_type else None,

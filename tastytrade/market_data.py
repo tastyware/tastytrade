@@ -5,7 +5,7 @@ from typing import Iterable
 
 from tastytrade.order import InstrumentType
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeData
+from tastytrade.utils import TastytradeData, intuitive_iterable
 
 
 class ExchangeType(str, Enum):
@@ -149,6 +149,6 @@ async def get_market_data_by_type(
         "future-option": future_options,
         "cryptocurrency": cryptocurrencies,
     }
-    params = {k: v for k, v in params.items() if v}
+    params = {k: intuitive_iterable(v) for k, v in params.items() if v}
     data = await session._get("/market-data/by-type", params=params)
     return [MarketData(**i) for i in data["items"]]

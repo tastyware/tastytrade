@@ -203,7 +203,7 @@ class Cryptocurrency(TradeableTastytradeData):
     active: bool
     tick_size: Decimal
     destination_venue_symbols: list[DestinationVenueSymbol]
-    streamer_symbol: str | None = None
+    streamer_symbol: str
 
     @overload
     @classmethod
@@ -219,7 +219,7 @@ class Cryptocurrency(TradeableTastytradeData):
     async def get(
         cls,
         session: Session,
-        symbols: str | Iterable[str] | None = None,
+        symbols: Iterable[str] | None = None,
     ) -> Self | list[Self]:
         """
         Returns a list of cryptocurrency objects from the given symbols,
@@ -312,7 +312,7 @@ class Equity(TradeableTastytradeData):
     async def get(
         cls,
         session: Session,
-        symbols: str | Iterable[str],
+        symbols: Iterable[str],
         per_page: int = 250,
         page_offset: int | None = 0,
         lendability: str | None = None,
@@ -403,7 +403,7 @@ class Option(TradeableTastytradeData):
     async def get(
         cls,
         session: Session,
-        symbols: str | Iterable[str],
+        symbols: Iterable[str],
         *,
         active: bool | None = None,
         per_page: int = 250,
@@ -656,7 +656,7 @@ class Future(TradeableTastytradeData):
     async def get(
         cls,
         session: Session,
-        symbols: str | Iterable[str] | None = None,
+        symbols: Iterable[str] | None = None,
         *,
         product_codes: list[str] | None = None,
         per_page: int = 250,
@@ -819,7 +819,7 @@ class FutureOption(TradeableTastytradeData):
     async def get(
         cls,
         session: Session,
-        symbols: str | Iterable[str],
+        symbols: Iterable[str],
         *,
         root_symbol: str | None = None,
         expiration_date: date | None = None,
@@ -924,7 +924,7 @@ class Warrant(TastytradeData):
 
     @classmethod
     async def get(
-        cls, session: Session, symbols: str | Iterable[str] | None = None
+        cls, session: Session, symbols: Iterable[str] | None = None
     ) -> Self | list[Self]:
         """
         Returns a list of Warrant objects from the given symbols, or a single

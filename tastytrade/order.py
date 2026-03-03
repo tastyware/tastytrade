@@ -9,6 +9,7 @@ from tastytrade import version_str
 from tastytrade.utils import (
     PriceEffect,
     TastytradeData,
+    TastytradeError,
     get_sign,
     set_sign_for,
 )
@@ -140,6 +141,14 @@ class Leg(TastytradeData):
     quantity: Decimal | int | None = None
     remaining_quantity: Decimal | None = None
     fills: list[FillInfo] | None = None
+
+    @property
+    def multiplier(self) -> Decimal | int:
+        if self.quantity is None:
+            raise TastytradeError(
+                "Can't calculate multiplier for legs without a quantity!"
+            )
+        return self.action.multiplier * self.quantity
 
 
 class TradeableTastytradeData(TastytradeData):

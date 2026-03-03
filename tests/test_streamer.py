@@ -44,7 +44,7 @@ class TestProxy(TestCase, IsolatedAsyncioTestCase):
             *self.credentials,  # type: ignore
             proxy=f"http://127.0.0.1:{self.PROXY.flags.port}",
         )
-        await session._refresh()
+        await session.refresh()
         assert await session.validate()
         async with DXLinkStreamer(session) as streamer:
             await streamer.subscribe(Quote, ["SPY"])

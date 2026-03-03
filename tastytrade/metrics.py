@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Iterable
 
 from tastytrade.session import Session
-from tastytrade.utils import TastytradeData, validate_and_parse
+from tastytrade.utils import TastytradeData, intuitive_iterable, validate_and_parse
 
 
 class DividendInfo(TastytradeData):
@@ -122,7 +122,9 @@ async def get_market_metrics(
     :param session: active user session to use
     :param symbols: list of symbols to retrieve metrics for
     """
-    data = await session._get("/market-metrics", params={"symbols": ",".join(symbols)})
+    data = await session._get(
+        "/market-metrics", params={"symbols": ",".join(intuitive_iterable(symbols))}
+    )
     return [MarketMetricInfo(**i) for i in data["items"]]
 
 
