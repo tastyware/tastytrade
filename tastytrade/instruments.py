@@ -5,7 +5,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any, Iterable, Self, overload
 
-from pydantic import field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from tastytrade.order import InstrumentType, TradeableTastytradeData
 from tastytrade.session import Session
@@ -938,6 +938,29 @@ class Warrant(TastytradeData):
             return cls(**data)
         params = {"symbol[]": symbols} if symbols else None
         data = await session._get("/instruments/warrants", params=params)
+        return [cls(**i) for i in data["items"]]
+
+
+class Forex(TastytradeData):
+    """
+    Dataclass that represents a Tastytrade currency pair object. Contains
+    information about the pair and ways to stream it.
+    """
+
+    id: int
+    description: str
+    streamer_symbol: str = Field(alias="dx-symbol")
+    symbol: str
+    instrument_type: InstrumentType
+
+    @classmethod
+    async def get(cls, session: Session) -> list[Self]:
+        """
+        Returns a list of all Forex objects from the API.
+
+        :param session: the session to use for the request.
+        """
+        data = await session._get("/instruments/currency-pairs")
         return [cls(**i) for i in data["items"]]
 
 

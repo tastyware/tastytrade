@@ -87,7 +87,9 @@ class OrderTimeInForce(str, Enum):
     GTC = "GTC"
     GTD = "GTD"
     EXT = "Ext"
+    OVERNIGHT = "Ext Overnight"
     GTC_EXT = "GTC Ext"
+    GTC_OVERNIGHT = "GTC Ext Overnight"
     IOC = "IOC"
 
 
