@@ -42,6 +42,8 @@ def test_bad_extra_data():
 
 def test_missing_size_data():
     missing_size_data = ["SPY", 0, 0, 0, 0, "Q", 0, "Q", 576.88, 576.9, "NaN", "NaN"]
-    quote = Quote.from_stream(quote_data + missing_size_data)[1]
-    assert quote.bid_size == _ZERO
-    assert quote.ask_size == _ZERO
+    quotes = Quote.from_stream(quote_data + missing_size_data)
+    assert quotes[0].bid_size == quote_data[-2]
+    assert quotes[0].ask_size == quote_data[-1]
+    assert quotes[1].bid_size == _ZERO
+    assert quotes[1].ask_size == _ZERO
