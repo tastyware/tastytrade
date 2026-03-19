@@ -1,6 +1,7 @@
 import pytest
 
 from tastytrade.dxfeed import Quote, Summary
+from tastytrade.dxfeed.quote import _ZERO
 from tastytrade.utils import TastytradeError
 
 
@@ -37,3 +38,10 @@ def test_wrong_number_data_fields():
 def test_bad_extra_data():
     extra_data = ["SPY", 0, "bad", 0, 0, "Q", 0, "Q", 576.88, 576.9, 230.0, 300.0]
     _ = Quote.from_stream(quote_data + extra_data)
+
+
+def test_missing_size_data():
+    missing_size_data = ["SPY", 0, 0, 0, 0, "Q", 0, "Q", 576.88, 576.9, "NaN", "NaN"]
+    quote = Quote.from_stream(quote_data + missing_size_data)[1]
+    assert quote.bid_size == _ZERO
+    assert quote.ask_size == _ZERO

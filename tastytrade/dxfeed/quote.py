@@ -1,9 +1,12 @@
 from decimal import Decimal
 
+from pydantic import field_validator
+
 from .. import logger
 from .event import Event
 
 _ZERO = Decimal(0)
+_NaN = "NaN"
 
 
 class Quote(Event):
@@ -30,10 +33,20 @@ class Quote(Event):
     ask_price: Decimal
     #: bid size as integer number (rounded toward zero)
     #: or decimal for cryptocurrencies
-    bid_size: Decimal = _ZERO
+    bid_size: Decimal
     #: ask size as integer number (rounded toward zero)
     #: or decimal for cryptocurrencies
-    ask_size: Decimal = _ZERO
+    ask_size: Decimal
+
+    @field_validator("bid_size", "ask_size", mode="before")
+    @classmethod
+    def _coerce_missing_sizes(cls, v: Decimal | str | None) -> Decimal | str:
+        """
+        Treat missing size values from dxfeed as zero.
+        """
+        if v is None or v == _NaN:
+            return _ZERO
+        return v
 
     @property
     def mid_price(self) -> Decimal:
