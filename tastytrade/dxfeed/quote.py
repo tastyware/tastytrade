@@ -1,9 +1,8 @@
 from decimal import Decimal
+from typing import Optional
 
 from .. import logger
 from .event import Event
-
-_ZERO = Decimal(0)
 
 
 class Quote(Event):
@@ -29,11 +28,13 @@ class Quote(Event):
     #: ask price
     ask_price: Decimal
     #: bid size as integer number (rounded toward zero)
-    #: or decimal for cryptocurrencies
-    bid_size: Decimal = _ZERO
+    #: or decimal for cryptocurrencies.
+    #: None for index symbols where DXLink sends NaN (indices have no order book).
+    bid_size: Optional[Decimal] = None
     #: ask size as integer number (rounded toward zero)
-    #: or decimal for cryptocurrencies
-    ask_size: Decimal = _ZERO
+    #: or decimal for cryptocurrencies.
+    #: None for index symbols where DXLink sends NaN (indices have no order book).
+    ask_size: Optional[Decimal] = None
 
     @property
     def mid_price(self) -> Decimal:
@@ -47,6 +48,9 @@ class Quote(Event):
         """
         Average of bid and ask price weighted by their sizes
         """
+        if self.bid_size is None or self.ask_size is None:
+            logger.warning("Can't compute micro price without sizing!")
+            return self.mid_price
         total_size = self.bid_size + self.ask_size
         if not total_size:  # check for zero, fallback to mid
             logger.warning("Can't compute micro price without sizing!")
