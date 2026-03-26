@@ -3,7 +3,7 @@ name: Python application
 on:
   push:
     branches: [ master ]
-  pull_request:
+  pull_request_target:
     branches: [ master ]
 
 jobs:
@@ -19,6 +19,8 @@ jobs:
           - "3.14"
     steps:
     - uses: actions/checkout@v5
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
     - name: Install uv and Python
       uses: astral-sh/setup-uv@v6
       with:

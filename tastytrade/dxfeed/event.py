@@ -2,11 +2,19 @@ from __future__ import annotations
 
 from typing import Any, Self
 
-from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    ValidationError,
+    ValidationInfo,
+    field_validator,
+)
 from pydantic.alias_generators import to_camel
+from pydantic_core import PydanticUndefined
 
 from tastytrade.utils import TastytradeError
 
+NAN_VALUES = frozenset({"NaN", "Infinity", "-Infinity"})
 REMOVE_EVENT = 0x2
 SNAPSHOT_BEGIN = 0x4
 SNAPSHOT_END = 0x8
@@ -29,9 +37,10 @@ class Event(BaseModel):
 
     @field_validator("*", mode="before")
     @classmethod
-    def change_nan_to_none(cls, v: Any) -> Any:
-        if v in {"NaN", "Infinity", "-Infinity"}:
-            return None
+    def change_nan_to_none(cls, v: Any, info: ValidationInfo) -> Any:
+        if v in NAN_VALUES and info.field_name:
+            default = cls.model_fields[info.field_name].default
+            return default if default is not PydanticUndefined else None
         return v
 
     @classmethod
