@@ -77,7 +77,7 @@ dev = [
 where = ["tastytrade"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]
+select = ["E", "F", "I", "UP"]
 
 [tool.pyright]
 pythonVersion = "3.11"

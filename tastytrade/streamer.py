@@ -3,16 +3,14 @@ from __future__ import annotations
 import math
 import warnings
 from collections import defaultdict
-from collections.abc import AsyncIterator
-from contextlib import AsyncExitStack, asynccontextmanager
+from collections.abc import AsyncGenerator, AsyncIterator, Iterable
+from contextlib import asynccontextmanager
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from ssl import SSLContext, create_default_context
 from typing import (
     Any,
-    AsyncGenerator,
-    Iterable,
     Self,
     TypeAlias,
     TypedDict,
@@ -233,18 +231,13 @@ class AlertStreamer(AsyncContextManagerMixin):
 
     @asynccontextmanager
     async def __asynccontextmanager__(self) -> AsyncGenerator[Self]:
-        async with AsyncExitStack() as stack:
-            client = await stack.enter_async_context(
-                AsyncClient(**self.session.client_kwargs)
-            )
-            self._websocket = await stack.enter_async_context(
-                aconnect_ws(self.base_url, client=client)
-            )
-            logger.debug("Websocket connection established.")
-            async with create_task_group() as tg:
-                tg.start_soon(self._reader)
-                yield self
-                tg.cancel_scope.cancel()
+        async with AsyncClient(**self.session.client_kwargs) as client:
+            async with aconnect_ws(self.base_url, client=client) as self._websocket:
+                logger.debug("Websocket connection established.")
+                async with create_task_group() as tg:
+                    tg.start_soon(self._reader)
+                    yield self
+                    tg.cancel_scope.cancel()
 
     async def _reader(self) -> None:
         while True:

@@ -1,6 +1,6 @@
+from collections.abc import Iterable
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Iterable
 
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeData, intuitive_iterable, validate_and_parse

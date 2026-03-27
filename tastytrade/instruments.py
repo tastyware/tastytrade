@@ -1,9 +1,10 @@
 import re
 from collections import defaultdict
+from collections.abc import Iterable
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Iterable, Self, overload
+from typing import Any, Self, overload
 
 from pydantic import Field, field_validator, model_validator
 
@@ -437,9 +438,9 @@ class Option(TradeableTastytradeData):
 
     def _set_streamer_symbol(self) -> None:
         if self.strike_price % 1 == 0:
-            strike = "{0:.0f}".format(self.strike_price)
+            strike = f"{self.strike_price:.0f}"
         else:
-            strike = "{0:.2f}".format(self.strike_price)
+            strike = f"{self.strike_price:.2f}"
             if strike[-1] == "0":
                 strike = strike[:-1]
 

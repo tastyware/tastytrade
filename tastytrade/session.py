@@ -3,9 +3,10 @@ from __future__ import annotations
 import json
 import os
 import time
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import date, datetime
-from typing import Any, AsyncGenerator, Self, TypeVar
+from typing import Any, Self, TypeVar
 
 from anyio import AsyncContextManagerMixin, Lock
 from httpx import AsyncClient

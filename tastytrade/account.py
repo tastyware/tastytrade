@@ -1,6 +1,7 @@
+from collections.abc import Iterable
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Iterable, Literal, Self, cast, overload
+from typing import Any, Literal, Self, cast, overload
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -168,7 +169,7 @@ class CurrentPosition(TastytradeData):
     quantity_direction: str
     close_price: Decimal
     average_open_price: Decimal
-    multiplier: int
+    multiplier: Decimal
     cost_effect: str
     is_suppressed: bool
     is_frozen: bool

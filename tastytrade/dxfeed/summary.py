@@ -1,5 +1,4 @@
 from decimal import Decimal
-from typing import Optional
 
 from .event import Event
 
@@ -28,14 +27,14 @@ class Summary(Event):
     #: open interest of the symbol as the number of open contracts
     open_interest: int
     #: the first (open) price for the day
-    day_open_price: Optional[Decimal] = None
+    day_open_price: Decimal | None = None
     #: the maximal (high) price for the day
-    day_high_price: Optional[Decimal] = None
+    day_high_price: Decimal | None = None
     #: the minimal (low) price for the day
-    day_low_price: Optional[Decimal] = None
+    day_low_price: Decimal | None = None
     #: the last (close) price for the day
-    day_close_price: Optional[Decimal] = None
+    day_close_price: Decimal | None = None
     #: the last (close) price for the previous day
-    prev_day_close_price: Optional[Decimal] = None
+    prev_day_close_price: Decimal | None = None
     #: total volume traded for the previous day
-    prev_day_volume: Optional[Decimal] = None
+    prev_day_volume: Decimal | None = None

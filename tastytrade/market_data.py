@@ -1,7 +1,7 @@
+from collections.abc import Iterable
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Iterable
 
 from tastytrade.order import InstrumentType
 from tastytrade.session import Session

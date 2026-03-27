@@ -1,5 +1,4 @@
 from decimal import Decimal
-from typing import Optional
 
 from .event import Event
 
@@ -31,10 +30,10 @@ class Trade(Event):
     #: price of the last trade
     price: Decimal
     #: change of the last trade
-    change: Optional[Decimal] = None
+    change: Decimal | None = None
     #: size of the last trade as integer number (rounded toward zero)
-    size: Optional[int] = None
+    size: int | None = None
     #: total vlume traded for a day as integer number (rounded toward zero)
-    day_volume: Optional[int] = None
+    day_volume: int | None = None
     #: total turnover traded for a day
-    day_turnover: Optional[Decimal] = None
+    day_turnover: Decimal | None = None

@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Annotated, Any, Optional, cast
+from typing import Annotated, Any, cast
 
 from pydantic import (
     ValidationError,
@@ -39,17 +39,17 @@ class Candle(IndexedEvent):
     #: total number of events in the candle
     count: int
     #: the total volume of the candle
-    volume: Optional[Decimal] = None
+    volume: Decimal | None = None
     #: volume-weighted average price
-    vwap: Optional[Decimal] = None
+    vwap: Decimal | None = None
     #: bid volume in the candle
-    bid_volume: Optional[Decimal] = None
+    bid_volume: Decimal | None = None
     #: ask volume in the candle
-    ask_volume: Optional[Decimal] = None
+    ask_volume: Decimal | None = None
     #: implied volatility in the candle
-    imp_volatility: Optional[Decimal] = None
+    imp_volatility: Decimal | None = None
     #: open interest in the candle
-    open_interest: Optional[int] = None
+    open_interest: int | None = None
     #: the first (open) price of the candle
     open: ZeroFromNone
     #: the maximal (high) price of the candle

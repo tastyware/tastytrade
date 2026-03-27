@@ -1,3 +1,4 @@
+import math
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
@@ -354,6 +355,16 @@ class PlacedOrder(TastytradeData):
     @classmethod
     def validate_price_effects(cls, data: Any) -> Any:
         return set_sign_for(data, ["price", "value"])
+
+    def average_fill_price(self) -> Decimal:
+        total_price = Decimal(0)
+        for leg in self.legs:
+            if not leg.fills:
+                raise TastytradeError("Can't calculate fill price without fills!")
+            for fill in leg.fills:
+                total_price += leg.action.multiplier * fill.fill_price * fill.quantity
+        size = self.size or math.gcd(*[int(leg.quantity or 0) for leg in self.legs])
+        return total_price / size
 
 
 class PlacedComplexOrder(TastytradeData):

@@ -1,8 +1,9 @@
+from collections.abc import Iterable
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from enum import Enum
 from json import JSONDecodeError
-from typing import Any, Iterable, cast
+from typing import Any, cast
 from zoneinfo import ZoneInfo
 
 from httpx import Response
