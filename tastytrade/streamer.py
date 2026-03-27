@@ -37,7 +37,12 @@ from anyio.abc import TaskStatus
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 from anyio.streams.stapled import StapledObjectStream
 from httpx import AsyncClient
-from httpx_ws import AsyncWebSocketSession, WebSocketDisconnect, aconnect_ws
+from httpx_ws import (
+    AsyncWebSocketSession,
+    WebSocketDisconnect,
+    WebSocketNetworkError,
+    aconnect_ws,
+)
 from pydantic import model_validator
 
 from tastytrade import logger, version_str
@@ -57,6 +62,7 @@ from tastytrade.dxfeed import (
 from tastytrade.order import InstrumentType, PlacedComplexOrder, PlacedOrder
 from tastytrade.session import Session
 from tastytrade.utils import (
+    StreamerDisconnect,
     TastytradeData,
     TastytradeError,
     intuitive_iterable,
@@ -247,12 +253,17 @@ class AlertStreamer(AsyncContextManagerMixin):
                 tg.cancel_scope.cancel()
 
     async def _reader(self) -> None:
-        while True:
-            data = await self._websocket.receive_json()
-            logger.debug("received message: %s", data)
-            type_str = data.get("type")
-            if type_str is not None:
-                await self._map_message(type_str, data["data"])
+        try:
+            while True:
+                data = await self._websocket.receive_json()
+                logger.debug("received message: %s", data)
+                type_str = data.get("type")
+                if type_str is not None:
+                    await self._map_message(type_str, data["data"])
+        except WebSocketDisconnect as e:
+            raise StreamerDisconnect(code=e.code, reason=e.reason) from None
+        except WebSocketNetworkError:
+            raise StreamerDisconnect(reason="network error") from None
 
     async def listen(self, alert_class: type[T]) -> AsyncIterator[T]:
         """
@@ -411,6 +422,8 @@ class DXLinkStreamer(AsyncContextManagerMixin):
                         # fix until httpx-ws issue #107 is resolved
                         with CancelScope(shield=True):
                             await self._websocket.close()
+            except* StreamerDisconnect as eg:
+                raise eg.exceptions[0] from None
             except* WebSocketDisconnect as eg:
                 if eg.subgroup(lambda e: getattr(e, "code", None) == 1009):
                     raise TastytradeError(
@@ -441,33 +454,40 @@ class DXLinkStreamer(AsyncContextManagerMixin):
             type: str
 
         await self._setup_connection()
-        while True:
-            message: DXLinkMessage = await self._websocket.receive_json()
-            logger.debug("received: %s", message)
-            if message["type"] == "FEED_DATA":
-                self._map_message(message["data"])
-            elif message["type"] == "SETUP":
-                await self._authenticate_connection()
-            elif message["type"] == "AUTH_STATE":
-                if message["state"] == "AUTHORIZED":
-                    logger.debug("Websocket connection established.")
-                    task_status.started()
-            elif message["type"] == "CHANNEL_OPENED":
-                key = self._channels_reversed[message["channel"]]
-                self._subscription_state[key].set()
-                logger.debug("Channel opened: %s", message)
-            elif message["type"] == "CHANNEL_CLOSED":
-                key = self._channels_reversed[message["channel"]]
-                del self._subscription_state[key]
-                logger.debug("Channel closed: %s", message)
-            elif message["type"] == "FEED_CONFIG":
-                logger.debug("Feed configured: %s", message)
-            elif message["type"] == "KEEPALIVE":
-                pass
-            elif message["type"] == "ERROR":
-                raise TastytradeError(f"Fatal streamer error: {message['message']}")
-            else:
-                logger.error(f"Unknown message: {message}")
+        try:
+            while True:
+                message: DXLinkMessage = await self._websocket.receive_json()
+                logger.debug("received: %s", message)
+                if message["type"] == "FEED_DATA":
+                    self._map_message(message["data"])
+                elif message["type"] == "SETUP":
+                    await self._authenticate_connection()
+                elif message["type"] == "AUTH_STATE":
+                    if message["state"] == "AUTHORIZED":
+                        logger.debug("Websocket connection established.")
+                        task_status.started()
+                elif message["type"] == "CHANNEL_OPENED":
+                    key = self._channels_reversed[message["channel"]]
+                    self._subscription_state[key].set()
+                    logger.debug("Channel opened: %s", message)
+                elif message["type"] == "CHANNEL_CLOSED":
+                    key = self._channels_reversed[message["channel"]]
+                    del self._subscription_state[key]
+                    logger.debug("Channel closed: %s", message)
+                elif message["type"] == "FEED_CONFIG":
+                    logger.debug("Feed configured: %s", message)
+                elif message["type"] == "KEEPALIVE":
+                    pass
+                elif message["type"] == "ERROR":
+                    raise TastytradeError(
+                        f"Fatal streamer error: {message['message']}"
+                    )
+                else:
+                    logger.error(f"Unknown message: {message}")
+        except WebSocketDisconnect as e:
+            raise StreamerDisconnect(code=e.code, reason=e.reason) from None
+        except WebSocketNetworkError:
+            raise StreamerDisconnect(reason="network error") from None
 
     async def _setup_connection(self) -> None:
         message = {

@@ -226,6 +226,19 @@ class TastytradeError(Exception):
     pass
 
 
+class StreamerDisconnect(Exception):
+    """
+    Raised when the DXLink or Alert WebSocket disconnects unexpectedly.
+    Attributes carry the close code and reason so callers can distinguish
+    server-requested reconnects (code 1012) from network failures.
+    """
+
+    def __init__(self, code=None, reason=''):
+        self.code = code
+        self.reason = reason
+        super().__init__(f"code={code}, reason={reason}")
+
+
 def _dasherize(s: str) -> str:
     """
     Converts a string from snake case to dasherized.

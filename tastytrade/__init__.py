@@ -16,5 +16,12 @@ logger.setLevel(logging.DEBUG)
 from .account import Account
 from .session import Session
 from .streamer import AlertStreamer, DXLinkStreamer
+from .utils import StreamerDisconnect
 
-__all__ = ["Account", "AlertStreamer", "DXLinkStreamer", "Session"]
+__all__ = [
+    "Account",
+    "AlertStreamer",
+    "DXLinkStreamer",
+    "Session",
+    "StreamerDisconnect",
+]
