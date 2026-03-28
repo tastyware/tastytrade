@@ -42,7 +42,7 @@ authors = [
 dependencies = [
     "anyio>=4.12.1",
     "httpx>=0.28.1",
-    "httpx-ws>=0.8.2",
+    "httpx-ws>=0.9.0",
     "pandas-market-calendars>=5.1.1",
     "pydantic>=2.12.0",
 ]
@@ -89,3 +89,6 @@ reportPrivateUsage = false
 [tool.mypy]
 strict = true
 warn_unused_ignores = false
+
+[tool.coverage.run]
+omit = ["tastytrade/paper.py"]

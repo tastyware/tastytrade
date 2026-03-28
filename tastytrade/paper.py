@@ -1,10 +1,13 @@
 import math
+from datetime import datetime, timedelta
+from enum import StrEnum
 from typing import Any
 
 from httpx import AsyncClient
 from httpx_ws import HTTPXWSException
 
 from tastytrade import PAPER_URL
+from tastytrade.order import NewOrder
 from tastytrade.session import Session
 from tastytrade.streamer import AlertStreamer
 
@@ -48,3 +51,34 @@ class PaperAlertStreamer(AlertStreamer):
         Raise an exception in the streamer that can be used to test retries.
         """
         raise HTTPXWSException("Something happened and the fake streamer broke, oh no!")
+
+
+class FillBehavior(StrEnum):
+    """
+    Valid fill behaviors in the paper environment.
+    """
+
+    #: fill after `NewPaperOrder.delay` seconds
+    DELAYED = "delayed"
+    #: fill immediately
+    IMMEDIATE = "immediate"
+    #: never fill
+    NEVER = "never"
+    #: fill at given `NewPaperOrder.schedule`
+    SCHEDULED = "scheduled"
+    #: reject order immediately
+    REJECT = "reject"
+    #: fill half of the order quantity immediately, the other half after
+    #: `NewPaperOrder.delay` seconds or at given `NewPaperOrder.schedule`
+    PARTIAL = "partial"
+
+
+class NewPaperOrder(NewOrder):
+    """
+    Augments order class to add additional properties that can be used to control fills
+    in the paper trading environment.
+    """
+
+    behavior: FillBehavior = FillBehavior.IMMEDIATE
+    schedule: datetime | None = None
+    delay: timedelta | int | None = None

@@ -21,7 +21,6 @@ from typing import (
 from anyio import (
     TASK_STATUS_IGNORED,
     AsyncContextManagerMixin,
-    CancelScope,
     WouldBlock,
     create_memory_object_stream,
     create_task_group,
@@ -401,9 +400,6 @@ class DXLinkStreamer(AsyncContextManagerMixin):
                         tg.start_soon(self._heartbeat)
                         yield self
                         tg.cancel_scope.cancel()
-                        # fix until httpx-ws issue #107 is resolved
-                        with CancelScope(shield=True):
-                            await self._websocket.close()
             except* WebSocketDisconnect as eg:
                 if eg.subgroup(lambda e: getattr(e, "code", None) == 1009):
                     raise TastytradeError(
