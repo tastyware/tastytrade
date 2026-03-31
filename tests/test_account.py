@@ -8,6 +8,7 @@ from anyio import sleep
 from tastytrade import Account, Session
 from tastytrade.instruments import Equity
 from tastytrade.order import (
+    FillInfo,
     NewComplexOrder,
     NewOrder,
     OrderAction,
@@ -15,6 +16,7 @@ from tastytrade.order import (
     OrderType,
     PlacedOrder,
 )
+from tastytrade.utils import TastytradeError, now_in_new_york
 
 pytestmark = pytest.mark.anyio
 
@@ -136,7 +138,19 @@ async def placed_order(
 
 
 async def test_place_order(placed_order: PlacedOrder):
-    pass
+    assert placed_order.legs[0].multiplier == 1
+    with pytest.raises(TastytradeError):
+        _ = placed_order.average_fill_price()
+    fill_price = Decimal(2)
+    placed_order.legs[0].fills = [
+        FillInfo(
+            fill_id="fill",
+            quantity=Decimal(1),
+            fill_price=fill_price,
+            filled_at=now_in_new_york(),
+        )
+    ]
+    assert placed_order.average_fill_price() == Decimal(2)
 
 
 async def test_place_notional_order(
