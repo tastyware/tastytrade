@@ -35,7 +35,7 @@ The different instruments have a host of properties that will be automatically p
 Options chains
 --------------
 
-The symbol structure for options and futures options is somewhat complex, so you can use ``get_option_chain()`` and ``get_future_option_chain()`` to get the instruments for a specific underlying as explained below.
+The symbol structure for options and futures options is somewhat complex, so you can use :func:`~tastytrade.instruments.get_option_chain` and :func:`~tastytrade.instruments.get_future_option_chain` to get the instruments for a specific underlying as explained below.
 
 .. code-block:: python
 
@@ -51,7 +51,7 @@ The symbol structure for options and futures options is somewhat complex, so you
 >>> instrument_type=<InstrumentType.EQUITY_OPTION: 'Equity Option'> symbol='SPLG  240315C00024000' active=True strike_price=Decimal('24.0') root_symbol='SPLG' underlying_symbol='SPLG' expiration_date=datetime.date(2024, 3, 15) exercise_style='American' shares_per_contract=100 option_type=<OptionType.CALL: 'C'> option_chain_type='Standard' expiration_type='Regular' settlement_type='PM' stops_trading_at=datetime.datetime(2024, 3, 15, 20, 0, tzinfo=datetime.timezone.utc) market_time_instrument_collection='Equity Option' days_to_expiration=38 expires_at=datetime.datetime(2024, 3, 15, 20, 0, tzinfo=datetime.timezone.utc) is_closing_only=False listed_market=None halted_at=None old_security_number=None streamer_symbol='.SPLG240315C24'
 >>> dict_keys([datetime.date(2024, 7, 17), datetime.date(2024, 6, 14), datetime.date(2024, 9, 17), datetime.date(2024, 11, 15), datetime.date(2024, 12, 16), datetime.date(2024, 2, 9), datetime.date(2024, 5, 16), datetime.date(2025, 1, 15), datetime.date(2024, 8, 15), datetime.date(2024, 2, 16), datetime.date(2024, 2, 14), datetime.date(2024, 10, 17), datetime.date(2024, 4, 17), datetime.date(2024, 3, 15)])
 
-Alternatively, ``NestedOptionChain`` and ``NestedFutureOptionChain`` provide a structured way to fetch chain expirations and available strikes.
+Alternatively, :class:`~tastytrade.instruments.NestedOptionChain` and :class:`~tastytrade.instruments.NestedFutureOptionChain` provide a structured way to fetch chain expirations and available strikes.
 
 .. code-block:: python
 
@@ -62,12 +62,12 @@ Alternatively, ``NestedOptionChain`` and ``NestedFutureOptionChain`` provide a s
 
 >>> Strike(strike_price=Decimal('437.0'), call='SPY   240417C00437000', put='SPY   240417P00437000', call_streamer_symbol='.SPY240417C437', put_streamer_symbol='.SPY240417P437')
 
-Each expiration contains a list of these strikes, which have the associated put and call symbols that can then be used to fetch option objects via ``Option.get_options()``, as well as dxfeed symbols for use with the streamer.
+Each expiration contains a list of these strikes, which have the associated put and call symbols that can then be used to fetch option objects via :meth:`~tastytrade.instruments.Option.get_options`, as well as dxfeed symbols for use with the streamer.
 
 Placing trades
 --------------
 
-Probably the most powerful tool available for instruments is the ``build_leg()`` function. This allows an instrument to be quickly converted into a tradeable 'leg', which by itself or together with other legs forms the basis for a trade.
+Probably the most powerful tool available for instruments is the :meth:`~tastytrade.instruments.Equity.build_leg` function. This allows an instrument to be quickly converted into a tradeable 'leg', which by itself or together with other legs forms the basis for a trade.
 This makes placing new trades across a wide variety of instruments surprisingly simple:
 
 .. code-block:: python

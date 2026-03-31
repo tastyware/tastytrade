@@ -58,4 +58,4 @@ We can also view portfolio P/L over time (and even plot it!):
 
 Accounts are needed to place, replace, and delete orders. See more in :doc:`Orders <orders>`.
 
-There are many more things you can do with an ``Account`` object--check out the SDK Reference section!
+There are many more things you can do with an :class:`~tastytrade.account.Account` object--check out the SDK Reference section!

@@ -73,7 +73,7 @@ class Event(BaseModel):
 
 class IndexedEvent(Event):
     """
-    A dxfeed `IndexedEvent` with flags computed bitwise.
+    A dxfeed ``IndexedEvent`` with flags computed bitwise.
     For info see `here <https://docs.dxfeed.com/dxfeed/api/com/dxfeed/event/IndexedEvent.html>`_.
     """
 

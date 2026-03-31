@@ -1,14 +1,14 @@
 from collections.abc import Iterable
 from datetime import date, datetime
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 
 from tastytrade.order import InstrumentType
 from tastytrade.session import Session
 from tastytrade.utils import TastytradeData, intuitive_iterable
 
 
-class ExchangeType(str, Enum):
+class ExchangeType(StrEnum):
     """
     Contains the valid exchanges to fetch data for.
     """
@@ -24,7 +24,7 @@ class ExchangeType(str, Enum):
     UNKNOWN = "Unknown"
 
 
-class ClosePriceType(str, Enum):
+class ClosePriceType(StrEnum):
     """
     Contains possible statuses for close prices.
     """

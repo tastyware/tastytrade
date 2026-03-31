@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from datetime import date, datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import Field
 
@@ -8,7 +8,7 @@ from tastytrade.session import Session
 from tastytrade.utils import TastytradeData
 
 
-class ExchangeType(str, Enum):
+class ExchangeType(StrEnum):
     """
     Contains the valid exchanges to get futures market sessions for.
     """
@@ -19,7 +19,7 @@ class ExchangeType(str, Enum):
     SMALL = "Smalls"
 
 
-class MarketStatus(str, Enum):
+class MarketStatus(StrEnum):
     """
     Contains the valid market status values.
     """

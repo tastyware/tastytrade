@@ -260,7 +260,8 @@ class Session(AsyncContextManagerMixin):
     :param is_test:
         whether to use the test API endpoints, default False
     :param client_kwargs:
-        additional keyword arguments to pass to the httpx AsyncClient, such as `timeout`
+        additional keyword arguments to pass to the httpx AsyncClient, such as
+        ``timeout``
     """
 
     def __init__(

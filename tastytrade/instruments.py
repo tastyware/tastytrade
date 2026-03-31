@@ -3,7 +3,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from datetime import date, datetime
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Self, overload
 
 from pydantic import Field, field_validator, model_validator
@@ -13,20 +13,18 @@ from tastytrade.session import Session
 from tastytrade.utils import TastytradeData
 
 
-class OptionType(str, Enum):
+class OptionType(StrEnum):
     """
-    This is an :class:`~enum.Enum` that contains the valid types of options
-    and their abbreviations in the API.
+    Contains the valid types of options and their abbreviations in the API.
     """
 
     CALL = "C"
     PUT = "P"
 
 
-class FutureMonthCode(str, Enum):
+class FutureMonthCode(StrEnum):
     """
-    This is an :class:`~enum.Enum` that contains the valid month codes for
-    futures.
+    Contains the valid month codes for futures.
 
     This is really here for reference, as the API barely uses these codes.
     """

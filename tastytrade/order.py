@@ -1,10 +1,10 @@
 import math
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
-from pydantic import ConfigDict, computed_field, field_serializer, model_validator
+from pydantic import computed_field, field_serializer, model_validator
 
 from tastytrade import version_str
 from tastytrade.utils import (
@@ -16,10 +16,9 @@ from tastytrade.utils import (
 )
 
 
-class InstrumentType(str, Enum):
+class InstrumentType(StrEnum):
     """
-    This is an :class:`~enum.Enum` that contains the valid types of instruments
-    and their representation in the API.
+    Contains the valid types of instruments and their representation in the API.
     """
 
     BOND = "Bond"
@@ -37,9 +36,9 @@ class InstrumentType(str, Enum):
     WARRANT = "Warrant"
 
 
-class OrderAction(str, Enum):
+class OrderAction(StrEnum):
     """
-    This is an :class:`~enum.Enum` that contains the valid order actions.
+    Contains the valid order actions.
     """
 
     BUY_TO_OPEN = "Buy to Open"
@@ -56,9 +55,9 @@ class OrderAction(str, Enum):
         return -1 if "Sell" in self.value else 1
 
 
-class OrderStatus(str, Enum):
+class OrderStatus(StrEnum):
     """
-    This is an :class:`~enum.Enum` that contains different order statuses.
+    Contains different order statuses.
     A typical (successful) order follows a progression:
 
     RECEIVED -> LIVE -> FILLED
@@ -79,9 +78,9 @@ class OrderStatus(str, Enum):
     PARTIALLY_REMOVED = "Partially Removed"
 
 
-class OrderTimeInForce(str, Enum):
+class OrderTimeInForce(StrEnum):
     """
-    This is an :class:`~enum.Enum` that contains the valid TIFs for orders.
+    Contains the valid TIFs for orders.
     """
 
     DAY = "Day"
@@ -94,9 +93,9 @@ class OrderTimeInForce(str, Enum):
     IOC = "IOC"
 
 
-class OrderType(str, Enum):
+class OrderType(StrEnum):
     """
-    This is an :class:`~enum.Enum` that contains the valid types of orders.
+    Contains the valid types of orders.
     """
 
     LIMIT = "Limit"
@@ -107,13 +106,32 @@ class OrderType(str, Enum):
     NOTIONAL_MARKET = "Notional Market"
 
 
-class ComplexOrderType(str, Enum):
+class ComplexOrderType(StrEnum):
     """
-    This is an :class:`~enum.Enum` that contains the valid complex order types.
+    Contains the valid complex order types.
     """
 
     OCO = "OCO"
     OTOCO = "OTOCO"
+
+
+class FillBehavior(StrEnum):
+    """
+    Valid fill behaviors in the paper environment.
+    """
+
+    #: fill after :attr:`NewOrder.delay` seconds
+    DELAYED = "delayed"
+    #: fill immediately
+    IMMEDIATE = "immediate"
+    #: never fill
+    NEVER = "never"
+    #: fill at given :attr:`NewOrder.schedule`
+    SCHEDULED = "scheduled"
+    #: reject order immediately
+    REJECT = "reject"
+    #: fill half immediately, the other half after 1 second
+    PARTIAL = "partial"
 
 
 class FillInfo(TastytradeData):
@@ -170,7 +188,8 @@ class TradeableTastytradeData(TastytradeData):
         Builds an order :class:`Leg` from the dataclass.
 
         :param quantity:
-            the quantity of the symbol to trade, set this as `None` for notional orders
+            the quantity of the symbol to trade, set this as ``None`` for notional
+            orders
         :param action: :class:`OrderAction` to perform, e.g. BUY_TO_OPEN
         """
         return Leg(
@@ -253,8 +272,6 @@ class NewOrder(TastytradeData):
     modifying existing orders.
     """
 
-    model_config = ConfigDict(extra="allow")
-
     time_in_force: OrderTimeInForce
     order_type: OrderType
     source: str = version_str
@@ -272,6 +289,12 @@ class NewOrder(TastytradeData):
     advanced_instructions: AdvancedInstructions | None = None
     #: External identifier for the order, used to track orders across systems
     external_identifier: str | None = None
+    #: controls when/if/how fill happens on the paper API
+    behavior: FillBehavior = FillBehavior.IMMEDIATE
+    #: specific time the fill should occur on the paper API
+    schedule: datetime | None = None
+    #: delay before the fill happens on the paper API
+    delay: timedelta | int | None = None
 
     @computed_field  # type: ignore[misc]
     @property

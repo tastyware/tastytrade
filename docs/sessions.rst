@@ -13,7 +13,7 @@ Generating an initial refresh token
 
 In order to get an initial refresh token, you can simply generate one from Tastytrade's website. Go to OAuth Applications > Manage > Create Grant to get a new refresh token, **which you should also save**.
 
-At this point, OAuth is now setup correctly! Doing these steps once is sufficient for **indefinite usage** of ``Session`` for authentication to the API, since refresh tokens never expire. From now on you can simply authenticate with your client secret and refresh token.
+At this point, OAuth is now setup correctly! Doing these steps once is sufficient for **indefinite usage** of :class:`~tastytrade.session.Session` for authentication to the API, since refresh tokens never expire. From now on you can simply authenticate with your client secret and refresh token.
 
 Creating a session
 ------------------

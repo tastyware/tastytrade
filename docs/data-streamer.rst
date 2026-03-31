@@ -13,7 +13,7 @@ You can create a streamer using an active production session:
    async with DXLinkStreamer(session) as streamer:
        pass
 
-Once you've created the streamer, you can subscribe/unsubscribe to events, like ``Quote``:
+Once you've created the streamer, you can subscribe/unsubscribe to events, like :class:`~tastytrade.dxfeed.Quote`:
 
 .. code-block:: python
 

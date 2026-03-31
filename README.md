@@ -85,7 +85,7 @@ from tastytrade.order import NewOrder, OrderAction, OrderTimeInForce, OrderType
 
 account = await Account.get(session, '5WX01234')
 symbol = await Equity.get(session, 'USO')
-leg = symbol.build_leg(Decimal('5'), OrderAction.BUY_TO_OPEN)  # buy to open 5 shares
+leg = symbol.build_leg(5, OrderAction.BUY_TO_OPEN)  # buy to open 5 shares
 
 order = NewOrder(
     time_in_force=OrderTimeInForce.DAY,

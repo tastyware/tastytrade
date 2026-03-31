@@ -1,15 +1,18 @@
 import math
-from datetime import datetime, timedelta
-from enum import StrEnum
-from typing import Any
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+from decimal import Decimal
+from typing import Any, Literal
+from uuid import uuid4
 
 from httpx import AsyncClient
 from httpx_ws import HTTPXWSException
 
 from tastytrade import PAPER_URL
-from tastytrade.order import NewOrder
+from tastytrade.account import Account
 from tastytrade.session import Session
 from tastytrade.streamer import AlertStreamer
+from tastytrade.utils import validate_response
 
 
 class PaperSession(Session):
@@ -17,7 +20,7 @@ class PaperSession(Session):
     Contains a session which can be used to interact with the paper trading API.
     Note these sessions are only valid for endpoints in the Account class.
 
-    :param api_key: user's paper API key from https://tastyware.dev/login
+    :param api_key: user's paper API key, buy one at https://tastyware.dev/login
     """
 
     def __init__(self, api_key: str, **client_kwargs: Any):
@@ -35,10 +38,68 @@ class PaperSession(Session):
         client_kwargs["headers"] = headers
         self.client_kwargs = client_kwargs
 
+    async def create_account(
+        self,
+        name: str,
+        margin_or_cash: Literal["Cash", "Margin"] = "Margin",
+        initial_deposit: int = 100_000,
+    ) -> Account:
+        """
+        Create a new paper trading account with the given configuration.
+
+        :param name: name for the account
+        :param margin_or_cash: whether the account should be margin or cash
+        :param initial_deposit: the initial balance for the new account
+        """
+        json = {
+            "account_name": name,
+            "margin_or_cash": margin_or_cash,
+            "initial_deposit": initial_deposit,
+        }
+        data = await self._post("/accounts", json=json)
+        return Account(**data)
+
+    async def delete_account(self, account: Account) -> None:
+        """
+        Delete the given paper trading account along with its orders, transactions, etc.
+
+        :param account: account to delete
+        """
+        params = {"account_number": account.account_number}
+        await self._delete("/accounts", params=params)
+
+    async def deposit(self, account: Account, amount: Decimal) -> None:
+        """
+        Deposit the given quantity of fake dollars into the paper trading account. Use
+        with a negative number for withdrawals.
+
+        :param account: account to deposit into
+        :param amount: amount of money to deposit/withdraw
+        """
+        params = {"account_number": account.account_number, "amount": f"{amount:.2f}"}
+        response = await self._client.post("/accounts/deposit", params=params)
+        validate_response(response)
+
+    @asynccontextmanager
+    async def temporary_account(
+        self, margin_or_cash: Literal["Cash", "Margin"] = "Margin"
+    ) -> AsyncGenerator[Account, None]:
+        """
+        Create an account for temporary use that will be cleaned up when exiting the
+        context manager. Useful for automated testing.
+
+        :param margin_or_cash: whether the account should be margin or cash
+        """
+        acc = await self.create_account(uuid4().hex, margin_or_cash=margin_or_cash)
+        try:
+            yield acc
+        finally:
+            await self.delete_account(acc)
+
 
 class PaperAlertStreamer(AlertStreamer):
     """
-    Designed to mimic the behavior and API of `tastytrade.AlertStreamer`.
+    Designed to mimic the behavior and API of :attr:`tastytrade.AlertStreamer`.
     Currently only supports listening to orders.
     """
 
@@ -51,34 +112,3 @@ class PaperAlertStreamer(AlertStreamer):
         Raise an exception in the streamer that can be used to test retries.
         """
         raise HTTPXWSException("Something happened and the fake streamer broke, oh no!")
-
-
-class FillBehavior(StrEnum):
-    """
-    Valid fill behaviors in the paper environment.
-    """
-
-    #: fill after `NewPaperOrder.delay` seconds
-    DELAYED = "delayed"
-    #: fill immediately
-    IMMEDIATE = "immediate"
-    #: never fill
-    NEVER = "never"
-    #: fill at given `NewPaperOrder.schedule`
-    SCHEDULED = "scheduled"
-    #: reject order immediately
-    REJECT = "reject"
-    #: fill half of the order quantity immediately, the other half after
-    #: `NewPaperOrder.delay` seconds or at given `NewPaperOrder.schedule`
-    PARTIAL = "partial"
-
-
-class NewPaperOrder(NewOrder):
-    """
-    Augments order class to add additional properties that can be used to control fills
-    in the paper trading environment.
-    """
-
-    behavior: FillBehavior = FillBehavior.IMMEDIATE
-    schedule: datetime | None = None
-    delay: timedelta | int | None = None

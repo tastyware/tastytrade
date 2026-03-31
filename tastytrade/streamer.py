@@ -7,7 +7,7 @@ from collections.abc import AsyncGenerator, AsyncIterator, Iterable
 from contextlib import asynccontextmanager
 from datetime import date, datetime
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 from ssl import SSLContext, create_default_context
 from typing import (
     Any,
@@ -137,10 +137,9 @@ class UnderlyingYearGainSummary(TastytradeData):
         )
 
 
-class SubscriptionType(str, Enum):
+class SubscriptionType(StrEnum):
     """
-    This is an :class:`~enum.Enum` that contains the subscription types
-    for the alert streamer.
+    Contains the subscription types for the alert streamer.
     """
 
     ACCOUNT = "connect"

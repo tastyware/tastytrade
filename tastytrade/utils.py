@@ -1,7 +1,7 @@
 from collections.abc import Iterable
 from datetime import date, datetime, timedelta
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 from json import JSONDecodeError
 from typing import Any, cast
 from zoneinfo import ZoneInfo
@@ -17,10 +17,9 @@ NYSE: Any = get_calendar("NYSE")
 TZ = ZoneInfo("US/Eastern")
 
 
-class PriceEffect(str, Enum):
+class PriceEffect(StrEnum):
     """
-    This is an :class:`~enum.Enum` that shows the sign of a price effect, since
-    Tastytrade is apparently against negative numbers.
+    Shows the sign of a price effect, since the API doesn't use negative numbers.
     """
 
     CREDIT = "Credit"

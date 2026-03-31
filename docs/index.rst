@@ -45,6 +45,7 @@ A typed, async SDK for Tastytrade built on their public API. This will allow you
    market-sessions
    watchlists
    sync
+   paper
 
 .. toctree::
    :maxdepth: 2
@@ -58,6 +59,7 @@ A typed, async SDK for Tastytrade built on their public API. This will allow you
    api/market-sessions
    api/metrics
    api/order
+   api/paper
    api/search
    api/session
    api/streamer
