@@ -11,7 +11,7 @@ Although Tastytrade offers a sandbox environment, it is unfortunately not very u
 
 In order to get around these limitations, tastyware provides access to a proprietary paper trading API for paid subscribers. The paper trading endpoints are designed to emulate the actual API as closely as possible to allow you to test your code in the same way you'd write production code.
 
-If you've made significant contributions to the SDK or you sponsor its development, please reach out to `support@tastyware.dev <mailto:support@tastyware.dev>`_ and ask for a free API key. Otherwise, if you've benefitted from this project and would make good use of the paper API, please consider subscribing--it's a great way to support the project!
+If you've made significant contributions to the SDK, please reach out to `support@tastyware.dev <mailto:support@tastyware.dev>`_ and ask for a free API key. If you sponsor tastyware at a level of $30/month or above, you should be able to log in and create an API key already! Otherwise, if you've benefitted from this project and would make good use of the paper API, please consider subscribing--it's a great way to support the project!
 
 .. warning::
 
