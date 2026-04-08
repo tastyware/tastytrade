@@ -1,5 +1,5 @@
-import os
 import json
+import os
 import urllib.request
 
 secrets = {k: v for k, v in os.environ.items()}
