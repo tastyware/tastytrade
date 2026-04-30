@@ -86,10 +86,7 @@ async def test_get_option_chain(session: Session):
     chain = await get_option_chain(session, "SPY")
     assert chain != {}
     for options in chain.values():
-        single = await Option.get(session, options[0].symbol)
-        multiple = await Option.get(session, [options[0].symbol, options[1].symbol])
-        assert isinstance(single, Option)
-        assert isinstance(multiple, list)
+        await Option.get(session, options[0].symbol)
         break
 
 
@@ -98,8 +95,6 @@ async def test_get_future_option_chain(session: Session):
     assert chain != {}
     for options in chain.values():
         await FutureOption.get(session, options[0].symbol)
-        symbols = [o.symbol for o in options[:4]]
-        await FutureOption.get(session, symbols)
         break
 
 

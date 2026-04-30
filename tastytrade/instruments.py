@@ -351,7 +351,7 @@ class Equity(TradeableTastytradeData):
 class Option(TradeableTastytradeData):
     """
     Dataclass that represents a Tastytrade option object. Contains information
-    about the option and methods to populate that data using option symbol(s).
+    about the option and methods to populate that data using an option symbol.
     """
 
     active: bool
@@ -381,58 +381,17 @@ class Option(TradeableTastytradeData):
             self._set_streamer_symbol()
         return self
 
-    @overload
     @classmethod
-    async def get(cls, session: Session, symbols: str) -> Self: ...  # type: ignore[overload-overlap]
-
-    @overload
-    @classmethod
-    async def get(
-        cls,
-        session: Session,
-        symbols: Iterable[str],
-        *,
-        active: bool | None = None,
-        per_page: int = 250,
-        page_offset: int | None = 0,
-        with_expired: bool | None = None,
-    ) -> list[Self]: ...
-
-    @classmethod
-    async def get(
-        cls,
-        session: Session,
-        symbols: Iterable[str],
-        *,
-        active: bool | None = None,
-        per_page: int = 250,
-        page_offset: int | None = 0,
-        with_expired: bool | None = None,
-    ) -> Self | list[Self]:
+    async def get(cls, session: Session, symbol: str) -> Self:
         """
-        Returns a list of Option objects from the given symbols, or a single
-        Option object if a list is not provided.
+        Returns an Option object corresponding to the given symbol.
 
         :param session: the session to use for the request.
-        :param symbols: the OCC symbol(s) to get the options for.
-        :param active: whether the options are active.
-        :param per_page: the number of options to get per page.
-        :param page_offset:
-            provide a specific page to get; if None, get all pages
-        :param with_expired: whether to include expired options.
+        :param symbol: the OCC symbol to fetch.
         """
-        if isinstance(symbols, str):
-            symbol = symbols.replace("/", "%2F")
-            data = await session._get(f"/instruments/equity-options/{symbol}")
-            return cls(**data)
-        params = {
-            "symbol[]": symbols,
-            "active": active,
-            "with-expired": with_expired,
-            "per-page": per_page,
-            "page-offset": page_offset,
-        }
-        return await session._paginate(cls, "/instruments/equity-options", params)
+        symbol = symbol.replace("/", "%2F")
+        data = await session._get(f"/instruments/equity-options/{symbol}")
+        return cls(**data)
 
     def _set_streamer_symbol(self) -> None:
         if self.strike_price % 1 == 0:
@@ -795,68 +754,17 @@ class FutureOption(TradeableTastytradeData):
             return value.split(" ")[0]
         return value
 
-    @overload
     @classmethod
-    async def get(cls, session: Session, symbols: str) -> Self: ...  # type: ignore[overload-overlap]
-
-    @overload
-    @classmethod
-    async def get(
-        cls,
-        session: Session,
-        symbols: Iterable[str],
-        *,
-        root_symbol: str | None = None,
-        expiration_date: date | None = None,
-        option_type: OptionType | None = None,
-        strike_price: Decimal | None = None,
-        per_page: int = 250,
-        page_offset: int | None = 0,
-    ) -> list[Self]: ...
-
-    @classmethod
-    async def get(
-        cls,
-        session: Session,
-        symbols: Iterable[str],
-        *,
-        root_symbol: str | None = None,
-        expiration_date: date | None = None,
-        option_type: OptionType | None = None,
-        strike_price: Decimal | None = None,
-        per_page: int = 250,
-        page_offset: int | None = 0,
-    ) -> Self | list[Self]:
+    async def get(cls, session: Session, symbol: str) -> Self:
         """
-        Returns a list of FutureOption objects from the given symbols.
-
-        NOTE: many of the parameters are bugged, maybe Tasty will fix?
+        Returns a FutureOption object corresponding to the given symbol.
 
         :param session: the session to use for the request.
-        :param symbols: the Tastytrade symbol(s) to filter by.
-        :param root_symbol:
-            the root symbol to get the future options for, e.g. 'EW3', 'SO'
-        :param expiration_date: the expiration date for the future options.
-        :param option_type: the option type to filter by.
-        :param strike_price: the strike price to filter by.
-        :param per_page: the number of options to get per page.
-        :param page_offset:
-            provide a specific page to get; if None, get all pages
+        :param symbol: the Tastytrade symbol to fetch.
         """
-        if isinstance(symbols, str):
-            symbol = symbols.replace("/", "%2F").replace(" ", "%20")
-            data = await session._get(f"/instruments/future-options/{symbol}")
-            return cls(**data)
-        params = {
-            "symbol[]": symbols,
-            "option-root-symbol": root_symbol,
-            "expiration-date": expiration_date,
-            "option-type": option_type.value if option_type else None,
-            "strike-price": strike_price,
-            "per-page": per_page,
-            "page-offset": page_offset,
-        }
-        return await session._paginate(cls, "/instruments/future-options", params)
+        symbol = symbol.replace("/", "%2F").replace(" ", "%20")
+        data = await session._get(f"/instruments/future-options/{symbol}")
+        return cls(**data)
 
 
 class NestedFutureOptionSubchain(TastytradeData):

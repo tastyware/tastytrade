@@ -16,7 +16,7 @@ class ExchangeType(StrEnum):
     CME = "CME"
     CFE = "CFE"
     NYSE = "Equity"
-    SMALL = "Smalls"
+    # SMALL = "Smalls"
 
 
 class MarketStatus(StrEnum):

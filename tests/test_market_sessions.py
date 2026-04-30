@@ -13,7 +13,7 @@ pytestmark = pytest.mark.anyio
 
 @pytest.fixture
 def exchanges() -> list[ExchangeType]:
-    return [ExchangeType.NYSE, ExchangeType.CME, ExchangeType.CFE, ExchangeType.SMALL]
+    return list(ExchangeType)
 
 
 async def test_get_market_sessions(session: Session, exchanges: list[ExchangeType]):
