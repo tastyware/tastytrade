@@ -6,6 +6,7 @@ from typing import Any, Literal, Self, cast, overload
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from tastytrade.order import (
+    BuyingPowerEffect,
     InstrumentType,
     NewComplexOrder,
     NewOrder,
@@ -896,6 +897,22 @@ class Account(TastytradeData):
         json = order.model_dump_json(exclude_none=True, by_alias=True)
         data = await session._post(url, data=json)
         return PlacedOrderResponse(**data)
+
+    async def get_order_buying_power_effect(
+        self, session: Session, order: NewOrder
+    ) -> BuyingPowerEffect:
+        """
+        Calculate the buying power effect for the given order.
+
+        :param session: the session to use for the request.
+        :param order: the order to calculate usage for.
+        """
+        url = f"/accounts/{self.account_number}/orders/dry-run"
+        json = order.model_dump_json(exclude_none=True, by_alias=True)
+        await session.refresh()
+        response = await session._client.post(url, data=json)  # type: ignore
+        data = response.json()["data"]["buying-power-effect"]
+        return BuyingPowerEffect(**data)
 
     async def place_complex_order(
         self, session: Session, order: NewComplexOrder, dry_run: bool = True

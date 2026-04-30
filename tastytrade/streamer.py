@@ -308,7 +308,7 @@ class AlertStreamer(AsyncContextManagerMixin):
     async def _map_message(self, type_str: str, data: dict[str, Any]) -> None:
         # I'm not sure what the user status messages look like, so they're absent.
         if type_str not in MAP_ALERTS:
-            logger.fatal(
+            logger.debug(
                 f"Unknown message type {type_str} received: {data}, please open an "
                 f"issue!"
             )
@@ -485,7 +485,7 @@ class DXLinkStreamer(AsyncContextManagerMixin):
         data = message[1]
         # parse type or warn for unknown type
         if msg_type not in MAP_EVENTS:
-            logger.fatal(
+            logger.debug(
                 f"Unknown message type {msg_type} received: {data}, please open an "
                 f"issue!"
             )
