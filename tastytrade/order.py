@@ -113,6 +113,8 @@ class ComplexOrderType(StrEnum):
 
     OCO = "OCO"
     OTOCO = "OTOCO"
+    OTO = "OTO"
+    PAIRS = "PAIRS"
 
 
 class FillBehavior(StrEnum):
@@ -324,7 +326,7 @@ class NewComplexOrder(TastytradeData):
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
-        if self.trigger_order is not None:
+        if self.trigger_order is not None and self.type == ComplexOrderType.OCO:
             self.type = ComplexOrderType.OTOCO
 
 
@@ -351,7 +353,7 @@ class PlacedOrder(TastytradeData):
     price: Decimal | None = None
     gtc_date: date | None = None
     value: Decimal | None = None
-    stop_trigger: str | None = None
+    stop_trigger: Decimal | None = None
     contingent_status: str | None = None
     confirmation_status: str | None = None
     cancelled_at: datetime | None = None

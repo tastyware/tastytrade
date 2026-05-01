@@ -15,7 +15,7 @@ If you've made significant contributions to the SDK, please reach out to `suppor
 
 .. warning::
 
-   At this time, the paper API only supports equities/index options trades, and complex orders have not yet been implemented. I hope to add futures options and complex orders soon.
+   At this time, the paper API only supports equities/index options trades. I hope to add futures options and other instrument types soon.
 
 .. note::
 

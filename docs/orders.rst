@@ -113,14 +113,12 @@ An OCO order is similar, but has no trigger order. It's used to add a profit-tak
                order_type=OrderType.LIMIT,
                legs=[closing],
                price=Decimal('4800'),  # take profits
-               price_effect=PriceEffect.CREDIT
            ),
            NewOrder(
                time_in_force=OrderTimeInForce.GTC,
                order_type=OrderType.STOP,
                legs=[closing],
                stop_trigger=Decimal('4000'),  # stop loss
-               price_effect=PriceEffect.CREDIT
            )
        ]
    )
