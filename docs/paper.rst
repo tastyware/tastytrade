@@ -140,7 +140,7 @@ One of the most important features that distinguishes the paper API from the off
        schedule=datetime(...),
    )
 
-By default, orders are filled after a random delay between 0 and 10 seconds. However, via :class:`~tastytrade.order.FillBehavior` you can configure a custom delay, a specific fill time, immediate fill/rejection of an order, or even partial fills!
+Via :class:`~tastytrade.order.FillBehavior` you can configure a custom delay, a specific fill time, immediate fill/rejection of an order, or even partial fills!
 
 The paper API works just as well outside of normal market hours, so :class:`~tastytrade.order.OrderTimeInForce` is just a formality.
 
