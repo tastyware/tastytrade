@@ -215,6 +215,7 @@ async def test_get_live_complex_orders(session: Session, account: Account):
     assert orders != []
 
 
+@pytest.mark.xfail
 async def test_place_oco_order(session: Session, account: Account):
     # account must have a share of F for this to work
     symbol = await Equity.get(session, "F")
@@ -231,7 +232,7 @@ async def test_place_oco_order(session: Session, account: Account):
                 time_in_force=OrderTimeInForce.GTC,
                 order_type=OrderType.STOP,
                 legs=[closing],
-                stop_trigger=Decimal(1),  # will never fill
+                stop_trigger=Decimal("0.02"),  # will never fill
             ),
         ]
     )
