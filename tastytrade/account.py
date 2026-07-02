@@ -6,16 +6,28 @@ from typing import Any, Literal, Self, cast, overload
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from tastytrade.order import (
+    PLACED_TYPES,
+    BaseOrder,
     BuyingPowerEffect,
     InstrumentType,
+    LimitOrder,
+    MarketOrder,
     NewComplexOrder,
     NewOrder,
+    NotionalOrder,
     OrderAction,
     OrderStatus,
     PlacedComplexOrder,
     PlacedComplexOrderResponse,
+    PlacedLimitOrder,
+    PlacedNotionalOrder,
     PlacedOrder,
     PlacedOrderResponse,
+    PlacedStopLimitOrder,
+    PlacedStopOrder,
+    StopLimitOrder,
+    StopOrder,
+    UnplacedOrder,
 )
 from tastytrade.session import Session
 from tastytrade.utils import (
@@ -881,9 +893,39 @@ class Account(TastytradeData):
             params,
         )
 
+    @overload
     async def place_order(
-        self, session: Session, order: NewOrder, dry_run: bool = True
-    ) -> PlacedOrderResponse:
+        self, session: Session, order: BaseOrder, dry_run: Literal[True] = ...
+    ) -> PlacedOrderResponse[UnplacedOrder]: ...
+
+    @overload
+    async def place_order(
+        self, session: Session, order: LimitOrder, dry_run: Literal[False]
+    ) -> PlacedOrderResponse[PlacedLimitOrder]: ...
+
+    @overload
+    async def place_order(
+        self, session: Session, order: StopOrder, dry_run: Literal[False]
+    ) -> PlacedOrderResponse[PlacedStopOrder]: ...
+
+    @overload
+    async def place_order(
+        self, session: Session, order: StopLimitOrder, dry_run: Literal[False]
+    ) -> PlacedOrderResponse[PlacedStopLimitOrder]: ...
+
+    @overload
+    async def place_order(
+        self, session: Session, order: NotionalOrder, dry_run: Literal[False]
+    ) -> PlacedOrderResponse[PlacedNotionalOrder]: ...
+
+    @overload
+    async def place_order(
+        self, session: Session, order: MarketOrder | NewOrder, dry_run: Literal[False]
+    ) -> PlacedOrderResponse[PlacedOrder]: ...
+
+    async def place_order(
+        self, session: Session, order: Any, dry_run: bool = True
+    ) -> PlacedOrderResponse[Any]:
         """
         Place the given order.
 
@@ -896,7 +938,10 @@ class Account(TastytradeData):
             url += "/dry-run"
         json = order.model_dump_json(exclude_none=True, by_alias=True)
         data = await session._post(url, data=json)
-        return PlacedOrderResponse(**data)
+        if dry_run:
+            return PlacedOrderResponse[UnplacedOrder](**data)
+        model_class = PLACED_TYPES.get(order.order_type, PlacedOrder)
+        return PlacedOrderResponse[model_class](**data)  # type: ignore[valid-type]
 
     async def get_order_buying_power_effect(
         self, session: Session, order: NewOrder
@@ -931,8 +976,33 @@ class Account(TastytradeData):
         data = await session._post(url, data=json)
         return PlacedComplexOrderResponse(**data)
 
+    @overload
     async def replace_order(
-        self, session: Session, old_order_id: int, new_order: NewOrder
+        self, session: Session, old_order_id: int, new_order: LimitOrder
+    ) -> PlacedLimitOrder: ...
+
+    @overload
+    async def replace_order(
+        self, session: Session, old_order_id: int, new_order: StopOrder
+    ) -> PlacedStopOrder: ...
+
+    @overload
+    async def replace_order(
+        self, session: Session, old_order_id: int, new_order: StopLimitOrder
+    ) -> PlacedStopLimitOrder: ...
+
+    @overload
+    async def replace_order(
+        self, session: Session, old_order_id: int, new_order: NotionalOrder
+    ) -> PlacedNotionalOrder: ...
+
+    @overload
+    async def replace_order(
+        self, session: Session, old_order_id: int, new_order: MarketOrder | NewOrder
+    ) -> PlacedOrder: ...
+
+    async def replace_order(
+        self, session: Session, old_order_id: int, new_order: Any
     ) -> PlacedOrder:
         """
         Replace an order with a new order with different characteristics (but
@@ -948,4 +1018,5 @@ class Account(TastytradeData):
                 exclude={"legs"}, exclude_none=True, by_alias=True
             ),
         )
-        return PlacedOrder(**data)
+        model_class = PLACED_TYPES.get(new_order.order_type, PlacedOrder)
+        return model_class(**data)

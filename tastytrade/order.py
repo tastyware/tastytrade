@@ -2,9 +2,13 @@ import math
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from enum import StrEnum
-from typing import Any
+from typing import Any, Generic, Literal, Self, TypeVar
 
-from pydantic import computed_field, field_serializer, model_validator
+from pydantic import (
+    SerializerFunctionWrapHandler,
+    model_serializer,
+    model_validator,
+)
 
 from tastytrade import version_str
 from tastytrade.utils import (
@@ -268,23 +272,15 @@ class AdvancedInstructions(TastytradeData):
     strict_position_effect_validation: bool = False
 
 
-class NewOrder(TastytradeData):
+class BaseOrder(TastytradeData):
     """
-    Dataclass containing information about a new order. Also used for
-    modifying existing orders.
+    Base class for different kinds of orders. For internal use.
     """
 
     time_in_force: OrderTimeInForce = OrderTimeInForce.DAY
-    order_type: OrderType
     source: str = version_str
     legs: list[Leg]
     gtc_date: date | None = None
-    #: For a stop/stop limit order. If the latter, use price for the limit price
-    stop_trigger: Decimal | None = None
-    #: The price of the order; negative = debit, positive = credit
-    price: Decimal | None = None
-    #: The actual notional value of the order. Only for notional market orders!
-    value: Decimal | None = None
     partition_key: str | None = None
     preflight_id: str | None = None
     rules: OrderRule | None = None
@@ -298,19 +294,68 @@ class NewOrder(TastytradeData):
     #: delay before the fill happens on the paper API
     delay: timedelta | int | None = None
 
-    @computed_field  # type: ignore[misc]
-    @property
-    def price_effect(self) -> PriceEffect | None:
-        return get_sign(self.price)
+    @model_serializer(mode="wrap", when_used="json")
+    def _split_sign_into_effect(
+        self, handler: SerializerFunctionWrapHandler
+    ) -> dict[str, Any]:
+        data: dict[str, Any] = handler(self)
+        for field in ["price", "value"]:
+            effect = get_sign(getattr(self, field, None))
+            if effect is not None:
+                data[f"{field}-effect"] = effect.value
+                data[field] = abs(getattr(self, field))
+        return data
 
-    @computed_field  # type: ignore[misc]
-    @property
-    def value_effect(self) -> PriceEffect | None:
-        return get_sign(self.value)
 
-    @field_serializer("price", "value")
-    def serialize_fields(self, field: Decimal | None) -> Decimal | None:
-        return abs(field) if field else None
+class NewOrder(BaseOrder):
+    """
+    Dataclass containing information about a new order. Also used for
+    modifying existing orders.
+    """
+
+    order_type: OrderType
+    #: For a stop/stop limit order. If the latter, use price for the limit price
+    stop_trigger: Decimal | None = None
+    #: The price of the order; negative = debit, positive = credit
+    price: Decimal | None = None
+    #: The actual notional value of the order. Only for notional market orders!
+    value: Decimal | None = None
+
+
+class LimitOrder(BaseOrder):
+    order_type: Literal[OrderType.LIMIT] = OrderType.LIMIT
+    #: The price of the order; negative = debit, positive = credit
+    price: Decimal
+
+
+class MarketOrder(BaseOrder):
+    order_type: Literal[OrderType.MARKET] = OrderType.MARKET
+
+
+class StopOrder(BaseOrder):
+    order_type: Literal[OrderType.STOP] = OrderType.STOP
+    #: Trigger price for the stop order to kick in
+    stop_trigger: Decimal
+
+
+class StopLimitOrder(BaseOrder):
+    order_type: Literal[OrderType.STOP_LIMIT] = OrderType.STOP_LIMIT
+    #: The price of the order; negative = debit, positive = credit
+    price: Decimal
+    #: Trigger price for the stop limit order to be placed
+    stop_trigger: Decimal
+
+
+class NotionalOrder(BaseOrder):
+    order_type: Literal[OrderType.NOTIONAL_MARKET] = OrderType.NOTIONAL_MARKET
+    #: The actual notional value of the order. Only for notional market orders!
+    value: Decimal
+
+    @model_validator(mode="after")
+    def _validate_legs(self) -> Self:
+        if any(leg.quantity for leg in self.legs):
+            raise TastytradeError("Notional order legs can't have a quantity!")
+        return self
 
 
 class NewComplexOrder(TastytradeData):
@@ -330,10 +375,9 @@ class NewComplexOrder(TastytradeData):
             self.type = ComplexOrderType.OTOCO
 
 
-class PlacedOrder(TastytradeData):
+class UnplacedOrder(TastytradeData):
     """
-    Dataclass containing information about an existing order, whether it's
-    been filled or not.
+    Dataclass containing information about a test (dry run) order.
     """
 
     account_number: str
@@ -347,8 +391,6 @@ class PlacedOrder(TastytradeData):
     edited: bool
     updated_at: datetime
     legs: list[Leg]
-    #: the ID of the order; test orders placed with dry_run don't have an ID
-    id: int = -1
     size: Decimal | None = None
     price: Decimal | None = None
     gtc_date: date | None = None
@@ -381,6 +423,16 @@ class PlacedOrder(TastytradeData):
     def validate_price_effects(cls, data: Any) -> Any:
         return set_sign_for(data, ["price", "value"])
 
+
+class PlacedOrder(UnplacedOrder):
+    """
+    Dataclass containing information about a live order, whether it's
+    been filled or not.
+    """
+
+    #: the ID of the order
+    id: int
+
     def average_fill_price(self) -> Decimal:
         total_price = Decimal(0)
         for leg in self.legs:
@@ -390,6 +442,32 @@ class PlacedOrder(TastytradeData):
                 total_price += leg.action.multiplier * fill.fill_price * fill.quantity
         size = self.size or math.gcd(*[int(leg.quantity or 0) for leg in self.legs])
         return total_price / size
+
+
+class PlacedLimitOrder(PlacedOrder):
+    price: Decimal  # pyright: ignore
+
+
+class PlacedStopOrder(PlacedOrder):
+    stop_trigger: Decimal  # pyright: ignore
+
+
+class PlacedStopLimitOrder(PlacedOrder):
+    price: Decimal  # pyright: ignore
+    stop_trigger: Decimal  # pyright: ignore
+
+
+class PlacedNotionalOrder(PlacedOrder):
+    value: Decimal  # pyright: ignore
+
+
+T = TypeVar("T", bound=UnplacedOrder)
+PLACED_TYPES: dict[OrderType, type[PlacedOrder]] = {
+    OrderType.LIMIT: PlacedLimitOrder,
+    OrderType.NOTIONAL_MARKET: PlacedNotionalOrder,
+    OrderType.STOP: PlacedStopOrder,
+    OrderType.STOP_LIMIT: PlacedStopLimitOrder,
+}
 
 
 class PlacedComplexOrder(TastytradeData):
@@ -478,13 +556,13 @@ class PlacedComplexOrderResponse(TastytradeData):
     errors: list[Message] | None = None
 
 
-class PlacedOrderResponse(TastytradeData):
+class PlacedOrderResponse(TastytradeData, Generic[T]):
     """
     Dataclass grouping together information about a placed order.
     """
 
     buying_power_effect: BuyingPowerEffect
-    order: PlacedOrder
+    order: T
     fee_calculation: FeeCalculation | None = None
     warnings: list[Message] | None = None
     errors: list[Message] | None = None
