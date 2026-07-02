@@ -86,9 +86,7 @@ Here's an example of how one might combine a normal and a paper session to simul
    )
    # here, we use a paper session to simulate placing orders with the chosen option
    acc = await Account.get(paper, "TW000014")
-   order = NewOrder(
-       time_in_force=OrderTimeInForce.DAY,
-       order_type=OrderType.LIMIT,
+   order = LimitOrder(
        legs=[option.build_leg(1, OrderAction.BUY_TO_OPEN)],
        price=-Decimal("3"),
    )
@@ -119,17 +117,9 @@ One of the most important features that distinguishes the paper API from the off
 
 .. code-block:: python
 
-   from tastytrade.order import (
-       FillBehavior,
-       NewOrder,
-       OrderAction,
-       OrderTimeInForce,
-       OrderType,
-   )
+   from tastytrade.order import FillBehavior, LimitOrder, OrderAction
 
-   order = NewOrder(
-       time_in_force=OrderTimeInForce.DAY,
-       order_type=OrderType.LIMIT,
+   order = LimitOrder(
        legs=[option.build_leg(1, OrderAction.BUY_TO_OPEN)],
        price=-Decimal("3"),
        behavior=FillBehavior.SCHEDULED,
@@ -167,9 +157,7 @@ The paper API makes writing unit tests for your code straightforward:
            for c in chain
            if c.option_type == OptionType.CALL and round(c.strike_price) == 7000
        )
-       order = NewOrder(
-           time_in_force=OrderTimeInForce.DAY,
-           order_type=OrderType.LIMIT,
+       order = LimitOrder(
            legs=[option.build_leg(1, OrderAction.BUY_TO_OPEN)],
            price=-Decimal("3"),
            behavior=FillBehavior.DELAYED,

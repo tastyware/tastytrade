@@ -5,7 +5,7 @@
 
 # Tastytrade Python SDK
 
-A simple, reverse-engineered SDK for Tastytrade built on their (now mostly public) API. This will allow you to create trading algorithms for whatever strategies you may have quickly and painlessly in Python.
+A simple, asynchronous SDK for Tastytrade's public API. This will allow you to create trading algorithms for whatever strategies you may have quickly and painlessly in Python.
 
 ## Features
 
@@ -55,7 +55,7 @@ async with DXLinkStreamer(session) as streamer:
 ```
 
 ```python
->>> Quote(event_symbol='SPY', event_time=0, sequence=0, time_nano_part=0, bid_time=0, bid_exchange_code='Q', bid_price=411.58, bid_size=400.0, ask_time=0, ask_exchange_code='Q', ask_price=411.6, ask_size=1313.0)
+>>> event_symbol='SPY' event_time=0 sequence=0 time_nano_part=0 bid_time=0 bid_exchange_code='Q' ask_time=0 ask_exchange_code='Q' bid_price=Decimal('742.59') ask_price=Decimal('742.62') bid_size=Decimal('170.0') ask_size=Decimal('240.0')
 ```
 
 ## Getting current positions
@@ -69,7 +69,7 @@ print(positions[0])
 ```
 
 ```python
->>> CurrentPosition(account_number='5WX01234', symbol='IAU', instrument_type=<InstrumentType.EQUITY: 'Equity'>, underlying_symbol='IAU', quantity=Decimal('20'), quantity_direction='Long', close_price=Decimal('37.09'), average_open_price=Decimal('37.51'), average_yearly_market_close_price=Decimal('37.51'), average_daily_market_close_price=Decimal('37.51'), multiplier=1, cost_effect=<PriceEffect.CREDIT: 'Credit'>, is_suppressed=False, is_frozen=False, realized_day_gain=Decimal('7.888'), realized_day_gain_date=datetime.date(2023, 5, 19), realized_today=Decimal('-0.512'), realized_today_date=datetime.date(2023, 5, 19), created_at=datetime.datetime(2023, 3, 31, 14, 38, 32, 58000, tzinfo=datetime.timezone.utc), updated_at=datetime.datetime(2023, 5, 19, 16, 56, 51, 920000, tzinfo=datetime.timezone.utc), mark=None, mark_price=None, restricted_quantity=Decimal('0'), expires_at=None, fixing_price=None, deliverable_type=None)
+>>> account_number='5WX01234' symbol='BRK/B' instrument_type=<InstrumentType.EQUITY: 'Equity'> underlying_symbol='BRK/B' quantity=Decimal('1') quantity_direction='Long' close_price=Decimal('499.74') average_open_price=Decimal('477.34') multiplier=Decimal('1.0') cost_effect='Credit' created_at=datetime.datetime(2026, 4, 17, 14, 23, 1, 210000, tzinfo=TzInfo(0)) updated_at=datetime.datetime(2026, 6, 9, 20, 2, 32, 427000, tzinfo=TzInfo(0)) average_yearly_market_close_price=Decimal('477.34') average_daily_market_close_price=Decimal('499.74') realized_day_gain_date=datetime.date(2026, 6, 9) realized_today_date=datetime.date(2026, 6, 9)
 ```
 
 ## Placing an order
@@ -78,15 +78,13 @@ print(positions[0])
 from decimal import Decimal
 from tastytrade import Account
 from tastytrade.instruments import Equity
-from tastytrade.order import NewOrder, OrderAction, OrderTimeInForce, OrderType
+from tastytrade.order import LimitOrder, OrderAction
 
 account = await Account.get(session, '5WX01234')
 symbol = await Equity.get(session, 'USO')
 leg = symbol.build_leg(5, OrderAction.BUY_TO_OPEN)  # buy to open 5 shares
 
-order = NewOrder(
-    time_in_force=OrderTimeInForce.DAY,
-    order_type=OrderType.LIMIT,
+order = LimitOrder(
     legs=[leg],  # you can have multiple legs in an order
     price=Decimal('-10')  # limit price, $10/share debit for a total value of $50
 )
@@ -95,7 +93,7 @@ print(response)
 ```
 
 ```python
->>> PlacedOrderResponse(buying_power_effect=BuyingPowerEffect(change_in_margin_requirement=Decimal('-125.0'), change_in_buying_power=Decimal('-125.004'), current_buying_power=Decimal('1000.0'), new_buying_power=Decimal('874.996'), isolated_order_margin_requirement=Decimal('-125.0'), is_spread=False, impact=Decimal('125.004'), effect=<PriceEffect.DEBIT: 'Debit'>), fee_calculation=FeeCalculation(regulatory_fees=Decimal('0.0'), clearing_fees=Decimal('-0.004'), commission=Decimal('0.0'), proprietary_index_option_fees=Decimal('0.0'), total_fees=Decimal('-0.004'), order=PlacedOrder(account_number='5WV69754', time_in_force=<OrderTimeInForce.DAY: 'Day'>, order_type=<OrderType.LIMIT: 'Limit'>, size='5', underlying_symbol='USO', underlying_instrument_type=<InstrumentType.EQUITY: 'Equity'>, status=<OrderStatus.RECEIVED: 'Received'>, cancellable=True, editable=True, edited=False, updated_at=datetime.datetime(1970, 1, 1, 0, 0, tzinfo=datetime.timezone.utc), legs=[Leg(instrument_type=<InstrumentType.EQUITY: 'Equity'>, symbol='USO', action=<OrderAction.BUY_TO_OPEN: 'Buy to Open'>, quantity=Decimal('5'), remaining_quantity=Decimal('5'), fills=[])], id=None, price=Decimal('-10.0'), gtc_date=None, value=None, stop_trigger=None, contingent_status=None, confirmation_status=None, cancelled_at=None, cancel_user_id=None, cancel_username=None, replacing_order_id=None, replaces_order_id=None, in_flight_at=None, live_at=None, received_at=None, reject_reason=None, user_id=None, username=None, terminal_at=None, complex_order_id=None, complex_order_tag=None, preflight_id=None, order_rule=None), complex_order=None, warnings=[Message(code='tif_next_valid_sesssion', message='Your order will begin working during next valid session.', preflight_id=None)], errors=None)
+>>> buying_power_effect=BuyingPowerEffect(change_in_margin_requirement=Decimal('-50.0') change_in_buying_power=Decimal('-50.004') current_buying_power=Decimal('190.95') new_buying_power=Decimal('140.946') isolated_order_margin_requirement=Decimal('-50.0') impact=Decimal('50.004') effect=<PriceEffect.DEBIT: 'Debit'>) order=UnplacedOrder(account_number='5WX01234' time_in_force=<OrderTimeInForce.DAY: 'Day'> order_type=<OrderType.LIMIT: 'Limit'> underlying_symbol='USO' underlying_instrument_type=<InstrumentType.EQUITY: 'Equity'> status=<OrderStatus.RECEIVED: 'Received'> cancellable=True editable=True updated_at=datetime.datetime(1970, 1, 1, 0, 0, tzinfo=TzInfo(0)) legs=[Leg(instrument_type=<InstrumentType.EQUITY: 'Equity'> symbol='USO' action=<OrderAction.BUY_TO_OPEN: 'Buy to Open'> quantity=5 remaining_quantity=Decimal('5'))] size=Decimal('5') price=Decimal('-10.0') source='tastyware/tastytrade:v13.0.0') fee_calculation=FeeCalculation(clearing_fees=Decimal('-0.004') total_fees=Decimal('-0.004'))
 ```
 
 ## Options chain/streaming greeks
@@ -106,7 +104,7 @@ from tastytrade.dxfeed import Greeks
 from tastytrade.instruments import get_option_chain
 from tastytrade.utils import get_tasty_monthly
 
-chain = await get_option_chain(session, 'SPLG')
+chain = await get_option_chain(session, 'SPY')
 exp = get_tasty_monthly()  # 45 DTE expiration!
 subs_list = [chain[exp][0].streamer_symbol]
 
@@ -117,7 +115,7 @@ async with DXLinkStreamer(session) as streamer:
 ```
 
 ```python
->>> Greeks(event_symbol='.SPLG230616C23', event_time=0, event_flags=0, index=7235129486797176832, time=1684559855338, sequence=0, price=26.3380972233688, volatility=0.396983376650804, delta=0.999999999996191, gamma=4.81989763184255e-12, theta=-2.5212017514875e-12, rho=0.01834504287973133, vega=3.7003015672215e-12)
+>>> event_symbol='.SPY260821C360' event_time=0 event_flags=0 index=7657999377268473856 time=1783016924113 sequence=0 price=Decimal('383.872914648466') volatility=Decimal('0.945267732851094') delta=Decimal('0.987555718428321') gamma=Decimal('0.0001239745502605713') theta=Decimal('-0.0836282191559167') rho=Decimal('0.479468024985951') vega=Decimal('0.0886597706581432')
 ```
 
 For more examples, check out the [documentation](https://tastyworks-api.readthedocs.io/en/latest/).

@@ -22,9 +22,6 @@ A typed, async SDK for Tastytrade built on their public API. This will allow you
 .. tip::
    Want to see the SDK in action? Check out `tastytrade-cli <https://github.com/tastyware/tastytrade-cli>`_, a CLI for Tastytrade that showcases many of the SDK's features.
 
-.. note::
-   Want to build an advanced trading system? Check out `streaQ <https://github.com/tastyware/streaq>`_, an async job queuing library for Python that's perfect for complex applications!
-
 .. toctree::
    :maxdepth: 2
    :caption: Documentation

@@ -73,16 +73,14 @@ This makes placing new trades across a wide variety of instruments surprisingly 
 .. code-block:: python
 
    from tastytrade.instruments import get_future_option_chain
-   from tastytrade.order import *
+   from tastytrade.order import LimitOrder, OrderAction
    from datetime import date
 
    chain = await get_future_option_chain(session, '/MCL')
    put = chain[date(2024, 3, 15)][286]
    call = chain[date(2024, 3, 15)][187]
 
-   order = NewOrder(
-       time_in_force=OrderTimeInForce.DAY,
-       order_type=OrderType.LIMIT,
+   order = LimitOrder(
        legs=[
            # two parameters: quantity and order action
            put.build_leg(1, OrderAction.SELL_TO_OPEN),
