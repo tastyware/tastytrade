@@ -68,14 +68,13 @@ class MarketData(TastytradeData):
     updated_at: datetime
     bid_size: Decimal
     ask_size: Decimal
-    # TODO: fix this
-    mark: Decimal
     close_price_type: ClosePriceType
     summary_date: date
     prev_close_date: date
     prev_close_price_type: ClosePriceType
     halt_start_time: int
     halt_end_time: int
+    mark: Decimal | None = None
     ask: Decimal | None = None
     beta: Decimal | None = None
     bid: Decimal | None = None

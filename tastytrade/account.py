@@ -6,7 +6,9 @@ from typing import Any, Literal, Self, cast, overload
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from tastytrade.order import (
+    PLACED_COMPLEX_TYPES,
     PLACED_TYPES,
+    BaseComplexOrder,
     BaseOrder,
     BuyingPowerEffect,
     InstrumentType,
@@ -15,18 +17,25 @@ from tastytrade.order import (
     NewComplexOrder,
     NewOrder,
     NotionalOrder,
+    OCOOrder,
     OrderAction,
     OrderStatus,
+    OTOCOOrder,
+    OTOOrder,
     PlacedComplexOrder,
     PlacedComplexOrderResponse,
     PlacedLimitOrder,
     PlacedNotionalOrder,
+    PlacedOCOOrder,
     PlacedOrder,
     PlacedOrderResponse,
+    PlacedOTOCOOrder,
+    PlacedOTOOrder,
     PlacedStopLimitOrder,
     PlacedStopOrder,
     StopLimitOrder,
     StopOrder,
+    UnplacedComplexOrder,
     UnplacedOrder,
 )
 from tastytrade.session import Session
@@ -944,7 +953,7 @@ class Account(TastytradeData):
         return PlacedOrderResponse[model_class](**data)  # type: ignore[valid-type]
 
     async def get_order_buying_power_effect(
-        self, session: Session, order: NewOrder
+        self, session: Session, order: BaseOrder
     ) -> BuyingPowerEffect:
         """
         Calculate the buying power effect for the given order.
@@ -959,9 +968,34 @@ class Account(TastytradeData):
         data = response.json()["data"]["buying-power-effect"]
         return BuyingPowerEffect(**data)
 
+    @overload
     async def place_complex_order(
-        self, session: Session, order: NewComplexOrder, dry_run: bool = True
-    ) -> PlacedComplexOrderResponse:
+        self, session: Session, order: BaseComplexOrder, dry_run: Literal[True] = ...
+    ) -> PlacedComplexOrderResponse[UnplacedComplexOrder]: ...
+
+    @overload
+    async def place_complex_order(
+        self, session: Session, order: OCOOrder, dry_run: Literal[False]
+    ) -> PlacedComplexOrderResponse[PlacedOCOOrder]: ...
+
+    @overload
+    async def place_complex_order(
+        self, session: Session, order: OTOOrder, dry_run: Literal[False]
+    ) -> PlacedComplexOrderResponse[PlacedOTOOrder]: ...
+
+    @overload
+    async def place_complex_order(
+        self, session: Session, order: OTOCOOrder, dry_run: Literal[False]
+    ) -> PlacedComplexOrderResponse[PlacedOTOCOOrder]: ...
+
+    @overload
+    async def place_complex_order(
+        self, session: Session, order: NewComplexOrder, dry_run: Literal[False]
+    ) -> PlacedComplexOrderResponse[PlacedComplexOrder]: ...
+
+    async def place_complex_order(
+        self, session: Session, order: BaseComplexOrder, dry_run: bool = True
+    ) -> PlacedComplexOrderResponse[Any]:
         """
         Place the given order.
 
@@ -974,7 +1008,10 @@ class Account(TastytradeData):
             url += "/dry-run"
         json = order.model_dump_json(exclude_none=True, by_alias=True)
         data = await session._post(url, data=json)
-        return PlacedComplexOrderResponse(**data)
+        if dry_run:
+            return PlacedComplexOrderResponse[UnplacedComplexOrder](**data)
+        model_class = PLACED_COMPLEX_TYPES.get(type(order), PlacedComplexOrder)
+        return PlacedComplexOrderResponse[model_class](**data)  # type: ignore[valid-type]
 
     @overload
     async def replace_order(
