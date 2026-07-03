@@ -9,12 +9,15 @@ from tastytrade import Account, Session
 from tastytrade.instruments import Equity
 from tastytrade.order import (
     FillInfo,
-    NewComplexOrder,
-    NewOrder,
+    LimitOrder,
+    NotionalOrder,
+    OCOOrder,
     OrderAction,
     OrderTimeInForce,
-    OrderType,
+    OTOCOOrder,
+    PlacedLimitOrder,
     PlacedOrder,
+    StopOrder,
 )
 from tastytrade.utils import TastytradeError, now_in_new_york
 
@@ -107,24 +110,22 @@ async def test_get_live_orders(session: Session, account: Account):
 
 
 @pytest.fixture(scope="module")
-async def new_order(session: Session) -> NewOrder:
+async def new_order(session: Session) -> LimitOrder:
     symbol = await Equity.get(session, "F")
     leg = symbol.build_leg(1, OrderAction.BUY_TO_OPEN)
-    return NewOrder(
+    return LimitOrder(
         time_in_force=OrderTimeInForce.GTC,
-        order_type=OrderType.LIMIT,
         legs=[leg],
         price=Decimal(-2),
     )
 
 
 @pytest.fixture(scope="module")
-async def notional_order(session: Session) -> NewOrder:
+async def notional_order(session: Session) -> NotionalOrder:
     symbol = await Equity.get(session, "AAPL")
     leg = symbol.build_leg(None, OrderAction.BUY_TO_OPEN)
-    return NewOrder(
+    return NotionalOrder(
         time_in_force=OrderTimeInForce.GTC,
-        order_type=OrderType.NOTIONAL_MARKET,
         legs=[leg],
         value=Decimal(-5),
     )
@@ -132,12 +133,12 @@ async def notional_order(session: Session) -> NewOrder:
 
 @pytest.fixture(scope="module")
 async def placed_order(
-    session: Session, account: Account, new_order: NewOrder
-) -> PlacedOrder:
+    session: Session, account: Account, new_order: LimitOrder
+) -> PlacedLimitOrder:
     return (await account.place_order(session, new_order, dry_run=False)).order
 
 
-async def test_place_order(placed_order: PlacedOrder):
+async def test_place_order(placed_order: PlacedLimitOrder):
     assert placed_order.legs[0].multiplier == 1
     with pytest.raises(TastytradeError):
         _ = placed_order.average_fill_price()
@@ -154,7 +155,7 @@ async def test_place_order(placed_order: PlacedOrder):
 
 
 async def test_place_notional_order(
-    session: Session, account: Account, notional_order: NewOrder
+    session: Session, account: Account, notional_order: NotionalOrder
 ):
     await account.place_order(session, notional_order, dry_run=True)
 
@@ -168,43 +169,40 @@ async def test_get_order(session: Session, account: Account, placed_order: Place
 async def test_replace_and_delete_order(
     session: Session,
     account: Account,
-    new_order: NewOrder,
+    new_order: LimitOrder,
     placed_order: PlacedOrder,
 ):
-    modified_order = new_order.model_copy()
+    modified_order = new_order.model_copy(deep=True)
     modified_order.price = Decimal("-2.01")
     replaced = await account.replace_order(session, placed_order.id, modified_order)
     await sleep(3)
     await account.delete_order(session, replaced.id)
 
 
-async def test_place_complex_order(session: Session, account: Account):
+async def test_place_otoco_order(session: Session, account: Account):
     await sleep(3)
     symbol = await Equity.get(session, "AAPL")
     opening = symbol.build_leg(1, OrderAction.BUY_TO_OPEN)
     closing = symbol.build_leg(1, OrderAction.SELL_TO_CLOSE)
-    otoco = NewComplexOrder(
-        trigger_order=NewOrder(
+    otoco = OTOCOOrder(
+        trigger_order=LimitOrder(
             time_in_force=OrderTimeInForce.GTC,
-            order_type=OrderType.LIMIT,
             legs=[opening],
             price=Decimal("-2"),  # won't fill
         ),
-        orders=[
-            NewOrder(
-                time_in_force=OrderTimeInForce.GTC,
-                order_type=OrderType.LIMIT,
-                legs=[closing],
-                price=Decimal("400"),  # won't fill
-            ),
-            NewOrder(
-                time_in_force=OrderTimeInForce.GTC,
-                order_type=OrderType.STOP,
-                legs=[closing],
-                stop_trigger=Decimal("1.5"),  # won't fill
-            ),
-        ],
+        take_profit=LimitOrder(
+            time_in_force=OrderTimeInForce.GTC,
+            legs=[closing],
+            price=Decimal("400"),  # won't fill
+        ),
+        stop_loss=StopOrder(
+            time_in_force=OrderTimeInForce.GTC,
+            legs=[closing],
+            stop_trigger=Decimal("1.5"),  # won't fill
+        ),
     )
+    resp = await account.place_complex_order(session, otoco, dry_run=True)
+    assert not resp.errors
     resp = await account.place_complex_order(session, otoco, dry_run=False)
     await sleep(3)
     await account.delete_complex_order(session, resp.complex_order.id)
@@ -220,55 +218,20 @@ async def test_place_oco_order(session: Session, account: Account):
     # account must have a share of F for this to work
     symbol = await Equity.get(session, "F")
     closing = symbol.build_leg(1, OrderAction.SELL_TO_CLOSE)
-    oco = NewComplexOrder(
-        orders=[
-            NewOrder(
-                time_in_force=OrderTimeInForce.GTC,
-                order_type=OrderType.LIMIT,
-                legs=[closing],
-                price=Decimal(1000),  # will never fill
-            ),
-            NewOrder(
-                time_in_force=OrderTimeInForce.GTC,
-                order_type=OrderType.STOP,
-                legs=[closing],
-                stop_trigger=Decimal("0.02"),  # will never fill
-            ),
-        ]
+    oco = OCOOrder(
+        take_profit=LimitOrder(
+            time_in_force=OrderTimeInForce.GTC,
+            legs=[closing],
+            price=Decimal(1000),  # will never fill
+        ),
+        stop_loss=StopOrder(
+            time_in_force=OrderTimeInForce.GTC,
+            legs=[closing],
+            stop_trigger=Decimal("0.02"),  # will never fill
+        ),
     )
     resp2 = await account.place_complex_order(session, oco, dry_run=False)
     await sleep(3)
     # test get complex order
     _ = await account.get_complex_order(session, resp2.complex_order.id)
     await account.delete_complex_order(session, resp2.complex_order.id)
-
-
-async def test_place_otoco_order(session: Session, account: Account):
-    symbol = await Equity.get(session, "AAPL")
-    opening = symbol.build_leg(1, OrderAction.BUY_TO_OPEN)
-    closing = symbol.build_leg(1, OrderAction.SELL_TO_CLOSE)
-    otoco = NewComplexOrder(
-        trigger_order=NewOrder(
-            time_in_force=OrderTimeInForce.GTC,
-            order_type=OrderType.LIMIT,
-            legs=[opening],
-            price=Decimal("-2"),  # won't fill
-        ),
-        orders=[
-            NewOrder(
-                time_in_force=OrderTimeInForce.GTC,
-                order_type=OrderType.LIMIT,
-                legs=[closing],
-                price=Decimal(400),  # won't fill
-            ),
-            NewOrder(
-                time_in_force=OrderTimeInForce.GTC,
-                order_type=OrderType.STOP,
-                legs=[closing],
-                stop_trigger=Decimal("1.5"),  # won't fill
-            ),
-        ],
-    )
-    resp = await account.place_complex_order(session, otoco, dry_run=False)
-    await sleep(3)
-    await account.delete_complex_order(session, resp.complex_order.id)

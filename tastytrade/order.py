@@ -12,6 +12,7 @@ from pydantic import (
     model_serializer,
     model_validator,
 )
+from typing_extensions import deprecated
 
 from tastytrade import version_str
 from tastytrade.utils import (
@@ -310,6 +311,10 @@ class BaseOrder(TastytradeData):
         return data
 
 
+@deprecated(
+    "`NewOrder` is deprecated and may be removed in the future. Use new order type "
+    "classes like `LimitOrder` or `MarketOrder` instead."
+)
 class NewOrder(BaseOrder):
     """
     Dataclass containing information about a new order. Also used for
@@ -383,6 +388,10 @@ class BaseComplexOrder(TastytradeData):
     source: str = version_str
 
 
+@deprecated(
+    "`NewComplexOrder` is deprecated and may be removed in the future. Use new order "
+    "type classes like `OCOOrder` or `OTOCOOrder` instead."
+)
 class NewComplexOrder(BaseComplexOrder):
     """
     Dataclass containing information about a new OTOCO order.
