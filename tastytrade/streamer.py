@@ -26,7 +26,7 @@ from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStre
 from anyio.streams.stapled import StapledObjectStream
 from httpx import AsyncClient
 from httpx_ws import AsyncWebSocketSession, WebSocketDisconnect, aconnect_ws
-from pydantic import model_validator
+from pydantic import ValidationError, model_validator
 
 from tastytrade import logger, version_str
 from tastytrade.account import Account, AccountBalance, CurrentPosition, TradingStatus
@@ -432,7 +432,7 @@ class DXLinkStreamer(AsyncContextManagerMixin):
             message: DXLinkMessage = await self._websocket.receive_json()
             logger.debug("received: %s", message)
             if message["type"] == "FEED_DATA":
-                self._map_message(message["data"])
+                self._map_message(message["data"], message["channel"])
             elif message["type"] == "SETUP" or message["type"] == "KEEPALIVE":
                 pass
             elif message["type"] == "AUTH_STATE":
@@ -458,25 +458,25 @@ class DXLinkStreamer(AsyncContextManagerMixin):
             else:
                 logger.error(f"Unknown message type: {message}")
 
-    def _map_message(self, message: list[Any]) -> None:
+    def _map_message(self, message: list[Any], channel: int) -> None:
         # takes the JSON data, parses the events and places them into their queues
         logger.debug("received message: %s", message)
-        if isinstance(message[0], str):
-            msg_type = message[0]
+        msg_type = self._channels_reversed[channel]
+        cls = MAP_EVENTS[msg_type]
+        # FULL data format: [{'eventSymbol': 'SPX', ...}]
+        if isinstance(message[0], dict):
+            results: list[Event] = []
+            for event_dict in message:
+                try:
+                    results.append(cls.model_validate(event_dict))
+                except ValidationError as e:
+                    # we skip these as they're mostly useless (eg quote without bid/ask)
+                    logger.debug(f"Failed to parse event: {e}, skipping")
+        # COMPACT data format: ['Trade', ['SPX', ...]]
         else:
-            msg_type = message[0][0]
-        data = message[1]
-        # parse type or warn for unknown type
-        if msg_type not in MAP_EVENTS:
-            logger.debug(
-                f"Unknown message type {msg_type} received: {data}, please open an "
-                f"issue!"
-            )
-        else:
-            cls = MAP_EVENTS[msg_type]
-            results = cls.from_stream(data)
-            for r in results:
-                self._send[msg_type].send_nowait(r)
+            results = cls.from_stream(message[1])
+        for r in results:
+            self._send[msg_type].send_nowait(r)
 
     async def _channel_request(
         self, event_type: str, refresh_interval: float = 0.1

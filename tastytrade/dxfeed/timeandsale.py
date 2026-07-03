@@ -31,8 +31,6 @@ class TimeAndSale(IndexedEvent):
     bid_price: Decimal
     #: the ask price on the market when this time and sale event occured
     ask_price: Decimal
-    #: sale conditions provided for this event by data feed
-    exchange_sale_conditions: str
     #: transaction is concluded by exempting from compliance with some rule
     trade_through_exempt: str
     #: initiator of the trade
@@ -49,3 +47,5 @@ class TimeAndSale(IndexedEvent):
     buyer: None
     #: Undocumented; always None
     seller: None
+    #: sale conditions provided for this event by data feed
+    exchange_sale_conditions: str | None = None

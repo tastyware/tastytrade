@@ -12,6 +12,7 @@ from pydantic import (
 from pydantic.alias_generators import to_camel
 from pydantic_core import PydanticUndefined
 
+from tastytrade import logger
 from tastytrade.utils import TastytradeError
 
 NAN_VALUES = frozenset({"NaN", "Infinity", "-Infinity"})
@@ -65,9 +66,9 @@ class Event(BaseModel):
             event_dict = dict(zip(keys, local_values))
             try:
                 objs.append(cls.model_validate(event_dict))
-            except ValidationError:
+            except ValidationError as e:
                 # we just skip these events as they're generally not helpful
-                pass
+                logger.debug(f"Failed to parse event: {e}, skipping")
         return objs
 
 
