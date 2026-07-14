@@ -22,8 +22,8 @@ from anyio import Event as AnyioEvent
 from anyio.abc import TaskStatus
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 from anyio.streams.stapled import StapledObjectStream
-from httpx import AsyncClient
-from httpx_ws import AsyncWebSocketSession, WebSocketDisconnect, aconnect_ws
+from httpx2 import AsyncClient
+from httpx2.websockets import AsyncWebSocketSession, WebSocketDisconnect
 from pydantic import ValidationError, model_validator
 
 from tastytrade import logger, version_str
@@ -219,7 +219,7 @@ class AlertStreamer(AsyncContextManagerMixin):
     @asynccontextmanager
     async def __asynccontextmanager__(self) -> AsyncGenerator[Self]:
         async with AsyncClient(**self.session.client_kwargs) as client:
-            async with aconnect_ws(self.base_url, client=client) as self._websocket:
+            async with client.websocket(self.base_url) as self._websocket:
                 logger.debug("Websocket connection established.")
                 async with create_task_group() as tg:
                     tg.start_soon(self._reader)
@@ -366,8 +366,8 @@ class DXLinkStreamer(AsyncContextManagerMixin):
         async with AsyncClient(**self.session.client_kwargs) as client:
             try:
                 # default keepalive doesn't work since TT expects a specific format
-                async with aconnect_ws(
-                    self._wss_url, client=client, keepalive_ping_interval_seconds=None
+                async with client.websocket(
+                    self._wss_url, keepalive_ping_interval_seconds=None
                 ) as self._websocket:
                     logger.debug("Websocket connection established.")
                     async with create_task_group() as tg:

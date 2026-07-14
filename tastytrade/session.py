@@ -9,14 +9,10 @@ from datetime import date, datetime
 from typing import Any, Self, TypeVar
 
 from anyio import AsyncContextManagerMixin, Lock
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from tastytrade import API_URL, API_VERSION, CERT_URL, logger
-from tastytrade.utils import (
-    TastytradeData,
-    validate_and_parse,
-    validate_response,
-)
+from tastytrade.utils import TastytradeData, validate_and_parse, validate_response
 
 T = TypeVar("T", bound=TastytradeData)
 

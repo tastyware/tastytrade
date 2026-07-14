@@ -5,8 +5,8 @@ from decimal import Decimal
 from typing import Any, Literal
 from uuid import uuid4
 
-from httpx import AsyncClient
-from httpx_ws import HTTPXWSException
+from httpx2 import AsyncClient
+from httpx2.websockets import HTTPXWSException
 
 from tastytrade import PAPER_URL
 from tastytrade.account import Account

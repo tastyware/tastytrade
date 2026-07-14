@@ -6,7 +6,7 @@ from json import JSONDecodeError
 from typing import Any, cast
 from zoneinfo import ZoneInfo
 
-from httpx import Response
+from httpx2 import Response
 from pandas import Timestamp
 from pandas_market_calendars import get_calendar  # type: ignore[import-untyped]
 from pydantic import BaseModel, ConfigDict

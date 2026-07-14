@@ -41,8 +41,7 @@ authors = [
 ]
 dependencies = [
     "anyio>=4.12.1",
-    "httpx>=0.28.1",
-    "httpx-ws>=0.9.0",
+    "httpx2[ws]>=2.7.0",
     "pandas-market-calendars>=5.1.1",
     "pydantic>=2.12.0",
 ]
