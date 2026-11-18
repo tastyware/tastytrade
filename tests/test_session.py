@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from tastytrade import Session
+from tastytrade import ORDER_API_VERSION, Session
 
 pytestmark = pytest.mark.anyio
 
@@ -30,3 +30,10 @@ def test_serialize_deserialize(session: Session):
         session_with_kwargs.__dict__.keys()
     )
     assert obj_with_kwargs.client_kwargs == session_with_kwargs.client_kwargs
+
+
+def test_order_headers():
+    session = Session("secret", "refresh")
+    assert session.order_headers == {"Accept-Version": ORDER_API_VERSION}
+    # the sandbox doesn't accept Accept-Version
+    assert Session("secret", "refresh", is_test=True).order_headers == {}

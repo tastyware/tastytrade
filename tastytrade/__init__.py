@@ -2,6 +2,9 @@ import logging
 
 API_URL = "https://api.tastyworks.com"
 API_VERSION = "20251101"
+#: Version sent on order endpoints. Order endpoints stop accepting versions before
+#: 20261012 on or after 2027-04-12; other endpoints keep ``API_VERSION``.
+ORDER_API_VERSION = "20261012"
 CERT_URL = "https://api.cert.tastyworks.com"
 PAPER_URL = "https://tastyware.dev/api"
 VERSION = "13.2.3"

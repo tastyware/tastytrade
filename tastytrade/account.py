@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any, Literal, Self, cast, overload
 
@@ -770,7 +770,10 @@ class Account(TastytradeData):
 
         :param session: the session to use for the request.
         """
-        data = await session._get(f"/accounts/{self.account_number}/orders/live")
+        data = await session._get(
+            f"/accounts/{self.account_number}/orders/live",
+            headers=session.order_headers,
+        )
         return [PlacedOrder(**i) for i in data["items"]]
 
     async def get_live_complex_orders(
@@ -782,7 +785,8 @@ class Account(TastytradeData):
         :param session: the session to use for the request.
         """
         data = await session._get(
-            f"/accounts/{self.account_number}/complex-orders/live"
+            f"/accounts/{self.account_number}/complex-orders/live",
+            headers=session.order_headers,
         )
         return [PlacedComplexOrder(**i) for i in data["items"]]
 
@@ -796,7 +800,8 @@ class Account(TastytradeData):
         :param order_id: the ID of the order to fetch.
         """
         data = await session._get(
-            f"/accounts/{self.account_number}/complex-orders/{order_id}"
+            f"/accounts/{self.account_number}/complex-orders/{order_id}",
+            headers=session.order_headers,
         )
         return PlacedComplexOrder(**data)
 
@@ -807,7 +812,10 @@ class Account(TastytradeData):
         :param session: the session to use for the request.
         :param order_id: the ID of the order to fetch.
         """
-        data = await session._get(f"/accounts/{self.account_number}/orders/{order_id}")
+        data = await session._get(
+            f"/accounts/{self.account_number}/orders/{order_id}",
+            headers=session.order_headers,
+        )
         return PlacedOrder(**data)
 
     async def delete_complex_order(self, session: Session, order_id: int) -> None:
@@ -818,7 +826,8 @@ class Account(TastytradeData):
         :param order_id: the ID of the order to delete.
         """
         await session._delete(
-            f"/accounts/{self.account_number}/complex-orders/{order_id}"
+            f"/accounts/{self.account_number}/complex-orders/{order_id}",
+            headers=session.order_headers,
         )
 
     async def delete_order(self, session: Session, order_id: int) -> None:
@@ -828,7 +837,10 @@ class Account(TastytradeData):
         :param session: the session to use for the request.
         :param order_id: the ID of the order to delete.
         """
-        await session._delete(f"/accounts/{self.account_number}/orders/{order_id}")
+        await session._delete(
+            f"/accounts/{self.account_number}/orders/{order_id}",
+            headers=session.order_headers,
+        )
 
     async def get_order_history(
         self,
@@ -852,7 +864,10 @@ class Account(TastytradeData):
         :param per_page: the number of results to return per page.
         :param page_offset:
             provide a specific page to get; if None, get all pages
-        :param start_date: the start date of orders to query.
+        :param start_date:
+            the start date of orders to query. If neither this nor ``start_at`` is
+            given, defaults to the day before the account was opened, so all orders
+            are returned.
         :param end_date: the end date of orders to query.
         :param underlying_symbol: underlying symbol to filter by.
         :param statuses: a list of statuses to filter by.
@@ -865,6 +880,10 @@ class Account(TastytradeData):
         :param end_at:
             datetime end range for filtering transactions in full date-time.
         """
+        if start_date is None and start_at is None:
+            # The API requires a start date. The day before opening covers every order,
+            # since dates are matched in US Eastern time and opened_at is in UTC.
+            start_date = self.opened_at.date() - timedelta(days=1)
         params = {
             "per-page": per_page,
             "page-offset": page_offset,
@@ -881,7 +900,10 @@ class Account(TastytradeData):
             "end-at": end_at,
         }
         return await session._paginate(
-            PlacedOrder, f"/accounts/{self.account_number}/orders", params
+            PlacedOrder,
+            f"/accounts/{self.account_number}/orders",
+            params,
+            session.order_headers,
         )
 
     async def get_complex_order_history(
@@ -900,6 +922,7 @@ class Account(TastytradeData):
             PlacedComplexOrder,
             f"/accounts/{self.account_number}/complex-orders",
             params,
+            session.order_headers,
         )
 
     @overload
@@ -946,7 +969,7 @@ class Account(TastytradeData):
         if dry_run:
             url += "/dry-run"
         json = order.model_dump_json(exclude_none=True, by_alias=True)
-        data = await session._post(url, data=json)
+        data = await session._post(url, data=json, headers=session.order_headers)
         if dry_run:
             return PlacedOrderResponse[UnplacedOrder](**data)
         model_class = PLACED_TYPES.get(order.order_type, PlacedOrder)
@@ -964,7 +987,11 @@ class Account(TastytradeData):
         url = f"/accounts/{self.account_number}/orders/dry-run"
         json = order.model_dump_json(exclude_none=True, by_alias=True)
         await session.refresh()
-        response = await session._client.post(url, data=json)  # type: ignore
+        response = await session._client.post(
+            url,
+            data=json,  # type: ignore
+            headers=session.order_headers,
+        )
         data = response.json()["data"]["buying-power-effect"]
         return BuyingPowerEffect(**data)
 
@@ -1007,7 +1034,7 @@ class Account(TastytradeData):
         if dry_run:
             url += "/dry-run"
         json = order.model_dump_json(exclude_none=True, by_alias=True)
-        data = await session._post(url, data=json)
+        data = await session._post(url, data=json, headers=session.order_headers)
         if dry_run:
             return PlacedComplexOrderResponse[UnplacedComplexOrder](**data)
         model_class = PLACED_COMPLEX_TYPES.get(type(order), PlacedComplexOrder)
@@ -1054,6 +1081,7 @@ class Account(TastytradeData):
             data=new_order.model_dump_json(
                 exclude={"legs"}, exclude_none=True, by_alias=True
             ),
+            headers=session.order_headers,
         )
         model_class = PLACED_TYPES.get(new_order.order_type, PlacedOrder)
         return model_class(**data)
