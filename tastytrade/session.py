@@ -11,7 +11,7 @@ from typing import Any, Self, TypeVar
 from anyio import AsyncContextManagerMixin, Lock
 from httpx2 import AsyncClient
 
-from tastytrade import API_URL, API_VERSION, CERT_URL, logger
+from tastytrade import API_URL, API_VERSION, CERT_URL, ORDER_API_VERSION, logger
 from tastytrade.utils import TastytradeData, validate_and_parse, validate_response
 
 T = TypeVar("T", bound=TastytradeData)
@@ -277,6 +277,10 @@ class Session(AsyncContextManagerMixin):
         headers = {"Accept": "application/json", "Content-Type": "application/json"}
         if not is_test:  # not accepted in sandbox
             headers["Accept-Version"] = API_VERSION
+        #: headers to send on order endpoints, which need a newer API version
+        self.order_headers: dict[str, str] = (
+            {} if is_test else {"Accept-Version": ORDER_API_VERSION}
+        )
         #: timestamp that the session will expire
         self.session_expiration = 0.0
         #: token used for authentication
@@ -397,7 +401,11 @@ class Session(AsyncContextManagerMixin):
         return validate_and_parse(response)
 
     async def _paginate(
-        self, model: type[T], url: str, params: dict[str, Any]
+        self,
+        model: type[T],
+        url: str,
+        params: dict[str, Any],
+        headers: dict[str, str] | None = None,
     ) -> list[T]:
         # Helper for paginated endpoints. Excepts params to have at least `page-offset`
         # and `per-page` parameters. If `params["page-offset"]` is None, iterates over
@@ -413,7 +421,7 @@ class Session(AsyncContextManagerMixin):
         await self.refresh()
         # loop through pages and get all transactions
         while True:
-            response = await self._client.get(url, params=params)
+            response = await self._client.get(url, params=params, headers=headers)
             validate_response(response)
             json = response.json()
             res.extend([model(**i) for i in json["data"]["items"]])
